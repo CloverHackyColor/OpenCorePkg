@@ -363,6 +363,9 @@ GetNewestFileFromDirectory (
   ASSERT (Directory != NULL);
   ASSERT (FileInfo != NULL);
 
+  LatestIndex = 0;
+  LatestEpoch = 0;
+
   //
   // Ensure this is a directory.
   //
@@ -476,9 +479,9 @@ GetNewestFileFromDirectory (
     return EFI_NOT_FOUND;
   }
 
-  *FileInfo = FileInfoLatest;
-  Context->PreviousIndex = LatestIndex;
-  Context->PreviousTime = LatestEpoch;
+  *FileInfo               = FileInfoLatest;
+  Context->PreviousIndex  = LatestIndex;
+  Context->PreviousTime   = LatestEpoch;
 
   return EFI_SUCCESS;
 }
