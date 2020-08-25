@@ -1093,7 +1093,7 @@ OcKernelFuzzyMatch (
       ReservedExeSize,
       LinkedExpansion,
       Digest
-    );
+      );
   } while (EFI_ERROR (Status));
 
   if (FileInfo != NULL) {
@@ -1191,7 +1191,7 @@ OcKernelFileOpen (
   if (mOcConfiguration->Kernel.Scheme.FuzzyMatch
     && Status == EFI_NOT_FOUND
     && OpenMode == EFI_FILE_MODE_READ
-    && (OcStriStr (FileName, L"\\kernelcache") != NULL)) {
+    && (StrStr (FileName, L"\\kernelcache") != NULL)) {
 
     DEBUG ((DEBUG_INFO, "OC: Trying kernelcache fuzzy matching on %s\n", FileName));
 
@@ -1207,7 +1207,7 @@ OcKernelFileOpen (
       &ReservedExeSize,
       &LinkedExpansion,
       UseSecureBoot ? mKernelDigest : NULL
-    );
+      );
   }
 
   if (EFI_ERROR (Status)) {
@@ -1239,7 +1239,7 @@ OcKernelFileOpen (
         &ReservedExeSize,
         &LinkedExpansion,
         UseSecureBoot ? mKernelDigest : NULL
-      );
+        );
 
       if (Status == EFI_NOT_FOUND) {
         (*NewHandle)->Close(*NewHandle);
