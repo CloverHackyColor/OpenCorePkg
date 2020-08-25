@@ -400,7 +400,7 @@ ReadAppleKernelImage (
         return EFI_INVALID_PARAMETER;
       }
       default:
-        DEBUG ((Offset > 0 ? DEBUG_INFO : DEBUG_INFO, "OCAK: Invalid kernel magic %08X at %08X\n", *MagicPtr, Offset));
+        DEBUG ((Offset > 0 ? DEBUG_INFO : DEBUG_VERBOSE, "OCAK: Invalid kernel magic %08X at %08X\n", *MagicPtr, Offset));
         return EFI_INVALID_PARAMETER;
     }
   }

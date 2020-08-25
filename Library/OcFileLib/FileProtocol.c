@@ -66,7 +66,7 @@ EfiTimeToEpoch (
   UINT32 EpochDays;   // Number of days elapsed since EPOCH_JULIAN_DAY
   UINT32 EpochSeconds;
 
-  EpochDays = EfiGetEpochDays (Time);
+  EpochDays = (UINT32)EfiGetEpochDays (Time);
 
   EpochSeconds = (EpochDays * SEC_PER_DAY) + ((UINTN)Time->Hour * SEC_PER_HOUR) + (Time->Minute * SEC_PER_MIN) + Time->Second;
 
