@@ -29,7 +29,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/UefiRuntimeServicesTableLib.h>
 
 STATIC OC_STORAGE_CONTEXT  *mOcStorage;
-STATIC OC_GLOBAL_CONFIG    *mOcConfiguration;
+OC_GLOBAL_CONFIG    *mOcConfiguration;
 STATIC OC_CPU_INFO         *mOcCpuInfo;
 STATIC UINT8               mKernelDigest[SHA384_DIGEST_SIZE];
 
@@ -1057,7 +1057,7 @@ OcKernelFuzzyMatch (
   return Status;
 }
 
-STATIC
+
 EFI_STATUS
 EFIAPI
 OcKernelFileOpen (

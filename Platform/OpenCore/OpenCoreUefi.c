@@ -309,9 +309,9 @@ OcReinstallProtocols (
     DEBUG ((DEBUG_ERROR, "OC: Failed to install device properties protocol\n"));
   }
 
-  if (OcAppleImageConversionInstallProtocol (Config->Uefi.ProtocolOverrides.AppleImageConversion) == NULL) {
-    DEBUG ((DEBUG_ERROR, "OC: Failed to install image conversion protocol\n"));
-  }
+//  if (OcAppleImageConversionInstallProtocol (Config->Uefi.ProtocolOverrides.AppleImageConversion) == NULL) {
+//    DEBUG ((DEBUG_ERROR, "OC: Failed to install image conversion protocol\n"));
+//  }
 
   if (OcAppleDebugLogInstallProtocol (Config->Uefi.ProtocolOverrides.AppleDebugLog) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install debug log protocol\n"));
@@ -333,9 +333,9 @@ OcReinstallProtocols (
     DEBUG ((DEBUG_ERROR, "OC: Failed to install hash services protocol\n"));
   }
 
-  if (OcAppleKeyMapInstallProtocols (Config->Uefi.ProtocolOverrides.AppleKeyMap) == NULL) {
-    DEBUG ((DEBUG_ERROR, "OC: Failed to install key map protocols\n"));
-  }
+//  if (OcAppleKeyMapInstallProtocols (Config->Uefi.ProtocolOverrides.AppleKeyMap) == NULL) {
+//    DEBUG ((DEBUG_ERROR, "OC: Failed to install key map protocols\n"));
+//  }
 
   if (OcAppleEventInstallProtocol (Config->Uefi.ProtocolOverrides.AppleEvent) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install key event protocol\n"));

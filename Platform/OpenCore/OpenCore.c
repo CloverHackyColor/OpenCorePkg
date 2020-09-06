@@ -40,19 +40,19 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/UefiDriverEntryPoint.h>
 #include <Library/UefiLib.h>
 
-STATIC
+
 OC_GLOBAL_CONFIG
 mOpenCoreConfiguration;
 
-STATIC
+
 OC_STORAGE_CONTEXT
 mOpenCoreStorage;
 
-STATIC
+
 OC_CPU_INFO
 mOpenCoreCpuInfo;
 
-STATIC
+
 OC_RSA_PUBLIC_KEY *
 mOpenCoreVaultKey;
 
@@ -157,7 +157,7 @@ OcMain (
     );
 }
 
-STATIC
+
 EFI_STATUS
 EFIAPI
 OcBootstrapRerun (
@@ -211,7 +211,7 @@ OcGetLoadHandle (
   return mLoadHandle;
 }
 
-STATIC
+
 OC_BOOTSTRAP_PROTOCOL
 mOpenCoreBootStrap = {
   .Revision      = OC_BOOTSTRAP_PROTOCOL_REVISION,

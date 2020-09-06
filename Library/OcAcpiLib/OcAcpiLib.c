@@ -138,7 +138,8 @@ AcpiFindRsdp (
 
   @return OemTableId or 0.
 **/
-STATIC
+
+
 UINT64
 AcpiReadOemTableId (
   IN  CONST EFI_ACPI_COMMON_HEADER  *Common

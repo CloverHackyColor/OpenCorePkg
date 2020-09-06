@@ -42,6 +42,8 @@
   Vtables.c
   CachelessContext.c
   MkextContext.c
+  CachelessInternal.h
+  MkextInternal.h
 
 [Packages]
   MdePkg/MdePkg.dec
