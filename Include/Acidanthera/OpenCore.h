@@ -52,7 +52,7 @@
 
 #define OPEN_CORE_ROOT_PATH        L"EFI\\OC"
 
-#define OPEN_CORE_CONFIG_PATH      L"config.plist"
+#define OPEN_CORE_CONFIG_PATH      L"config-oc.plist"
 
 #define OPEN_CORE_LOG_PREFIX_PATH  L"opencore"
 
@@ -60,7 +60,7 @@
 
 #define OPEN_CORE_ACPI_PATH        L"ACPI\\"
 
-#define OPEN_CORE_UEFI_DRIVER_PATH L"Drivers\\"
+#define OPEN_CORE_UEFI_DRIVER_PATH L"Drivers\\OC\\"
 
 #define OPEN_CORE_KEXT_PATH        L"Kexts\\"
 

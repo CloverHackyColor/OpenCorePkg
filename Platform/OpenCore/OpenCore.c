@@ -60,14 +60,13 @@ STATIC
 OC_PRIVILEGE_CONTEXT
 mOpenCorePrivilege;
 
-STATIC
 EFI_HANDLE
 mLoadHandle;
 
-STATIC
+
 EFI_STATUS
 EFIAPI
-OcStartImage (
+OcStartImage_2 (
   IN  OC_BOOT_ENTRY               *Chosen,
   IN  EFI_HANDLE                  ImageHandle,
   OUT UINTN                       *ExitDataSize,
@@ -94,7 +93,7 @@ OcStartImage (
   return Status;
 }
 
-STATIC
+
 VOID
 OcMain (
   IN OC_STORAGE_CONTEXT        *Storage,
@@ -103,6 +102,8 @@ OcMain (
 {
   EFI_STATUS                Status;
   OC_PRIVILEGE_CONTEXT      *Privilege;
+
+  SetMem(&mOpenCoreConfiguration, sizeof(mOpenCoreConfiguration), 0);
 
   DEBUG ((DEBUG_INFO, "OC: OcMiscEarlyInit...\n"));
   Status = OcMiscEarlyInit (
@@ -147,14 +148,49 @@ OcMain (
 
   DEBUG ((DEBUG_INFO, "OC: All green, starting boot management...\n"));
 
-  OcMiscBoot (
-    &mOpenCoreStorage,
-    &mOpenCoreConfiguration,
-    Privilege,
-    OcStartImage,
-    mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
-    mLoadHandle
-    );
+
+//
+//  CHAR16* UnicodeDevicePath = NULL; (void)UnicodeDevicePath;
+//
+//  UINTN                   HandleCount = 0;
+//  EFI_HANDLE              *Handles = NULL;
+//  Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &HandleCount, &Handles);
+//  UINTN HandleIndex = 0;
+//  for (HandleIndex = 0; HandleIndex < HandleCount; HandleIndex++) {
+//    EFI_DEVICE_PATH_PROTOCOL* DevicePath = DevicePathFromHandle(Handles[HandleIndex]);
+//    UnicodeDevicePath = ConvertDevicePathToText(DevicePath, FALSE, FALSE);
+//    if ( StrCmp(L"PciRoot(0x0)/Pci(0x11,0x0)/Pci(0x5,0x0)/Sata(0x1,0x0,0x0)/HD(2,GPT,25B8F381-DC5C-40C4-BCF2-9B22412964BE,0x64028,0x4F9BFB0)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842,B1F3810AD9513533B3E3169C3640360D)", UnicodeDevicePath) == 0 ) break;
+//  }
+//  if ( HandleIndex < HandleCount )
+//  {
+//    EFI_DEVICE_PATH_PROTOCOL* jfkImagePath = FileDevicePath(Handles[HandleIndex], L"\\System\\Library\\CoreServices\\boot.efi");
+//    UnicodeDevicePath = ConvertDevicePathToText (jfkImagePath, FALSE, FALSE);
+//
+//    EFI_HANDLE EntryHandle = NULL;
+//    Status = gBS->LoadImage (
+//      FALSE,
+//      gImageHandle,
+//      jfkImagePath,
+//      NULL,
+//      0,
+//      &EntryHandle
+//      );
+//  //  OcLoadBootEntry (Context, Context->
+//    Status = gBS->StartImage (EntryHandle, 0, NULL);
+//  }else{
+//  }
+
+
+
+
+//  OcMiscBoot (
+//    &mOpenCoreStorage,
+//    &mOpenCoreConfiguration,
+//    Privilege,
+//    OcStartImage_2,
+//    mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
+//    mLoadHandle
+//    );
 }
 
 
