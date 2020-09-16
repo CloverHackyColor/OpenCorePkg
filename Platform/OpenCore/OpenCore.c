@@ -103,7 +103,7 @@ OcMain (
   EFI_STATUS                Status;
   OC_PRIVILEGE_CONTEXT      *Privilege;
 
-  SetMem(&mOpenCoreConfiguration, sizeof(mOpenCoreConfiguration), 0);
+//  SetMem(&mOpenCoreConfiguration, sizeof(mOpenCoreConfiguration), 0);
 
   DEBUG ((DEBUG_INFO, "OC: OcMiscEarlyInit...\n"));
   Status = OcMiscEarlyInit (
@@ -124,10 +124,10 @@ OcMain (
   OcMiscMiddleInit (Storage, &mOpenCoreConfiguration, LoadPath, &mLoadHandle);
   DEBUG ((DEBUG_INFO, "OC: OcLoadUefiSupport...\n"));
   OcLoadUefiSupport (Storage, &mOpenCoreConfiguration, &mOpenCoreCpuInfo);
-  DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport...\n"));
-  OcLoadAcpiSupport (&mOpenCoreStorage, &mOpenCoreConfiguration);
-  DEBUG ((DEBUG_INFO, "OC: OcLoadPlatformSupport...\n"));
-  OcLoadPlatformSupport (&mOpenCoreConfiguration, &mOpenCoreCpuInfo);
+//  DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport...\n"));
+//  OcLoadAcpiSupport (&mOpenCoreStorage, &mOpenCoreConfiguration);
+//  DEBUG ((DEBUG_INFO, "OC: OcLoadPlatformSupport...\n"));
+//  OcLoadPlatformSupport (&mOpenCoreConfiguration, &mOpenCoreCpuInfo);
   DEBUG ((DEBUG_INFO, "OC: OcLoadDevPropsSupport...\n"));
   OcLoadDevPropsSupport (&mOpenCoreConfiguration);
   DEBUG ((DEBUG_INFO, "OC: OcMiscLateInit...\n"));

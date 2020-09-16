@@ -465,18 +465,17 @@ OcMiscGetVersionString (
 }
 
 EFI_STATUS
-OcMiscEarlyInit (
+ClOcReadConfigurationFile(
   IN  OC_STORAGE_CONTEXT *Storage,
-  OUT OC_GLOBAL_CONFIG   *Config,
-  IN  OC_RSA_PUBLIC_KEY  *VaultKey  OPTIONAL
-  )
+  IN  CONST CHAR16* configPath,
+  OUT OC_GLOBAL_CONFIG   *Config
+ )
 {
   EFI_STATUS                Status;
   CHAR8                     *ConfigData;
   UINT32                    ConfigDataSize;
-  EFI_TIME                  BootTime;
-  CONST CHAR8               *AsciiVault;
-  OCS_VAULT_MODE            Vault;
+
+  SetMem(Config, sizeof(*Config), 0);
 
   ConfigData = OcStorageReadFileUnicode (
     Storage,
@@ -500,6 +499,23 @@ OcMiscEarlyInit (
     CpuDeadLoop ();
     return EFI_UNSUPPORTED; ///< Should be unreachable.
   }
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
+OcMiscEarlyInit (
+  IN  OC_STORAGE_CONTEXT *Storage,
+  OUT OC_GLOBAL_CONFIG   *Config,
+  IN  OC_RSA_PUBLIC_KEY  *VaultKey  OPTIONAL
+  )
+{
+  EFI_STATUS                Status;
+  EFI_TIME                  BootTime;
+  CONST CHAR8               *AsciiVault;
+  OCS_VAULT_MODE            Vault;
+
+//  Status = ClOcReadConfigurationFile(Storage, OPEN_CORE_CONFIG_PATH, Config);
+//  if (EFI_ERROR (Status)) return EFI_UNSUPPORTED;
 
   AsciiVault = OC_BLOB_GET (&Config->Misc.Security.Vault);
   if (AsciiStrCmp (AsciiVault, "Secure") == 0) {
