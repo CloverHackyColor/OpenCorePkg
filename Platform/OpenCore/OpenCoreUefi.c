@@ -260,6 +260,8 @@ OcExitBootServicesHandler (
 
   Config = (OC_GLOBAL_CONFIG *) Context;
 
+DEBUG ((DEBUG_INFO, "++++++++++++++++++++++++++++++++\n"));
+
   //
   // Printing from ExitBootServices is dangerous, as it may cause
   // memory reallocation, which can make ExitBootServices fail.
