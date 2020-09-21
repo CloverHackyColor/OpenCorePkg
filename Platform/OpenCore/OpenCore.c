@@ -103,8 +103,6 @@ OcMain (
   EFI_STATUS                Status;
   OC_PRIVILEGE_CONTEXT      *Privilege;
 
-//  SetMem(&mOpenCoreConfiguration, sizeof(mOpenCoreConfiguration), 0);
-
   DEBUG ((DEBUG_INFO, "OC: OcMiscEarlyInit...\n"));
   Status = OcMiscEarlyInit (
     Storage,
@@ -182,15 +180,16 @@ OcMain (
 
 
 
-
-//  OcMiscBoot (
-//    &mOpenCoreStorage,
-//    &mOpenCoreConfiguration,
-//    Privilege,
-//    OcStartImage_2,
-//    mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
-//    mLoadHandle
-//    );
+#ifndef CLOVER_BUILD
+  OcMiscBoot (
+    &mOpenCoreStorage,
+    &mOpenCoreConfiguration,
+    Privilege,
+    OcStartImage_2,
+    mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
+    mLoadHandle
+    );
+#endif
 }
 
 

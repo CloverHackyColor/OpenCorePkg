@@ -514,8 +514,10 @@ OcMiscEarlyInit (
   CONST CHAR8               *AsciiVault;
   OCS_VAULT_MODE            Vault;
 
-//  Status = ClOcReadConfigurationFile(Storage, OPEN_CORE_CONFIG_PATH, Config);
-//  if (EFI_ERROR (Status)) return EFI_UNSUPPORTED;
+#ifndef CLOVER_BUILD
+  Status = ClOcReadConfigurationFile(Storage, OPEN_CORE_CONFIG_PATH, Config);
+  if (EFI_ERROR (Status)) return EFI_UNSUPPORTED;
+#endif
 
   AsciiVault = OC_BLOB_GET (&Config->Misc.Security.Vault);
   if (AsciiStrCmp (AsciiVault, "Secure") == 0) {
