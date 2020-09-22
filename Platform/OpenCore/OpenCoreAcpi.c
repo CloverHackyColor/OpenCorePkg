@@ -146,8 +146,10 @@ OcAcpiPatchTables (
     UserPatch = Config->Acpi.Patch.Values[Index];
 
     if (!UserPatch->Enabled) {
+      DEBUG ((DEBUG_INFO, "OC: Skipping disabled patch ACPI %a\n", OC_BLOB_GET(&Config->Acpi.Patch.Values[Index]->Comment)));
       continue;
     }
+    DEBUG ((DEBUG_INFO, "OC: Apply patch ACPI %a\n", OC_BLOB_GET(&Config->Acpi.Patch.Values[Index]->Comment)));
 
     //
     // Ignore patch if:
