@@ -48,6 +48,8 @@ OcAcpiAddTables (
       continue;
     }
 
+    DEBUG ((DEBUG_INFO, "OC: add ACPI %a\n", TablePath));
+
     Status = OcUnicodeSafeSPrint (FullPath, sizeof (FullPath), OPEN_CORE_ACPI_PATH "%a", TablePath);
     if (EFI_ERROR (Status)) {
       DEBUG ((
