@@ -634,10 +634,10 @@ OcMiscMiddleInit (
 
   BootProtectFlag = Config->Uefi.Quirks.RequestBootVarRouting ? OC_BOOT_PROTECT_VARIABLE_NAMESPACE : 0;
 
-  if (OcHandle != NULL && AsciiStrCmp (BootProtect, "Bootstrap") == 0) {
-    OcRegisterBootOption (L"OpenCore", OcHandle, OPEN_CORE_BOOTSTRAP_PATH);
-    BootProtectFlag = OC_BOOT_PROTECT_VARIABLE_BOOTSTRAP;
-  }
+// if (OcHandle != NULL && AsciiStrCmp (BootProtect, "Bootstrap") == 0) {
+//    OcRegisterBootOption (L"OpenCore", OcHandle, OPEN_CORE_BOOTSTRAP_PATH);
+//    BootProtectFlag = OC_BOOT_PROTECT_VARIABLE_BOOTSTRAP;
+//  }
 
   //
   // Inform about boot protection.
