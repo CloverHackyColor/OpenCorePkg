@@ -62,7 +62,11 @@
 
 #define OPEN_CORE_UEFI_DRIVER_PATH L"Drivers\\UEFI\\"
 
+#ifdef CLOVER_BUILD
+#define OPEN_CORE_KEXT_PATH        L""
+#else
 #define OPEN_CORE_KEXT_PATH        L"Kexts\\"
+#endif
 
 #define OPEN_CORE_TOOL_PATH        L"Tools\\"
 
