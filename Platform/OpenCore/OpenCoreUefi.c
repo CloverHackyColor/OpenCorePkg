@@ -179,7 +179,7 @@ OcLoadDrivers (
       NULL
       );
 
-    if (EFI_ERROR (Status)) {
+    if (EFI_ERROR (Status)  &&  Status != RETURN_ALREADY_STARTED) {
       DEBUG ((
         DEBUG_ERROR,
         "OC: Driver %a at %u cannot be started - %r!\n",
@@ -190,7 +190,7 @@ OcLoadDrivers (
       gBS->UnloadImage (ImageHandle);
     }
 
-    if (!EFI_ERROR (Status)) {
+    if (!EFI_ERROR (Status)  ||   Status != RETURN_ALREADY_STARTED) {
       DEBUG ((
         DEBUG_INFO,
         "OC: Driver %a at %u is successfully loaded!\n",
@@ -260,6 +260,8 @@ OcExitBootServicesHandler (
 
   Config = (OC_GLOBAL_CONFIG *) Context;
 
+DEBUG ((DEBUG_INFO, "++++++++++++++++++++++++++++++++\n"));
+
   //
   // Printing from ExitBootServices is dangerous, as it may cause
   // memory reallocation, which can make ExitBootServices fail.
@@ -308,11 +310,11 @@ OcReinstallProtocols (
   if (OcDevicePathPropertyInstallProtocol (Config->Uefi.ProtocolOverrides.DeviceProperties) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install device properties protocol\n"));
   }
-
-//  if (OcAppleImageConversionInstallProtocol (Config->Uefi.ProtocolOverrides.AppleImageConversion) == NULL) {
-//    DEBUG ((DEBUG_ERROR, "OC: Failed to install image conversion protocol\n"));
-//  }
-
+#ifndef CLOVER_BUILD
+  if (OcAppleImageConversionInstallProtocol (Config->Uefi.ProtocolOverrides.AppleImageConversion) == NULL) {
+    DEBUG ((DEBUG_ERROR, "OC: Failed to install image conversion protocol\n"));
+  }
+#endif
   if (OcAppleDebugLogInstallProtocol (Config->Uefi.ProtocolOverrides.AppleDebugLog) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install debug log protocol\n"));
   }
@@ -333,9 +335,11 @@ OcReinstallProtocols (
     DEBUG ((DEBUG_ERROR, "OC: Failed to install hash services protocol\n"));
   }
 
-//  if (OcAppleKeyMapInstallProtocols (Config->Uefi.ProtocolOverrides.AppleKeyMap) == NULL) {
-//    DEBUG ((DEBUG_ERROR, "OC: Failed to install key map protocols\n"));
-//  }
+#ifndef CLOVER_BUILD
+  if (OcAppleKeyMapInstallProtocols (Config->Uefi.ProtocolOverrides.AppleKeyMap) == NULL) {
+    DEBUG ((DEBUG_ERROR, "OC: Failed to install key map protocols\n"));
+  }
+#endif
 
   if (OcAppleEventInstallProtocol (Config->Uefi.ProtocolOverrides.AppleEvent) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install key event protocol\n"));

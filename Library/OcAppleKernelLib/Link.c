@@ -1424,13 +1424,13 @@ InternalPrelinkKext64 (
         ));
       return EFI_LOAD_ERROR;
     } else {
-      DEBUG ((
-        DEBUG_VERBOSE,
-        "OCAK: Symbol %a was resolved for kext %a to %Lx\n",
-        MachoGetSymbolName64 (MachoContext, Symbol),
-        Kext->Identifier,
-        Symbol->Value
-        ));
+//      DEBUG ((
+//        DEBUG_VERBOSE,
+//        "OCAK: Symbol %a was resolved for kext %a to %Lx\n",
+//        MachoGetSymbolName64 (MachoContext, Symbol),
+//        Kext->Identifier,
+//        Symbol->Value
+//        ));
     }
   }
   //
