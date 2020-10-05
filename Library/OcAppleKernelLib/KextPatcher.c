@@ -162,7 +162,8 @@ PatcherGetSymbolAddress (
     }
 
     SymbolName = MachoGetSymbolName64 (&Context->MachContext, Symbol);
-    if (SymbolName != NULL && AsciiStrCmp (Name, SymbolName) == 0) {
+//    if (SymbolName != NULL && AsciiStrCmp (Name, SymbolName) == 0) {
+    if (SymbolName != NULL && AsciiStrStr (SymbolName, Name) != NULL) {
       //
       // Once we have a symbol, get its ondisk offset.
       //

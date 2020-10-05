@@ -122,8 +122,10 @@ OcMain (
   OcMiscMiddleInit (Storage, &mOpenCoreConfiguration, LoadPath, &mLoadHandle);
   DEBUG ((DEBUG_INFO, "OC: OcLoadUefiSupport...\n"));
   OcLoadUefiSupport (Storage, &mOpenCoreConfiguration, &mOpenCoreCpuInfo);
+#ifndef CLOVER_BUILD
   DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport...\n"));
   OcLoadAcpiSupport (&mOpenCoreStorage, &mOpenCoreConfiguration);
+#endif
   DEBUG ((DEBUG_INFO, "OC: OcLoadPlatformSupport...\n"));
   OcLoadPlatformSupport (&mOpenCoreConfiguration, &mOpenCoreCpuInfo);
   DEBUG ((DEBUG_INFO, "OC: OcLoadDevPropsSupport...\n"));
