@@ -210,12 +210,73 @@ OcBootstrapRerun (
   if (This->NestedCount == 1) {
     mOpenCoreVaultKey = OcGetVaultKey (This);
 
-    Status = OcStorageInitFromFs (
-      &mOpenCoreStorage,
-      FileSystem,
-      OPEN_CORE_ROOT_PATH,
-      mOpenCoreVaultKey
+
+
+
+
+
+
+    /*
+     * Jief : I declare these var here, to keep my modification grouped together and ease copy/paste each time a new version is pulled.
+     */
+
+    /*
+     * Leave a signature that wouldn't be stripped in release version
+     */
+    static const char* opencore_revision __attribute__((used)) = "OpenCore revision: " OPEN_CORE_VERSION;
+    /*
+     * Leave a marker for BootloaderChooser, to prevent confusion (an efi file from a folder EFI\OCXXX that would use file from EFI\OC)
+     */
+    static const char* path_independant __attribute__((used)) = "path_independant";
+
+    EFI_LOADED_IMAGE_PROTOCOL* LoadedImage = NULL;
+    Status = gBS->HandleProtocol (
+      gImageHandle,
+      &gEfiLoadedImageProtocolGuid,
+      (VOID **) &LoadedImage
       );
+
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "OC: Failed to locate loaded image - %r\n", Status));
+      return EFI_NOT_FOUND;
+    }
+
+    // Extract dirname from LoadedImage->FilePath
+    CHAR16* UnicodeDevicePath = NULL;
+    if ( LoadedImage->FilePath ) {
+      UnicodeDevicePath = ConvertDevicePathToText(LoadedImage->FilePath, FALSE, FALSE);
+      CHAR16* p = UnicodeDevicePath + StrLen(UnicodeDevicePath);
+      while ( p > UnicodeDevicePath  &&  *p != L'\\' ) {
+        p -= 1;
+      }
+      *p = 0;
+    }
+    // If not dirname is found (LoadedImage->FilePath can be NULL), use OPEN_CORE_ROOT_PATH as before.
+    if ( UnicodeDevicePath == NULL  ||  *UnicodeDevicePath == 0 )
+    {
+
+      Status = OcStorageInitFromFs (
+        &mOpenCoreStorage,
+        FileSystem,
+        OPEN_CORE_ROOT_PATH,
+        mOpenCoreVaultKey
+        );
+
+    }else{
+
+      Status = OcStorageInitFromFs (
+        &mOpenCoreStorage,
+        FileSystem,
+        UnicodeDevicePath,
+        mOpenCoreVaultKey
+        );
+      if ( UnicodeDevicePath != NULL ) FreePool (UnicodeDevicePath);
+    }
+
+
+
+
+
 
     if (!EFI_ERROR (Status)) {
       OcMain (&mOpenCoreStorage, LoadPath);
@@ -246,6 +307,7 @@ OcGetLoadHandle (
   return mLoadHandle;
 }
 
+#include <Library/SerialPortLib.h>
 
 OC_BOOTSTRAP_PROTOCOL
 mOpenCoreBootStrap = {
@@ -269,6 +331,12 @@ UefiMain (
   EFI_HANDLE                        BootstrapHandle;
   OC_BOOTSTRAP_PROTOCOL             *Bootstrap;
   EFI_DEVICE_PATH_PROTOCOL          *AbsPath;
+
+#ifdef OC_TARGET_DEBUG
+  SerialPortInitialize();
+  Status = SerialPortWrite ((UINT8 *)"Starting OpenCore...", AsciiStrLen("Starting OpenCore..."));
+  gBS->Stall(2000000);
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: Starting OpenCore...\n"));
 
