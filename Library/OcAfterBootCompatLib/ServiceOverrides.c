@@ -655,7 +655,7 @@ OcStartImage (
       NULL,
       NULL
       );
-    DEBUG ((DEBUG_INFO, "OCABC: VMware Mac installed on %p - %r\n", ImageHandle, Status));
+//    DEBUG ((DEBUG_INFO, "OCABC: VMware Mac installed on %p - %r\n", ImageHandle, Status));
 
     BootCompat->ServiceState.AppleHibernateWake = OcIsAppleHibernateWake ();
     BootCompat->ServiceState.AppleCustomSlide = OcCheckArgumentFromEnv (
