@@ -60,7 +60,7 @@ ApplyPatch (
   )
 {
   return SearchAndReplaceMask(Data, DataSize, Pattern, PatternMask, PatternSize,
-                              Replace, ReplaceMask, Count);
+                              Replace, ReplaceMask, Count, Skip);
 }
 
 
