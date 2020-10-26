@@ -530,11 +530,11 @@ OcLoadUefiSupport (
   // Setup Apple bootloader specific UEFI features.
   //
   OcLoadBooterUefiSupport (Config);
-
+#ifndef CLOVER_BUILD
   if (Config->Uefi.Quirks.IgnoreInvalidFlexRatio) {
     OcCpuCorrectFlexRatio (CpuInfo);
   }
-
+#endif
   if (Config->Uefi.Quirks.TscSyncTimeout > 0) {
     OcCpuCorrectTscSync (CpuInfo, Config->Uefi.Quirks.TscSyncTimeout);
   }
