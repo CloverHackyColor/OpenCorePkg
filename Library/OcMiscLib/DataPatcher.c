@@ -139,6 +139,23 @@ ApplyPatch (
       //
       // Perform replacement.
       //
+      DEBUG((DEBUG_VERBOSE, "Replace " ));
+      for (UINTN Index = 0; Index < PatternSize; ++Index) {
+        DEBUG((DEBUG_VERBOSE, "%02X", Pattern[Index]));
+      }
+      if ( PatternMask ) {
+        DEBUG((DEBUG_VERBOSE, "/" ));
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          DEBUG((DEBUG_VERBOSE, "%02X", PatternMask[Index]));
+        }
+        DEBUG((DEBUG_VERBOSE, "(" ));
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          DEBUG((DEBUG_VERBOSE, "%02X", Data[DataOff + Index]));
+        }
+        DEBUG((DEBUG_VERBOSE, ")" ));
+      }
+      DEBUG((DEBUG_VERBOSE, " by " ));
+
       if (ReplaceMask == NULL) {
         CopyMem (&Data[DataOff], (void*)Replace, PatternSize);
       } else {
@@ -146,6 +163,24 @@ ApplyPatch (
           Data[DataOff + Index] = (Data[DataOff + Index] & ~ReplaceMask[Index]) | (Replace[Index] & ReplaceMask[Index]);
         }
       }
+
+      for (UINTN Index = 0; Index < PatternSize; ++Index) {
+        DEBUG((DEBUG_VERBOSE, "%02X", Replace[Index]));
+      }
+      if ( ReplaceMask ) {
+        DEBUG((DEBUG_VERBOSE, "/" ));
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          DEBUG((DEBUG_VERBOSE, "%02X", ReplaceMask[Index]));
+        }
+        DEBUG((DEBUG_VERBOSE, "(" ));
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          DEBUG((DEBUG_VERBOSE, "%02X", Data[DataOff + Index]));
+        }
+        DEBUG((DEBUG_VERBOSE, ")" ));
+      }
+
+      DEBUG((DEBUG_VERBOSE, " at ofs:%X\n", DataOff));
+
       ++ReplaceCount;
       DataOff += PatternSize;
 
