@@ -222,14 +222,17 @@ OcBootstrapRerun (
      * Jief : I declare these var here, to keep my modification grouped together and ease copy/paste each time a new version is pulled.
      */
 
+    int oc_unused_symbol_trick = 0;
     /*
      * Leave a signature that wouldn't be stripped in release version
      */
-    static const char* opencore_revision __attribute__((used)) = "OpenCore revision: " OPEN_CORE_VERSION;
+    static const char* opencore_revision = "OpenCore revision: " OPEN_CORE_VERSION;
+    oc_unused_symbol_trick += opencore_revision[0]; // to keep it used
     /*
      * Leave a marker for BootloaderChooser, to prevent confusion (an efi file from a folder EFI\OCXXX that would use file from EFI\OC)
      */
-    static const char* path_independant __attribute__((used)) = "path_independant";
+    static const char* path_independant = "path_independant";
+    oc_unused_symbol_trick += path_independant[0]; // to keep it used
 
     EFI_LOADED_IMAGE_PROTOCOL* LoadedImage = NULL;
     Status = gBS->HandleProtocol (

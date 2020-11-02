@@ -41,7 +41,9 @@ FindPattern (
 
   UINTN result = FindMemMask(Data + DataOff, DataSize, Pattern, PatternSize, PatternMask, PatternSize);
   if (result != MAX_UINTN) {
-    return result + DataOff;
+    if ( result < MAX_INT32 - DataOff ) {
+      return (INT32)(result + DataOff);
+    }
   }
   return -1;
 }
@@ -59,8 +61,12 @@ ApplyPatch (
   IN UINT32        Skip
   )
 {
-  return SearchAndReplaceMask(Data, DataSize, Pattern, PatternMask, PatternSize,
-                              Replace, ReplaceMask, Count, Skip);
+  UINTN res = SearchAndReplaceMask(Data, DataSize, Pattern, PatternMask, PatternSize, Replace, ReplaceMask, Count, Skip);
+  if ( res < MAX_UINT32 ) {
+    return (UINT32)res;
+  }else{
+    return MAX_UINT32;
+  }
 }
 
 
