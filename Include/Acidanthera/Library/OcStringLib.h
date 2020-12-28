@@ -333,6 +333,25 @@ UnicodeUefiSlashes (
   );
 
 /**
+  Drop last path from string and normalise start path. Examples:
+  - "Path" -> ""
+  - "Path/" -> ""
+  - "Path1\\Path2\\" -> "Path1"
+  - "\\Path1\\Path2" -> "Path1"
+  - "\\/" -> "/" & FALSE
+  - "\\" -> "" & FALSE
+  - "" -> "" & FALSE
+
+  @param[in,out]  String      Path.
+
+  @retval TRUE on success
+**/
+BOOLEAN
+UnicodeGetParentDirectory (
+  IN OUT CHAR16  *String
+  );
+
+/**
   Filter string from unprintable characters.
 
   @param[in,out]  String      String to filter.
@@ -342,6 +361,19 @@ VOID
 UnicodeFilterString (
   IN OUT CHAR16   *String,
   IN     BOOLEAN  SingleLine
+  );
+
+/**
+  Check if string starts with GUID.
+
+  @param[in]  String  String to check.
+
+  @retval TRUE when string starts with GUID.
+  @retval FALSE otherwise.
+**/
+BOOLEAN
+HasValidGuidStringPrefix (
+  IN CONST CHAR16  *String
   );
 
 #endif // OC_STRING_LIB_H

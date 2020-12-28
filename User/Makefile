@@ -53,8 +53,10 @@ ifeq ($(shell echo 'int a;' | "${CC}" -Wno-address -x c -c - -o /dev/null 2>&1),
 endif
 
 ifeq ($(DIST),Darwin)
-	CFLAGS  += -mmacosx-version-min=10.6
-	LDFLAGS += -mmacosx-version-min=10.6
+	ifneq ($(FUZZ),1)
+		CFLAGS  += -mmacosx-version-min=10.6 --target=x86_64-apple-darwin
+		LDFLAGS += -mmacosx-version-min=10.6 --target=x86_64-apple-darwin
+	endif
 endif
 
 ifeq ($(DIST),Windows)
@@ -65,6 +67,11 @@ endif
 ifeq ($(SANITIZE),1)
 	CFLAGS  += -fsanitize=undefined,address
 	LDFLAGS += -fsanitize=undefined,address
+endif
+
+ifeq ($(FUZZ),1)
+	CFLAGS  += -fsanitize=fuzzer -D FUZZING_TEST
+	LDFLAGS += -fsanitize=fuzzer -D FUZZING_TEST
 endif
 
 ifeq ($(DEBUG),1)
@@ -136,7 +143,7 @@ ifneq ($(STANDALONE),1)
 	#
 	# OcMachoLib targets.
 	#
-	OBJS    += CxxSymbols.o Fat.o Header.o Symbols.o Relocations.o
+	OBJS    += CxxSymbols.o Fat.o Header.o Macho32.o Macho64.o Relocations.o Symbols.o
 	#
 	# OcAppleKeysLib targets.
 	#

@@ -172,7 +172,7 @@ InternalFileExists (
   return Status;
 }
 
-
+STATIC
 EFI_STATUS
 InternalGetApfsSpecialFileInfo (
   IN     EFI_FILE_PROTOCOL          *Root,
@@ -197,14 +197,14 @@ InternalGetApfsSpecialFileInfo (
       return EFI_NOT_FOUND;
     }
 
-//    DEBUG ((
-//      DEBUG_BULK_INFO,
-//      "OCBP: APFS Volume Info - %p (%u, %g, %u)\n",
-//      *VolumeInfo,
-//      (*VolumeInfo)->Always1,
-//      &(*VolumeInfo)->Uuid,
-//      (*VolumeInfo)->Role
-//      ));
+    DEBUG ((
+      DEBUG_BULK_INFO,
+      "OCBP: APFS Volume Info - %p (%u, %g, %u)\n",
+      *VolumeInfo,
+      (*VolumeInfo)->Always1,
+      &(*VolumeInfo)->Uuid,
+      (*VolumeInfo)->Role
+      ));
   }
 
   if (ContainerInfo != NULL) {
@@ -223,13 +223,13 @@ InternalGetApfsSpecialFileInfo (
       return EFI_NOT_FOUND;
     }
 
-//    DEBUG ((
-//      DEBUG_BULK_INFO,
-//      "OCBP: APFS Container Info - %p (%u, %g)\n",
-//      *ContainerInfo,
-//      (*ContainerInfo)->Always1,
-//      &(*ContainerInfo)->Uuid
-//      ));
+    DEBUG ((
+      DEBUG_BULK_INFO,
+      "OCBP: APFS Container Info - %p (%u, %g)\n",
+      *ContainerInfo,
+      (*ContainerInfo)->Always1,
+      &(*ContainerInfo)->Uuid
+      ));
   }
 
   return EFI_SUCCESS;
@@ -741,36 +741,6 @@ InternalGetBooterFromApfsPredefinedPathList (
     ));
 
   return Status;
-}
-
-STATIC
-BOOLEAN
-HasValidGuidStringPrefix (
-  IN CONST CHAR16  *String
-  )
-{
-  UINTN  Length;
-  UINTN  Index;
-  UINTN  GuidLength = GUID_STRING_LENGTH;
-
-  Length = StrLen (String);
-  if (Length < GuidLength) {
-    return FALSE;
-  }
-
-  for (Index = 0; Index < GuidLength; ++Index) {
-    if (Index == 8 || Index == 13 || Index == 18 || Index == 23) {
-      if (String[Index] != '-') {
-        return FALSE;
-      }
-    } else if (!(String[Index] >= L'0' && String[Index] <= L'9')
-      && !(String[Index] >= L'A' && String[Index] <= L'F')
-      && !(String[Index] >= L'a' && String[Index] <= L'f')) {
-      return FALSE;
-    }
-  }
-
-  return TRUE;
 }
 
 STATIC

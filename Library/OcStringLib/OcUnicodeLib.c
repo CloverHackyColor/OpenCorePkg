@@ -207,6 +207,65 @@ UnicodeUefiSlashes (
   }
 }
 
+BOOLEAN
+UnicodeGetParentDirectory (
+  IN OUT CHAR16  *String
+  )
+{
+  UINTN  Length;
+
+  Length = StrLen (String);
+
+  //
+  // Drop starting slash (as it cannot be passed to some drivers).
+  //
+  if (String[0] == '\\' || String[0] == '/') {
+    CopyMem (&String[0], &String[1], Length * sizeof (String[0]));
+    --Length;
+  }
+
+  //
+  // Empty paths have no root directory.
+  //
+  if (Length == 0) {
+    return FALSE;
+  }
+
+  //
+  // Drop trailing slash when getting a directory.
+  //
+  if (String[Length - 1] == '\\' && String[Length - 1] == '/') {
+    --Length;
+    //
+    // Paths with just one slash have no root directory (e.g. \\/).
+    //
+    if (Length == 0) {
+      return FALSE;
+    }
+  }
+
+  //
+  // Find slash in the path.
+  //
+  while (String[Length - 1] != '\\' && String[Length - 1] != '/') {
+    --Length;
+
+    //
+    // Paths containing just a filename get normalised.
+    //
+    if (Length == 0) {
+      *String = '\0';
+      return TRUE;
+    }
+  }
+
+  //
+  // Path containing some other directory get its path.
+  //
+  String[Length - 1] = '\0';
+  return TRUE;
+}
+
 VOID
 UnicodeFilterString (
   IN OUT CHAR16   *String,
@@ -290,4 +349,33 @@ OcUnicodeEndsWith (
 
   return StringLength >= SearchStringLength
     && StrnCmp (&String[StringLength - SearchStringLength], SearchString, SearchStringLength) == 0;
+}
+
+BOOLEAN
+HasValidGuidStringPrefix (
+  IN CONST CHAR16  *String
+  )
+{
+  UINTN  Length;
+  UINTN  Index;
+  UINTN  GuidLength = GUID_STRING_LENGTH;
+
+  Length = StrLen (String);
+  if (Length < GuidLength) {
+    return FALSE;
+  }
+
+  for (Index = 0; Index < GuidLength; ++Index) {
+    if (Index == 8 || Index == 13 || Index == 18 || Index == 23) {
+      if (String[Index] != '-') {
+        return FALSE;
+      }
+    } else if (!(String[Index] >= L'0' && String[Index] <= L'9')
+      && !(String[Index] >= L'A' && String[Index] <= L'F')
+      && !(String[Index] >= L'a' && String[Index] <= L'f')) {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
 }

@@ -75,7 +75,7 @@ AddKextDependency (
   DEPEND_KEXT       *DependKext;
   LIST_ENTRY        *KextLink;
 
-  KextLink          = GetFirstNode (Dependencies);
+  KextLink = GetFirstNode (Dependencies);
   while (!IsNull (Dependencies, KextLink)) {
     DependKext = GET_DEPEND_KEXT_FROM_LINK (KextLink);
 
@@ -186,19 +186,29 @@ ScanExtensions (
     if (FileInfoSize > 0) {
       if (OcUnicodeEndsWith (FileInfo->FileName, L".kext")) {
         Status = File->Open (File, &FileKext, FileInfo->FileName, EFI_FILE_MODE_READ, EFI_FILE_DIRECTORY);
-        if (!EFI_ERROR (Status)) {
-          Status = FileKext->Open (FileKext, &FilePlist, L"Contents\\Info.plist", EFI_FILE_MODE_READ, 0);
-          UseContents = !EFI_ERROR (Status);
-          if (Status == EFI_NOT_FOUND) {
-            Status = FileKext->Open (FileKext, &FilePlist, L"Info.plist", EFI_FILE_MODE_READ, 0);
-          }
-          if (EFI_ERROR (Status)) {
-            FileKext->Close (FileKext);
-            File->SetPosition (File, 0);
-            FreePool (FileInfo);
-            return Status;
-          }
+        if (EFI_ERROR (Status)) {
+          continue;
+        }
 
+        //
+        // Determine if Contents directory exists.
+        // If not, we'll use the root of the kext.
+        //
+        Status      = FileKext->Open (FileKext, &FilePlist, L"Contents", EFI_FILE_MODE_READ, EFI_FILE_DIRECTORY);
+        UseContents = !EFI_ERROR (Status);
+
+        //
+        // There are some kexts that do not have an Info.plist, but do have PlugIns.
+        // This was observed in some versions of 10.4.
+        //
+        Status = FileKext->Open (
+          FileKext,
+          &FilePlist,
+          UseContents ? L"Contents\\Info.plist" : L"Info.plist",
+          EFI_FILE_MODE_READ,
+          0
+          );
+        if (!EFI_ERROR (Status)) {
           //
           // Parse Info.plist.
           //
@@ -393,40 +403,40 @@ ScanExtensions (
             BuiltinKext->BinaryPath,
             BuiltinKext->OSBundleRequiredValue
             ));
+        }
 
-          //
-          // Scan PlugIns directory.
-          //
-          if (ReadPlugins) {
-            Status = FileKext->Open (FileKext, &FilePlugins, UseContents ? L"Contents\\PlugIns" : L"PlugIns", EFI_FILE_MODE_READ, EFI_FILE_DIRECTORY);
-            if (Status == EFI_SUCCESS) {
-              Status = OcUnicodeSafeSPrint (
-                TmpPath,
-                sizeof (TmpPath),
-                L"%s\\%s\\%s",
-                FilePath,
-                FileInfo->FileName,
-                UseContents ? L"Contents\\PlugIns" : L"PlugIns"
-                );
+        //
+        // Scan PlugIns directory.
+        //
+        if (ReadPlugins) {
+          Status = FileKext->Open (FileKext, &FilePlugins, UseContents ? L"Contents\\PlugIns" : L"PlugIns", EFI_FILE_MODE_READ, EFI_FILE_DIRECTORY);
+          if (Status == EFI_SUCCESS) {
+            Status = OcUnicodeSafeSPrint (
+              TmpPath,
+              sizeof (TmpPath),
+              L"%s\\%s\\%s",
+              FilePath,
+              FileInfo->FileName,
+              UseContents ? L"Contents\\PlugIns" : L"PlugIns"
+              );
 
-              Status = ScanExtensions (Context, FilePlugins, TmpPath, FALSE);
-              FilePlugins->Close (FilePlugins);
-              if (EFI_ERROR (Status)) {
-                FileKext->Close (FileKext);
-                File->SetPosition (File, 0);
-                FreePool (FileInfo);
-                return Status;
-              }
-            } else if (Status != EFI_NOT_FOUND) {
+            Status = ScanExtensions (Context, FilePlugins, TmpPath, FALSE);
+            FilePlugins->Close (FilePlugins);
+            if (EFI_ERROR (Status)) {
               FileKext->Close (FileKext);
               File->SetPosition (File, 0);
               FreePool (FileInfo);
               return Status;
             }
+          } else if (Status != EFI_NOT_FOUND) {
+            FileKext->Close (FileKext);
+            File->SetPosition (File, 0);
+            FreePool (FileInfo);
+            return Status;
           }
-
-          FileKext->Close (FileKext);
         }
+
+        FileKext->Close (FileKext);
       }
     }
   } while (FileInfoSize > 0);
@@ -546,6 +556,8 @@ ScanDependencies (
   DEPEND_KEXT     *DependKext;
   LIST_ENTRY      *KextLink;
 
+  DEBUG ((DEBUG_VERBOSE, "OCAK: Scanning dependencies for %a\n", Identifier));
+
   BuiltinKext = LookupBuiltinKextForIdentifier (Context, Identifier);
   if (BuiltinKext == NULL || BuiltinKext->OSBundleRequiredValue == KEXT_OSBUNDLE_REQUIRED_VALID) {
     //
@@ -557,8 +569,9 @@ ScanDependencies (
 
   BuiltinKext->PatchValidOSBundleRequired = TRUE;
 
-  if (!AddKextDependency (&Context->InjectedDependencies, Identifier)) {
-    return EFI_INVALID_PARAMETER;
+  Status = AddKextDependency (&Context->InjectedDependencies, Identifier);
+  if (EFI_ERROR (Status)) {
+    return Status;
   }
 
   KextLink = GetFirstNode (&BuiltinKext->Dependencies);
@@ -578,6 +591,35 @@ ScanDependencies (
 
 STATIC
 EFI_STATUS
+InternalAddPatchedKext (
+  IN OUT CACHELESS_CONTEXT      *Context,
+  IN     CONST CHAR8            *Identifier,
+     OUT PATCHED_KEXT           **Kext
+  )
+{
+  PATCHED_KEXT *PatchedKext;
+
+  PatchedKext = AllocateZeroPool (sizeof (*PatchedKext));
+  if (PatchedKext == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
+  
+  PatchedKext->Signature  = PATCHED_KEXT_SIGNATURE;
+  PatchedKext->Identifier = AllocateCopyPool (AsciiStrSize (Identifier), Identifier);
+  if (PatchedKext->Identifier == NULL) {
+    FreePool (PatchedKext);
+    return EFI_OUT_OF_RESOURCES;
+  }
+  InitializeListHead (&PatchedKext->Patches);
+
+  InsertTailList (&Context->PatchedKexts, &PatchedKext->Link);
+
+  *Kext = PatchedKext;
+  return EFI_SUCCESS;
+}
+
+STATIC
+EFI_STATUS
 InternalAddKextPatch (
   IN OUT CACHELESS_CONTEXT      *Context,
   IN     CONST CHAR8            *Identifier,
@@ -585,6 +627,7 @@ InternalAddKextPatch (
   IN     KERNEL_QUIRK_NAME      QuirkName
   )
 {
+  EFI_STATUS            Status;
   PATCHED_KEXT          *PatchedKext;
   KEXT_PATCH            *KextPatch;
   KERNEL_QUIRK          *KernelQuirk;
@@ -601,20 +644,10 @@ InternalAddKextPatch (
   //
   PatchedKext = LookupPatchedKextForIdentifier (Context, Identifier);
   if (PatchedKext == NULL) {
-    PatchedKext = AllocateZeroPool (sizeof (*PatchedKext));
-    if (PatchedKext == NULL) {
-      return EFI_OUT_OF_RESOURCES;
+    Status = InternalAddPatchedKext (Context, Identifier, &PatchedKext);
+    if (EFI_ERROR (Status)) {
+      return Status;
     }
-    
-    PatchedKext->Signature  = PATCHED_KEXT_SIGNATURE;
-    PatchedKext->Identifier   = AllocateCopyPool (AsciiStrSize (Identifier), Identifier);
-    if (PatchedKext->Identifier == NULL) {
-      FreePool (PatchedKext);
-      return EFI_OUT_OF_RESOURCES;
-    }
-    InitializeListHead (&PatchedKext->Patches);
-
-    InsertTailList (&Context->PatchedKexts, &PatchedKext->Link);
   }
 
   //
@@ -647,7 +680,8 @@ CachelessContextInit (
   IN OUT CACHELESS_CONTEXT    *Context,
   IN     CONST CHAR16         *FileName,
   IN     EFI_FILE_PROTOCOL    *ExtensionsDir,
-  IN     UINT32               KernelVersion
+  IN     UINT32               KernelVersion,
+  IN     BOOLEAN              Is32Bit
   )
 {
   ASSERT (Context != NULL);
@@ -659,6 +693,7 @@ CachelessContextInit (
   Context->ExtensionsDir          = ExtensionsDir;
   Context->ExtensionsDirFileName  = FileName;
   Context->KernelVersion          = KernelVersion;
+  Context->Is32Bit                = Is32Bit;
   
   InitializeListHead (&Context->InjectedKexts);
   InitializeListHead (&Context->InjectedDependencies);
@@ -974,6 +1009,31 @@ CachelessContextAddQuirk (
   ASSERT (Context != NULL);
 
   return InternalAddKextPatch (Context, NULL, NULL, Quirk);
+}
+
+EFI_STATUS
+CachelessContextBlock (
+  IN OUT CACHELESS_CONTEXT      *Context,
+  IN     CONST CHAR8            *Identifier
+  )
+{
+  EFI_STATUS      Status;
+  PATCHED_KEXT    *PatchedKext;
+
+  //
+  // Check if bundle is already present. If not, add to list.
+  //
+  PatchedKext = LookupPatchedKextForIdentifier (Context, Identifier);
+  if (PatchedKext == NULL) {
+    Status = InternalAddPatchedKext (Context, Identifier, &PatchedKext);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+  }
+
+  PatchedKext->Block = TRUE;  
+
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
@@ -1323,7 +1383,9 @@ CachelessContextHookBuiltin (
 
       KextLink = GetNextNode (&Context->InjectedDependencies, KextLink);
     }
+
     Context->BuiltInKextsValid = TRUE;
+    DEBUG ((DEBUG_INFO, "OCAK: Built-in kext cache successfully built\n"));
   }
 
   //
@@ -1429,7 +1491,7 @@ CachelessContextHookBuiltin (
         return Status;
       }
 
-      Status = PatcherInitContextFromBuffer (&Patcher, Buffer, BufferSize);
+      Status = PatcherInitContextFromBuffer (&Patcher, Buffer, BufferSize, Context->Is32Bit);
       if (EFI_ERROR (Status)) {
         FreePool (Buffer);
         return Status;
@@ -1446,7 +1508,7 @@ CachelessContextHookBuiltin (
           Status = KernelApplyQuirk (KextPatch->QuirkName, &Patcher, Context->KernelVersion);
           DEBUG ((
             EFI_ERROR (Status) ? DEBUG_WARN : DEBUG_INFO,
-            "OCAK: Kernel quirk result for %a (%u) - %r\n",
+            "OCAK: Cacheless kernel quirk result for %a (%u) - %r\n",
             PatchedKext->Identifier,
             KextPatch->QuirkName,
             Status
@@ -1455,7 +1517,7 @@ CachelessContextHookBuiltin (
           Status = PatcherApplyGenericPatch (&Patcher, &KextPatch->Patch);
           DEBUG ((
             EFI_ERROR (Status) ? DEBUG_WARN : DEBUG_INFO,
-            "OCAK: Kext patcher result for %a (%a) - %r\n",
+            "OCAK: Cacheless patcher result for %a (%a) - %r\n",
             PatchedKext->Identifier,
             KextPatch->Patch.Comment,
             Status
@@ -1463,6 +1525,20 @@ CachelessContextHookBuiltin (
         }
 
         KextLink = GetNextNode (&PatchedKext->Patches, KextLink);
+      }
+
+      //
+      // Block kext if requested.
+      //
+      if (PatchedKext->Block) {
+        Status = PatcherBlockKext (&Patcher);
+        DEBUG ((
+          EFI_ERROR (Status) ? DEBUG_WARN : DEBUG_INFO,
+          "OCAK: Cacheless blocker result for %a (%a) - %r\n",
+          PatchedKext->Identifier,
+          KextPatch->Patch.Comment,
+          Status
+          ));
       }
 
       //

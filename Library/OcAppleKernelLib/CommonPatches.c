@@ -54,7 +54,7 @@ PatchAppleCpuPmCfgLock (
   }
 
   Count = 0;
-  Walker = (UINT8 *) MachoGetMachHeader64 (&Patcher->MachContext);
+  Walker = (UINT8 *) MachoGetMachHeader (&Patcher->MachContext);
   WalkerEnd = Walker + MachoGetFileSize (&Patcher->MachContext) - mWrmsrMaxDistance;
 
   //
@@ -218,7 +218,7 @@ PatchAppleXcpmCfgLock (
     return EFI_SUCCESS;
   }
 
-  Last = (XCPM_MSR_RECORD *) ((UINT8 *) MachoGetMachHeader64 (&Patcher->MachContext)
+  Last = (XCPM_MSR_RECORD *) ((UINT8 *) MachoGetMachHeader (&Patcher->MachContext)
     + MachoGetFileSize (&Patcher->MachContext) - sizeof (XCPM_MSR_RECORD));
 
   Replacements = 0;
@@ -349,7 +349,7 @@ PatchAppleXcpmExtraMsrs (
     return EFI_SUCCESS;
   }
 
-  Last = (XCPM_MSR_RECORD *) ((UINT8 *) MachoGetMachHeader64 (&Patcher->MachContext)
+  Last = (XCPM_MSR_RECORD *) ((UINT8 *) MachoGetMachHeader (&Patcher->MachContext)
     + MachoGetFileSize (&Patcher->MachContext) - sizeof (XCPM_MSR_RECORD));
 
   Replacements = 0;
@@ -470,16 +470,13 @@ PatchAppleXcpmForceBoost (
   UINT8   *Current;
 
   ASSERT (Patcher != NULL);
-  if (!Patcher) {
-    return EFI_INVALID_PARAMETER;
-  }
 
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_MOUNTAIN_LION_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping XcpmForceBoost on %u\n", KernelVersion));
     return EFI_SUCCESS;
   }
 
-  Start   = (UINT8 *) MachoGetMachHeader64 (&Patcher->MachContext);
+  Start   = (UINT8 *) MachoGetMachHeader (&Patcher->MachContext);
   Last    = Start + MachoGetFileSize (&Patcher->MachContext) - EFI_PAGE_SIZE*2;
   Start  += EFI_PAGE_SIZE;
   Current = Start;
@@ -1072,496 +1069,6 @@ PatchIncreasePciBarSize (
   return Status;
 }
 
-
-STATIC
-CONST UINT8
-mKernelCpuIdFindRelNew[] = {
-  0xB9, 0x8B, 0x00, 0x00, 0x00, ///< mov ecx, 8Bh
-  0x31, 0xC0,                   ///< xor eax, eax
-  0x31, 0xD2,                   ///< xor edx, edx
-  0x0F, 0x30,                   ///< wrmsr
-  0xB8, 0x01, 0x00, 0x00, 0x00, ///< mov eax, 1
-  0x31, 0xDB,                   ///< xor ebx, ebx
-  0x31, 0xC9,                   ///< xor ecx, ecx
-  0x31, 0xD2,                   ///< xor edx, edx
-  0x0F, 0xA2                    ///< cpuid
-};
-
-STATIC
-CONST UINT8
-mKernelCpuIdFindRelOld[] = {
-  0xB9, 0x8B, 0x00, 0x00, 0x00, ///< mov ecx, 8Bh
-  0x31, 0xD2,                   ///< xor edx, edx
-  0x0F, 0x30,                   ///< wrmsr
-  0xB8, 0x01, 0x00, 0x00, 0x00, ///< mov eax, 1
-  0x31, 0xDB,                   ///< xor ebx, ebx
-  0x31, 0xC9,                   ///< xor ecx, ecx
-  0x31, 0xD2,                   ///< xor edx, edx
-  0x0F, 0xA2                    ///< cpuid
-};
-
-STATIC
-CONST UINT8
-mKernelCpuidFindMcRel[] = {
-  0xB9, 0x8B, 0x00, 0x00, 0x00, 0x0F, 0x32
-};
-
-/**
-  cpu->cpuid_signature           = 0x11111111;
-  cpu->cpuid_stepping            = 0x22;
-  cpu->cpuid_model               = 0x33;
-  cpu->cpuid_family              = 0x44;
-  cpu->cpuid_type                = 0x55555555;
-  cpu->cpuid_extmodel            = 0x66;
-  cpu->cpuid_extfamily           = 0x77;
-  cpu->cpuid_features            = 0x8888888888888888;
-  cpu->cpuid_logical_per_package = 0x99999999;
-  cpu->cpuid_cpufamily           = 0xAAAAAAAA;
-  return 0xAAAAAAAA;
-**/
-
-
-STATIC
-CONST UINT8
-mKernelCpuidReplaceDbg[] = {
-  0xC7, 0x47, 0x68, 0x11, 0x11, 0x11, 0x11,                   ///< mov dword ptr [rdi+68h], 11111111h
-  0xC6, 0x47, 0x50, 0x22,                                     ///< mov byte ptr [rdi+50h], 22h
-  0x48, 0xB8, 0x55, 0x55, 0x55, 0x55, 0x44, 0x33, 0x66, 0x77, ///< mov rax, 7766334455555555h
-  0x48, 0x89, 0x47, 0x48,                                     ///< mov [rdi+48h], rax
-  0x48, 0xB8, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, ///< mov rax, 8888888888888888h
-  0x48, 0x89, 0x47, 0x58,                                     ///< mov [rdi+58h], rax
-  0xC7, 0x87, 0xCC, 0x00, 0x00, 0x00, 0x99, 0x99, 0x99, 0x99, ///< mov dword ptr [rdi+0CCh], 99999999h
-  0xC7, 0x87, 0x88, 0x01, 0x00, 0x00, 0xAA, 0xAA, 0xAA, 0xAA, ///< mov dword ptr [rdi+188h], 0AAAAAAAAh
-  0xB8, 0xAA, 0xAA, 0xAA, 0xAA,                               ///< mov eax, 0AAAAAAAAh
-  0xC3                                                        ///< retn
-};
-
-#pragma pack(push, 1)
-
-typedef struct {
-  UINT8   Code1[3];
-  UINT32  Signature;
-  UINT8   Code2[3];
-  UINT8   Stepping;
-  UINT8   Code3[2];
-  UINT32  Type;
-  UINT8   Family;
-  UINT8   Model;
-  UINT8   ExtModel;
-  UINT8   ExtFamily;
-  UINT8   Code4[6];
-  UINT64  Features;
-  UINT8   Code5[10];
-  UINT32  LogicalPerPkg;
-  UINT8   Code6[6];
-  UINT32  AppleFamily1;
-  UINT8   Code7;
-  UINT32  AppleFamily2;
-  UINT8   Code8;
-} INTERNAL_CPUID_FN_PATCH;
-
-STATIC_ASSERT (
-  sizeof (INTERNAL_CPUID_FN_PATCH) == sizeof (mKernelCpuidReplaceDbg),
-  "Check your CPUID patch layout"
-  );
-
-typedef struct {
-  UINT8   EaxCmd;
-  UINT32  EaxVal;
-  UINT8   EbxCmd;
-  UINT32  EbxVal;
-  UINT8   EcxCmd;
-  UINT32  EcxVal;
-  UINT8   EdxCmd;
-  UINT32  EdxVal;
-} INTERNAL_CPUID_PATCH;
-
-typedef struct {
-  UINT8   EdxCmd;
-  UINT32  EdxVal;
-} INTERNAL_MICROCODE_PATCH;
-
-#pragma pack(pop)
-
-STATIC
-EFI_STATUS
-PatchKernelCpuIdLegacy (
-  IN OUT PATCHER_CONTEXT  *Patcher,
-  IN     OC_CPU_INFO      *CpuInfo,
-  IN     UINT32           *Data,
-  IN     UINT32           *DataMask,
-  IN     UINT8            *Record
-  )
-{
-  UINT8                 *StartPointer;
-  UINT8                 *EndPointer;
-  UINT8                 *Location;
-  UINT8                 *LocationEnd;
-  UINT32                Signature[3];
-  UINT32                Index;
-  UINT32                MaxExt;
-  INT32                 Delta;
-  INTERNAL_CPUID_PATCH  Patch;
-
-  STATIC CONST UINT8 mKernelCpuidFindLegacyStart[8] = {
-    0xBA, 0x04, 0x00, 0x00, 0x00,  ///< mov edx, 4
-    0x48, 0x8D, 0x35               ///< lea rsi from lea rsi, byte_FFFFFF80006C5900
-  };
-
-  for (Index = 0; Index < EFI_PAGE_SIZE; ++Index, ++Record) {
-    if (Record[0] == mKernelCpuidFindLegacyStart[0]
-      && Record[1] == mKernelCpuidFindLegacyStart[1]
-      && Record[2] == mKernelCpuidFindLegacyStart[2]
-      && Record[3] == mKernelCpuidFindLegacyStart[3]
-      && Record[4] == mKernelCpuidFindLegacyStart[4]
-      && Record[5] == mKernelCpuidFindLegacyStart[5]
-      && Record[6] == mKernelCpuidFindLegacyStart[6]
-      && Record[7] == mKernelCpuidFindLegacyStart[7]) {
-      break;
-    }
-  }
-
-  if (Index >= EFI_PAGE_SIZE) {
-    return EFI_NOT_FOUND;
-  }
-
-  StartPointer = Record + sizeof (mKernelCpuidFindLegacyStart) + sizeof (UINT32);
-
-  STATIC CONST UINT8 mKernelCpuidFindLegacyEnd1[6] = {
-    0x00,                         ///< 0 from mov cs:byte_FFFFFF80006C590C, 0
-    0xB8, 0x00, 0x00, 0x00, 0x80, ///< mov eax, 80000000h
-  };
-
-  for (; Index < EFI_PAGE_SIZE; ++Index, ++Record) {
-    if (Record[0] == mKernelCpuidFindLegacyEnd1[0]
-      && Record[1] == mKernelCpuidFindLegacyEnd1[1]
-      && Record[2] == mKernelCpuidFindLegacyEnd1[2]
-      && Record[3] == mKernelCpuidFindLegacyEnd1[3]
-      && Record[4] == mKernelCpuidFindLegacyEnd1[4]
-      && Record[5] == mKernelCpuidFindLegacyEnd1[5]) {
-      break;
-    }
-  }
-
-  if (Index >= EFI_PAGE_SIZE) {
-    return EFI_NOT_FOUND;
-  }
-
-  STATIC CONST UINT8 mKernelCpuidFindLegacyEnd2[3] = {
-    0x0F, 0xA2,                   ///< cpuid
-    0x89                          ///< mov prefix from mov [rbp+var_40], eax
-  };
-
-  for (; Index < EFI_PAGE_SIZE; ++Index, ++Record) {
-    if (Record[0] == mKernelCpuidFindLegacyEnd2[0]
-      && Record[1] == mKernelCpuidFindLegacyEnd2[1]
-      && Record[2] == mKernelCpuidFindLegacyEnd2[2]) {
-      break;
-    }
-  }
-
-  if (Index >= EFI_PAGE_SIZE) {
-    return EFI_NOT_FOUND;
-  }
-
-  EndPointer = Record - 3;
-
-  STATIC CONST UINT8 mKernelCpuidFindLegacyLoc1[5] = {
-    0xB8, 0x01, 0x00, 0x00, 0x00, ///< mov eax, 1
-  };
-
-  for (; Index < EFI_PAGE_SIZE; ++Index, ++Record) {
-    if (Record[0] == mKernelCpuidFindLegacyLoc1[0]
-      && Record[1] == mKernelCpuidFindLegacyLoc1[1]
-      && Record[2] == mKernelCpuidFindLegacyLoc1[2]
-      && Record[3] == mKernelCpuidFindLegacyLoc1[3]
-      && Record[4] == mKernelCpuidFindLegacyLoc1[4]) {
-      break;
-    }
-  }
-
-  if (Index >= EFI_PAGE_SIZE) {
-    return EFI_NOT_FOUND;
-  }
-
-  Location = Record;
-
-  STATIC CONST UINT8 mKernelCpuidFindLegacyLoc2[3] = {
-    0x0F, 0xA2,                   ///< cpuid
-    0x89                          ///< mov prefix from mov [rbp+var_40], eax
-  };
-
-  for (; Index < EFI_PAGE_SIZE; ++Index, ++Record) {
-    if (Record[0] == mKernelCpuidFindLegacyLoc2[0]
-      && Record[1] == mKernelCpuidFindLegacyLoc2[1]
-      && Record[2] == mKernelCpuidFindLegacyLoc2[2]) {
-      break;
-    }
-  }
-
-  if (Index >= EFI_PAGE_SIZE) {
-    return EFI_NOT_FOUND;
-  }
-
-  LocationEnd = Record + 2;
-
-  //
-  // Free 2+ more bytes in the end by assigning EAX directly.
-  //
-  AsmCpuid (0x80000000, &MaxExt, NULL, NULL, NULL);
-  EndPointer[0] = 0xB8;
-  CopyMem (&EndPointer[1], &MaxExt, sizeof (MaxExt));
-
-  //
-  // Short-write CPU signature at RSI save space.
-  //
-  AsmCpuid (0, NULL, &Signature[0], &Signature[2], &Signature[1]);
-  for (Index = 0; Index < 3; ++Index) {
-    //
-    // mov eax, <signature>
-    //
-    *StartPointer++ = 0xB8;
-    CopyMem (StartPointer, &Signature[Index], sizeof (Signature[0]));
-    StartPointer += sizeof (Signature[0]);
-    //
-    // mov [rsi], eax
-    //
-    *StartPointer++ = 0x89;
-    *StartPointer++ = 0x06;
-    if (Index < 2) {
-      //
-      // add rsi, 4
-      //
-      *StartPointer++ = 0x48;
-      *StartPointer++ = 0x83;
-      *StartPointer++ = 0xC6;
-      *StartPointer++ = 0x04;
-    }
-  }
-
-  //
-  // Ensure that we still have room, which is within 2-byte jmp (127)
-  // and has at least 2-byte jmp and patch + 5-byte jmp area.
-  // Should have around 25 bytes here.
-  //
-  if (StartPointer >= EndPointer
-    || EndPointer - StartPointer > 128
-    || (UINTN) (EndPointer - StartPointer) < sizeof (INTERNAL_CPUID_PATCH) + 7) {
-    return EFI_OUT_OF_RESOURCES;
-  }
-
-  //
-  // Short jmp to EndPointer
-  //
-  StartPointer[0] = 0xEB;
-  StartPointer[1] = (UINT8) (EndPointer - StartPointer - 2);
-  StartPointer += 2;
-
-  //
-  // Workaround incorrect OSXSAVE handling, see below.
-  //
-  if (CpuInfo->CpuidVerEcx.Bits.XSAVE != 0
-    && CpuInfo->CpuidVerEcx.Bits.OSXSAVE == 0
-    && CpuInfo->CpuidVerEcx.Bits.AVX != 0) {
-    CpuInfo->CpuidVerEcx.Bits.OSXSAVE = 1;
-  }
-
-  //
-  // Jump from location to patch area.
-  //
-  Delta = (INT32) (StartPointer - (Location + 5));
-  *Location++ = 0xE9;
-  CopyMem (Location, &Delta, sizeof (Delta));
-  Location   += sizeof (Delta);
-  while (Location < LocationEnd) {
-    *Location++ = 0x90;
-  }
-
-  //
-  // Write virtualised CPUID.
-  //
-  Patch.EaxCmd = 0xB8;
-  Patch.EaxVal = (Data[0] & DataMask[0]) | (CpuInfo->CpuidVerEax.Uint32 & ~DataMask[0]);
-  Patch.EbxCmd = 0xBB;
-  Patch.EbxVal = (Data[1] & DataMask[1]) | (CpuInfo->CpuidVerEbx.Uint32 & ~DataMask[1]);
-  Patch.EcxCmd = 0xB9;
-  Patch.EcxVal = (Data[2] & DataMask[2]) | (CpuInfo->CpuidVerEcx.Uint32 & ~DataMask[2]);
-  Patch.EdxCmd = 0xBA;
-  Patch.EdxVal = (Data[3] & DataMask[3]) | (CpuInfo->CpuidVerEdx.Uint32 & ~DataMask[3]);
-  CopyMem (StartPointer, &Patch, sizeof (Patch));
-  StartPointer += sizeof (Patch);
-
-  //
-  // Jump to the end of location (5-byte mov + 2-byte cpuid).
-  //
-  Delta = (INT32) (Location - (StartPointer + 5));
-  *StartPointer++ = 0xE9;
-  CopyMem (StartPointer, &Delta, sizeof (Delta));
-
-  return EFI_SUCCESS;
-}
-
-EFI_STATUS
-PatchKernelCpuId (
-  IN OUT PATCHER_CONTEXT  *Patcher,
-  IN     OC_CPU_INFO      *CpuInfo,
-  IN     UINT32           *Data,
-  IN     UINT32           *DataMask
-  )
-{
-  EFI_STATUS                Status;
-  UINT8                     *CpuidSetInfo;
-  UINT8                     *Record;
-  UINT8                     *Last;
-  UINT32                    Index;
-  UINT32                    FoundSize;
-  INTERNAL_CPUID_PATCH      *CpuidPatch;
-  INTERNAL_MICROCODE_PATCH  *McPatch;
-  INTERNAL_CPUID_FN_PATCH   *FnPatch;
-  CPUID_VERSION_INFO_EAX    Eax;
-  CPUID_VERSION_INFO_EBX    Ebx;
-  CPUID_VERSION_INFO_ECX    Ecx;
-  CPUID_VERSION_INFO_EDX    Edx;
-  BOOLEAN                   FoundReleaseKernel;
-
-  ASSERT (Patcher != NULL);
-
-  STATIC_ASSERT (
-    sizeof (mKernelCpuIdFindRelNew) > sizeof (mKernelCpuIdFindRelOld),
-    "Kernel CPUID patch seems wrong"
-    );
-
-  ASSERT (mKernelCpuIdFindRelNew[0] == mKernelCpuIdFindRelOld[0]
-    && mKernelCpuIdFindRelNew[1] == mKernelCpuIdFindRelOld[1]
-    && mKernelCpuIdFindRelNew[2] == mKernelCpuIdFindRelOld[2]
-    && mKernelCpuIdFindRelNew[3] == mKernelCpuIdFindRelOld[3]
-    );
-
-  Last = ((UINT8 *) MachoGetMachHeader64 (&Patcher->MachContext)
-    + MachoGetFileSize (&Patcher->MachContext) - EFI_PAGE_SIZE*2 - sizeof (mKernelCpuIdFindRelNew));
-
-  Status = PatcherGetSymbolAddress (Patcher, "_cpuid_set_info", (UINT8 **) &CpuidSetInfo);
-  if (EFI_ERROR (Status) || CpuidSetInfo >= Last) {
-    DEBUG ((DEBUG_WARN, "OCAK: Failed to locate _cpuid_set_info (%p) - %r\n", CpuidSetInfo, Status));
-    return EFI_NOT_FOUND;
-  }
-
-  Record = CpuidSetInfo;
-  FoundSize = 0;
-
-  for (Index = 0; Index < EFI_PAGE_SIZE; ++Index, ++Record) {
-    if (Record[0] == mKernelCpuIdFindRelNew[0]
-      && Record[1] == mKernelCpuIdFindRelNew[1]
-      && Record[2] == mKernelCpuIdFindRelNew[2]
-      && Record[3] == mKernelCpuIdFindRelNew[3]) {
-
-      if (CompareMem (Record, mKernelCpuIdFindRelNew, sizeof (mKernelCpuIdFindRelNew)) == 0) {
-        FoundSize = sizeof (mKernelCpuIdFindRelNew);
-        break;
-      } else if (CompareMem (Record, mKernelCpuIdFindRelOld, sizeof (mKernelCpuIdFindRelOld)) == 0) {
-        FoundSize = sizeof (mKernelCpuIdFindRelOld);
-        break;
-      }
-    }
-  }
-
-  FoundReleaseKernel = FoundSize > 0;
-
-  if (!FoundReleaseKernel) {
-    Status = PatchKernelCpuIdLegacy (Patcher, CpuInfo, Data, DataMask, CpuidSetInfo);
-    if (!EFI_ERROR (Status)) {
-      return EFI_SUCCESS;
-    }
-  }
-
-  //
-  // When patching the release kernel we do not allow reevaluating CPUID information,
-  // which is used to report OSXSAVE availability. This causes issues with some programs,
-  // like Docker using Hypervisor.framework, which rely on sysctl to track CPU feature.
-  //
-  // To workaround this we make sure to always report OSXSAVE bit when it is available
-  // regardless of the reevaluation performed by init_fpu in XNU.
-  //
-  // REF: https://github.com/acidanthera/bugtracker/issues/1035
-  //
-  if (FoundReleaseKernel
-    && CpuInfo->CpuidVerEcx.Bits.XSAVE != 0
-    && CpuInfo->CpuidVerEcx.Bits.OSXSAVE == 0
-    && CpuInfo->CpuidVerEcx.Bits.AVX != 0) {
-    CpuInfo->CpuidVerEcx.Bits.OSXSAVE = 1;
-  }
-
-  Eax.Uint32 = (Data[0] & DataMask[0]) | (CpuInfo->CpuidVerEax.Uint32 & ~DataMask[0]);
-  Ebx.Uint32 = (Data[1] & DataMask[1]) | (CpuInfo->CpuidVerEbx.Uint32 & ~DataMask[1]);
-  Ecx.Uint32 = (Data[2] & DataMask[2]) | (CpuInfo->CpuidVerEcx.Uint32 & ~DataMask[2]);
-  Edx.Uint32 = (Data[3] & DataMask[3]) | (CpuInfo->CpuidVerEdx.Uint32 & ~DataMask[3]);
-
-  if (FoundReleaseKernel) {
-    CpuidPatch         = (INTERNAL_CPUID_PATCH *) Record;
-    CpuidPatch->EaxCmd = 0xB8;
-    CpuidPatch->EaxVal = Eax.Uint32;
-    CpuidPatch->EbxCmd = 0xBB;
-    CpuidPatch->EbxVal = Ebx.Uint32;
-    CpuidPatch->EcxCmd = 0xB9;
-    CpuidPatch->EcxVal = Ecx.Uint32;
-    CpuidPatch->EdxCmd = 0xBA;
-    CpuidPatch->EdxVal = Edx.Uint32;
-    SetMem (
-      Record + sizeof (INTERNAL_CPUID_PATCH),
-      FoundSize - sizeof (INTERNAL_CPUID_PATCH),
-      0x90
-      );
-    Record += FoundSize;
-
-    for (Index = 0; Index < EFI_PAGE_SIZE - sizeof (mKernelCpuidFindMcRel); ++Index, ++Record) {
-      if (CompareMem (Record, mKernelCpuidFindMcRel, sizeof (mKernelCpuidFindMcRel)) == 0) {
-        McPatch         = (INTERNAL_MICROCODE_PATCH *) Record;
-        McPatch->EdxCmd = 0xBA;
-        McPatch->EdxVal = CpuInfo->MicrocodeRevision;
-        SetMem (
-          Record + sizeof (INTERNAL_MICROCODE_PATCH),
-          sizeof (mKernelCpuidFindMcRel) - sizeof (INTERNAL_MICROCODE_PATCH),
-          0x90
-          );
-        return EFI_SUCCESS;
-      }
-    }
-  } else {
-    //
-    // Handle debug kernel here...
-    //
-    Status = PatcherGetSymbolAddress (Patcher, "_cpuid_set_cpufamily", (UINT8 **) &Record);
-    if (EFI_ERROR (Status) || Record >= Last) {
-      DEBUG ((DEBUG_WARN, "OCAK: Failed to locate _cpuid_set_cpufamily (%p) - %r\n", Record, Status));
-      return EFI_NOT_FOUND;
-    }
-
-    CopyMem (Record, mKernelCpuidReplaceDbg, sizeof (mKernelCpuidReplaceDbg));
-    FnPatch = (INTERNAL_CPUID_FN_PATCH *) Record;
-    FnPatch->Signature     = Eax.Uint32;
-    FnPatch->Stepping      = (UINT8) Eax.Bits.SteppingId;
-    FnPatch->ExtModel      = (UINT8) Eax.Bits.ExtendedModelId;
-    FnPatch->Model         = (UINT8) Eax.Bits.Model | (UINT8) (Eax.Bits.ExtendedModelId << 4U);
-    FnPatch->Family        = (UINT8) Eax.Bits.FamilyId;
-    FnPatch->Type          = (UINT8) Eax.Bits.ProcessorType;
-    FnPatch->ExtFamily     = (UINT8) Eax.Bits.ExtendedFamilyId;
-    FnPatch->Features      = LShiftU64 (Ecx.Uint32, 32) | (UINT64) Edx.Uint32;
-    if (FnPatch->Features & CPUID_FEATURE_HTT) {
-      FnPatch->LogicalPerPkg = (UINT16) Ebx.Bits.MaximumAddressableIdsForLogicalProcessors;
-    } else {
-      FnPatch->LogicalPerPkg = 1;
-    }
-
-    FnPatch->AppleFamily1 = FnPatch->AppleFamily2 = OcCpuModelToAppleFamily (Eax);
-
-    return EFI_SUCCESS;
-  }
-
-  DEBUG ((DEBUG_WARN, "OCAK: Failed to find either CPUID patch (%u)\n", FoundSize));
-
-  return EFI_UNSUPPORTED;
-}
-
 STATIC
 CONST UINT8
 mCustomSmbiosGuidPatchFind[] = {
@@ -1655,7 +1162,7 @@ PatchPanicKextDump (
     return EFI_SUCCESS;
   }
 
-  Last = ((UINT8 *) MachoGetMachHeader64 (&Patcher->MachContext)
+  Last = ((UINT8 *) MachoGetMachHeader (&Patcher->MachContext)
     + MachoGetFileSize (&Patcher->MachContext) - EFI_PAGE_SIZE);
 
   //
@@ -1916,35 +1423,70 @@ PatchPowerStateTimeout (
 // we patch-out __ZN8AppleRTC8rtcWriteEjh call arguments (0x58 and 0x59) with
 // invalid (out of range) value 0xFFFF in 4 places.
 //
+// 10.5 and below do not have __ZN8AppleRTC19rtcRecordTracePointEjjj.
+//
 
 STATIC
 UINT8
-mAppleRtcChecksumPatchFind[] = {
+mAppleRtcChecksumPatchFind32[] = {
+  0xC7, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00
+};
+
+STATIC
+UINT8
+mAppleRtcChecksumPatchMask32[] = {
+  0xFF, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0xFF, 0xFF
+};
+
+STATIC
+UINT8
+mAppleRtcChecksumPatchReplace32[] = {
+  0xC7, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00
+};
+
+STATIC
+UINT8
+mAppleRtcChecksumPatchFind64[] = {
   0xBE, 0x58, 0x00, 0x00, 0x00
 };
 
 STATIC
 UINT8
-mAppleRtcChecksumPatchMask[] = {
+mAppleRtcChecksumPatchMask64[] = {
   0xFF, 0xFE, 0xFF, 0xFF, 0xFF
 };
 
 STATIC
 UINT8
-mAppleRtcChecksumPatchReplace[] = {
+mAppleRtcChecksumPatchReplace64[] = {
   0xBE, 0xFF, 0xFF, 0x00, 0x00
 };
 
 STATIC
 PATCHER_GENERIC_PATCH
-mAppleRtcChecksumPatch = {
-  .Comment     = DEBUG_POINTER ("DisableRtcChecksum"),
+mAppleRtcChecksumPatch32 = {
+  .Comment     = DEBUG_POINTER ("DisableRtcChecksum32"),
   .Base        = NULL,
-  .Find        = mAppleRtcChecksumPatchFind,
-  .Mask        = mAppleRtcChecksumPatchMask,
-  .Replace     = mAppleRtcChecksumPatchReplace,
+  .Find        = mAppleRtcChecksumPatchFind32,
+  .Mask        = mAppleRtcChecksumPatchMask32,
+  .Replace     = mAppleRtcChecksumPatchReplace32,
+  .ReplaceMask = mAppleRtcChecksumPatchMask32,
+  .Size        = sizeof (mAppleRtcChecksumPatchFind32),
+  .Count       = 4,
+  .Skip        = 0,
+  .Limit       = 0
+};
+
+STATIC
+PATCHER_GENERIC_PATCH
+mAppleRtcChecksumPatch64 = {
+  .Comment     = DEBUG_POINTER ("DisableRtcChecksum64"),
+  .Base        = NULL,
+  .Find        = mAppleRtcChecksumPatchFind64,
+  .Mask        = mAppleRtcChecksumPatchMask64,
+  .Replace     = mAppleRtcChecksumPatchReplace64,
   .ReplaceMask = NULL,
-  .Size        = sizeof (mAppleRtcChecksumPatchFind),
+  .Size        = sizeof (mAppleRtcChecksumPatchFind64),
   .Count       = 4,
   .Skip        = 0,
   .Limit       = 0
@@ -1963,7 +1505,7 @@ PatchAppleRtcChecksum (
     return EFI_NOT_FOUND;
   }
 
-  Status = PatcherApplyGenericPatch (Patcher, &mAppleRtcChecksumPatch);
+  Status = PatcherApplyGenericPatch (Patcher, Patcher->Is32Bit ? &mAppleRtcChecksumPatch32 : &mAppleRtcChecksumPatch64);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_INFO, "OCAK: Failed to apply patch com.apple.driver.AppleRTC DisableRtcChecksum - %r\n", Status));
   } else {
@@ -1995,7 +1537,7 @@ PatchSegmentJettison (
     return EFI_SUCCESS;
   }
 
-  Last = (UINT8 *) MachoGetMachHeader64 (&Patcher->MachContext)
+  Last = (UINT8 *) MachoGetMachHeader (&Patcher->MachContext)
     + MachoGetFileSize (&Patcher->MachContext) - sizeof (EFI_PAGE_SIZE) * 2;
 
   Status = PatcherGetSymbolAddress (Patcher, "__ZN6OSKext19removeKextBootstrapEv", (UINT8 **) &RemoveBs);
@@ -2059,6 +1601,293 @@ PatchSegmentJettison (
   return EFI_NOT_FOUND;
 }
 
+STATIC
+UINT8
+mBTFeatureFlagsReplace[] = {
+  0x55,            // push rbp
+  0x83, 0xCE, 0x0F // or esi, 0x0F
+};
+
+STATIC
+PATCHER_GENERIC_PATCH
+mBTFeatureFlagsPatchV1 = {
+  .Comment     = DEBUG_POINTER ("BTFeatureFlagsV1"),
+  .Base        = "__ZN25IOBluetoothHostController25SetControllerFeatureFlagsEj",
+  .Find        = NULL,
+  .Mask        = NULL,
+  .Replace     = mBTFeatureFlagsReplace,
+  .ReplaceMask = NULL,
+  .Size        = sizeof (mBTFeatureFlagsReplace),
+  .Count       = 1,
+  .Skip        = 0
+};
+
+STATIC
+PATCHER_GENERIC_PATCH
+mBTFeatureFlagsPatchV2 = {
+  .Comment     = DEBUG_POINTER ("BTFeatureFlagsV2"),
+  .Base        = "__ZN24IOBluetoothHCIController25SetControllerFeatureFlagsEj",
+  .Find        = NULL,
+  .Mask        = NULL,
+  .Replace     = mBTFeatureFlagsReplace,
+  .ReplaceMask = NULL,
+  .Size        = sizeof (mBTFeatureFlagsReplace),
+  .Count       = 1,
+  .Skip        = 0
+};
+
+STATIC
+EFI_STATUS
+PatchBTFeatureFlags (
+  IN OUT PATCHER_CONTEXT    *Patcher,
+  IN     UINT32             KernelVersion
+  )
+{
+  EFI_STATUS Status;
+
+  ASSERT (Patcher != NULL);
+
+  if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_MOUNTAIN_LION_MIN, 0)) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping BTFeatureFlags on %u\n", KernelVersion));
+    return EFI_SUCCESS;
+  }
+
+  Status = PatcherApplyGenericPatch (
+    Patcher,
+    &mBTFeatureFlagsPatchV1
+    );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_INFO, "OCAK: Failed to find BT FeatureFlags symbol v1 - %r, trying v2\n", Status));
+    Status = PatcherApplyGenericPatch (
+      Patcher,
+      &mBTFeatureFlagsPatchV2
+      );
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_INFO, "OCAK: Failed to find BT FeatureFlags symbol v2 - %r\n", Status));
+      return EFI_NOT_FOUND;
+    }
+  }
+
+  return EFI_SUCCESS;
+}
+
+//
+// 32-bit commpage_descriptor structure from XNU.
+//
+typedef struct {
+  //
+  // Address of code.
+  //
+  UINT32  CodeAddress;
+  //
+  // Length of code in bytes.
+  //
+  UINT32  CodeLength;
+  //
+  // Address to place this function at.
+  //
+  UINT32  CommpageAddress;
+  //
+  // CPU capability bits we must have.
+  //
+  UINT32  MustHave;
+  //
+  // CPU capability bits we can't have.
+  //
+  UINT32  CantHave;
+} COMMPAGE_DESCRIPTOR;
+
+//
+// 64-bit commpage_descriptor structure from XNU.
+//
+typedef struct {
+  //
+  // Address of code.
+  //
+  UINT64  CodeAddress;
+  //
+  // Length of code in bytes.
+  //
+  UINT32  CodeLength;
+  //
+  // Address to place this function at.
+  //
+  UINT32  CommpageAddress;
+  //
+  // CPU capability bits we must have.
+  //
+  UINT32  MustHave;
+  //
+  // CPU capability bits we can't have.
+  //
+  UINT32  CantHave;
+} COMMPAGE_DESCRIPTOR_64;
+
+typedef union {
+  COMMPAGE_DESCRIPTOR     Desc32;
+  COMMPAGE_DESCRIPTOR_64  Desc64;
+} COMMPAGE_DESCRIPTOR_ANY;
+
+#define COMM_PAGE_BCOPY       0xFFFF0780
+#define kHasSupplementalSSE3  0x00000100
+
+STATIC CONST UINT8 mAsmLegacyBcopy64[] = {
+  #include "LegacyBcopy.h"
+};
+
+STATIC
+EFI_STATUS
+PatchLegacyCommpage (
+  IN OUT PATCHER_CONTEXT    *Patcher,
+  IN     UINT32             KernelVersion
+  )
+{
+  EFI_STATUS                Status;
+  UINT8                     *Start;
+  UINT8                     *Last;
+  UINT8                     *CommpageRoutines;
+  UINT8                     *Target;
+  UINT64                    Address;
+  UINT32                    MaxSize;
+
+  COMMPAGE_DESCRIPTOR_ANY   *Commpage;
+  UINT32                    CommpageCodeLength;
+  UINT32                    CommpageAddress;
+  UINT32                    CommpageMustHave;
+
+  ASSERT (Patcher != NULL);
+
+  Start = ((UINT8 *) MachoGetMachHeader (&Patcher->MachContext));
+  Last  = Start + MachoGetFileSize (&Patcher->MachContext) - EFI_PAGE_SIZE * 2 - (Patcher->Is32Bit ? sizeof (COMMPAGE_DESCRIPTOR) : sizeof (COMMPAGE_DESCRIPTOR_64));
+
+  //
+  // This is a table of pointers to commpage entries.
+  //
+  Status = PatcherGetSymbolAddress (Patcher, "_commpage_64_routines", (UINT8 **) &CommpageRoutines);
+  if (EFI_ERROR (Status) || CommpageRoutines >= Last) {
+    DEBUG ((DEBUG_WARN, "OCAK: Failed to locate _commpage_64_routines (%p) - %r\n", CommpageRoutines, Status));
+    return EFI_NOT_FOUND;
+  }
+
+  //
+  // Iterate through table looking for bcopy_sse4_64 (on 10.4) or bcopy_sse3x_64 (10.5+) entry.
+  //
+  Address = Patcher->Is32Bit ? *((UINT32 *) CommpageRoutines) : *((UINT64 *) CommpageRoutines);
+  while (Address > 0) {
+    Commpage = MachoGetFilePointerByAddress (&Patcher->MachContext, Address, &MaxSize);
+    if (Commpage == NULL
+      || MaxSize < (Patcher->Is32Bit ? sizeof (COMMPAGE_DESCRIPTOR) : sizeof (COMMPAGE_DESCRIPTOR_64))) {
+      break;
+    }
+
+    //
+    // Locate the bcopy commpage entry that requires SSSE3 and replace it with our own implementation.
+    //
+    CommpageAddress  = Patcher->Is32Bit ? Commpage->Desc32.CommpageAddress : Commpage->Desc64.CommpageAddress;
+    CommpageMustHave = Patcher->Is32Bit ? Commpage->Desc32.MustHave : Commpage->Desc64.MustHave;
+    if (CommpageAddress == COMM_PAGE_BCOPY
+      && (CommpageMustHave & kHasSupplementalSSE3) == kHasSupplementalSSE3) {
+      Address            = Patcher->Is32Bit ? Commpage->Desc32.CodeAddress : Commpage->Desc64.CodeAddress;
+      CommpageCodeLength = Patcher->Is32Bit ? Commpage->Desc32.CodeLength : Commpage->Desc64.CodeLength;
+      DEBUG ((
+        DEBUG_VERBOSE,
+        "OCAK: Found 64-bit _COMM_PAGE_BCOPY function @ 0x%llx (0x%X bytes)\n",
+        Address, 
+        CommpageCodeLength
+        ));
+
+      Target = MachoGetFilePointerByAddress (&Patcher->MachContext, Address, &MaxSize);
+      if (Target == NULL
+        || MaxSize < sizeof (mAsmLegacyBcopy64)
+        || CommpageCodeLength < sizeof (mAsmLegacyBcopy64)) {
+        break;
+      }
+
+      CopyMem (Target, mAsmLegacyBcopy64, sizeof (mAsmLegacyBcopy64));
+      if (Patcher->Is32Bit) {
+        Commpage->Desc32.CodeLength = sizeof (mAsmLegacyBcopy64);
+        Commpage->Desc32.MustHave  &= ~kHasSupplementalSSE3;
+      } else {
+        Commpage->Desc64.CodeLength = sizeof (mAsmLegacyBcopy64);
+        Commpage->Desc64.MustHave  &= ~kHasSupplementalSSE3;
+      }
+
+      return EFI_SUCCESS;
+    }
+
+    CommpageRoutines += Patcher->Is32Bit ? sizeof (UINT32) : sizeof (UINT64);
+    if (CommpageRoutines >= Last) {
+      break;
+    }
+    Address = Patcher->Is32Bit ? *((UINT32 *) CommpageRoutines) : *((UINT64 *) CommpageRoutines);
+  }
+
+  DEBUG ((DEBUG_INFO, "OCAK: Failed to find 64-bit _COMM_PAGE_BCOPY function\n"));
+
+  return EFI_NOT_FOUND;
+}
+
+STATIC
+EFI_STATUS
+PatchForceSecureBootScheme (
+  IN OUT PATCHER_CONTEXT    *Patcher,
+  IN     UINT32             KernelVersion
+  )
+{
+  EFI_STATUS   Status;
+  UINT8        *Last;
+  UINT8        *SelectAp;
+  UINT8        *HybridAp;
+  UINT32       Diff;
+
+  ASSERT (Patcher != NULL);
+
+  //
+  // This code is for debugging APFS snapshot verification for Big Sur.
+  // macOS chooses verification scheme based on the hardware:
+  // - __img4_chip_x86_software_8012 (software x86 8012)
+  //   for CPUs with VMM flag enabled via cpuid_features.
+  // - __img4_chip_x86 (x86)
+  //   for platforms with no or v1 (0x10000) coprocessor (apple-coprocessor-version).
+  // - __img4_chip_ap_hybrid_medium (medium-security hybrid arm/x86 ap)
+  //   for platforms with v2 (0x20000) coprocessor and medium (1) policy (AppleSecureBootPolicy).
+  // - __img4_chip_ap_hybrid_relaxed (relaxed hybrid arm/x86 ap)
+  //   for platforms with v2 coprocessor and relaxed (0) policy.
+  // - __img4_chip_ap_hybrid (hybrid arm/x86 ap)
+  //   for platfirms with v2 or newer coprocessor and personalised policy (2).
+  //
+
+  if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_BIG_SUR_MIN, 0)) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping sb scheme on %u\n", KernelVersion));
+    return EFI_SUCCESS;
+  }
+
+  Last = ((UINT8 *) MachoGetMachHeader (&Patcher->MachContext)
+    + MachoGetFileSize (&Patcher->MachContext) - 64);
+
+  Status = PatcherGetSymbolAddress (Patcher, "_img4_chip_select_effective_ap", &SelectAp);
+  if (EFI_ERROR (Status) || SelectAp > Last) {
+    DEBUG ((DEBUG_INFO, "OCAK: Missing _img4_chip_select_effective_ap - %r\n", Status));
+    return EFI_NOT_FOUND;
+  }
+
+  Status = PatcherGetSymbolAddress (Patcher, "__img4_chip_x86", &HybridAp);
+  if (EFI_ERROR (Status) || HybridAp > Last) {
+    DEBUG ((DEBUG_INFO, "OCAK: Missing __img4_chip_x86 - %r\n", Status));
+    return EFI_NOT_FOUND;
+  }
+
+  DEBUG ((DEBUG_INFO, "OCAK: Forcing sb scheme on %u\n", KernelVersion));
+
+  SelectAp[0] = 0x48;
+  SelectAp[1] = 0x8D;
+  SelectAp[2] = 0x05;
+  Diff = (UINT32) (HybridAp - SelectAp - 7);
+  CopyMem (&SelectAp[3], &Diff, sizeof (Diff));
+  SelectAp[7] = 0xC3;
+  return EFI_SUCCESS;
+}
+
 //
 // Quirks table.
 //
@@ -2082,6 +1911,9 @@ KERNEL_QUIRK gKernelQuirks[] = {
   [KernelQuirkXhciPortLimit2] = { "com.apple.driver.usb.AppleUSBXHCI", PatchUsbXhciPortLimit2 },
   [KernelQuirkXhciPortLimit3] = { "com.apple.driver.usb.AppleUSBXHCIPCI", PatchUsbXhciPortLimit3 },
   [KernelQuirkSegmentJettison] = { NULL, PatchSegmentJettison },
+  [KernelQuirkExtendBTFeatureFlags] = { "com.apple.iokit.IOBluetoothFamily", PatchBTFeatureFlags },
+  [KernelQuirkLegacyCommpage] = { NULL, PatchLegacyCommpage },
+  [KernelQuirkForceSecureBootScheme] = { "com.apple.security.AppleImage4", PatchForceSecureBootScheme },
 };
 
 EFI_STATUS

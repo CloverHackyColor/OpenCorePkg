@@ -61,6 +61,7 @@ typedef struct OC_PICKER_CONTEXT_ OC_PICKER_CONTEXT;
 #define OC_ATTR_USE_DISK_LABEL_FILE      BIT1
 #define OC_ATTR_USE_GENERIC_LABEL_IMAGE  BIT2
 #define OC_ATTR_USE_ALTERNATE_ICONS      BIT3
+#define OC_ATTR_USE_POINTER_CONTROL      BIT4
 
 /**
   Default timeout for IDLE timeout during menu picker navigation
@@ -99,12 +100,6 @@ typedef UINT32 OC_BOOT_ENTRY_TYPE;
 #define OC_BOOT_EXTERNAL_TOOL       BIT7
 #define OC_BOOT_RESET_NVRAM         BIT8
 #define OC_BOOT_SYSTEM              (OC_BOOT_RESET_NVRAM)
-
-/**
-  Default boot option numbers.
-**/
-#define OC_BOOT_OPTION                0x9696
-#define OC_BOOT_OPTION_VARIABLE_NAME  L"Boot9696"
 
 /**
   Picker mode.
@@ -198,6 +193,14 @@ typedef struct OC_BOOT_ENTRY_ {
   // Should make this option default boot option.
   //
   BOOLEAN                   SetDefault;
+  //
+  // Should launch this entry in text mode.
+  //
+  BOOLEAN                   LaunchInText;
+  //
+  // Should expose real device path when dealing with custom entries.
+  //
+  BOOLEAN                   ExposeDevicePath;
   //
   // Load option data (usually "boot args") size.
   //
@@ -403,7 +406,8 @@ EFI_STATUS
   IN  OC_BOOT_ENTRY               *ChosenEntry,
   IN  EFI_HANDLE                  ImageHandle,
   OUT UINTN                       *ExitDataSize,
-  OUT CHAR16                      **ExitData    OPTIONAL
+  OUT CHAR16                      **ExitData    OPTIONAL,
+  IN  BOOLEAN                     LaunchInText
   );
 
 /**
@@ -417,9 +421,9 @@ EFI_STATUS
   IN  OC_BOOT_ENTRY               *ChosenEntry,
   OUT VOID                        **Data,
   OUT UINT32                      *DataSize,
-  OUT EFI_DEVICE_PATH_PROTOCOL    **DevicePath         OPTIONAL,
-  OUT EFI_HANDLE                  *ParentDeviceHandle  OPTIONAL,
-  OUT EFI_DEVICE_PATH_PROTOCOL    **ParentFilePath     OPTIONAL
+  OUT EFI_DEVICE_PATH_PROTOCOL    **DevicePath,
+  OUT EFI_HANDLE                  *StorageHandle,
+  OUT EFI_DEVICE_PATH_PROTOCOL    **StoragePath
   );
 
 /**
@@ -462,6 +466,14 @@ typedef struct {
   // Whether this entry is a tool.
   //
   BOOLEAN      Tool;
+  //
+  // Whether it should be started in text mode.
+  //
+  BOOLEAN      TextMode;
+  //
+  // Whether we should pass the actual device path (if possible).
+  //
+  BOOLEAN      RealPath;
 } OC_PICKER_ENTRY;
 
 /**
@@ -655,6 +667,10 @@ struct OC_PICKER_CONTEXT_ {
   // Set when Apple picker cannot be used on this system.
   //
   BOOLEAN                    ApplePickerUnsupported;
+  //
+  // Ignore Apple peripheral firmware updates.
+  //
+  BOOLEAN                    BlacklistAppleUpdate;
   //
   // Recommended audio protocol, optional.
   //
@@ -1078,6 +1094,10 @@ typedef struct OC_BOOT_ARGUMENTS_ {
   UINT32            *MemoryMapDescriptorSize;
   UINT32            *MemoryMapDescriptorVersion;
   CHAR8             *CommandLine;
+  UINT32            *KernelAddrP;
+  UINT32            *SystemTableP;
+  UINT32            *RuntimeServicesPG;
+  UINT64            *RuntimeServicesV;
   UINT32            *DeviceTreeP;
   UINT32            *DeviceTreeLength;
   UINT32            *CsrActiveConfig;
@@ -1191,13 +1211,17 @@ OcDeleteVariables (
   );
 
 /**
-  Launch Apple BootPicker.
+  Launch firmware application.
+
+  @param[in] ApplicationGuid  Application GUID identifier in the firmware.
+  @param[in] SetReason        Pass enter reason (specific to Apple BootPicker).
 
   @retval error code, should not return. 
 **/
 EFI_STATUS
-OcRunAppleBootPicker (
-  VOID
+OcRunFirmwareApplication (
+  IN EFI_GUID  *ApplicationGuid,
+  IN BOOLEAN   SetReason
   );
 
 /**
@@ -1286,14 +1310,19 @@ OcGetBootOrder (
   @param[in]  OptionName    Option name to create.
   @param[in]  DeviceHandle  Device handle of the file system.
   @param[in]  FilePath      Bootloader path.
+  @param[in]  ShortForm     Whether the Device Path should be written in
+                            short-form.
 
   @retval EFI_SUCCESS on success.
 **/
 EFI_STATUS
-OcRegisterBootOption (
+OcRegisterBootstrapBootOption (
   IN CONST CHAR16    *OptionName,
   IN EFI_HANDLE      DeviceHandle,
-  IN CONST CHAR16    *FilePath
+  IN CONST CHAR16    *FilePath,
+  IN BOOLEAN         ShortForm,
+  IN CHAR16          *MatchSuffix,
+  IN UINTN           MatchSuffixLen
   );
 
 /**

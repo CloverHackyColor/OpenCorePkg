@@ -32,6 +32,10 @@
  rm -rf Macho.dSYM DICT fuzz*.log Macho
 */
 
+#ifdef FUZZING_TEST
+#define main no_main
+#endif
+
 MACH_HEADER_64 Header;
 MACH_SECTION_64 Sect;
 MACH_SEGMENT_COMMAND_64 Seg;
@@ -39,19 +43,19 @@ MACH_UUID_COMMAND Uuid;
 
 static int FeedMacho(void *file, uint32_t size) {
   OC_MACHO_CONTEXT Context;
-  if (!MachoInitializeContext (&Context, file, size, 0)) {
+  if (!MachoInitializeContext64 (&Context, file, size, 0)) {
     return -1;
   }
 
   int code = 0;
 
   MACH_HEADER_64 *Hdr = MachoGetMachHeader64 (&Context);
-  if (Hdr && MachoGetFileSize(&Context) > 10 && MachoGetLastAddress64(&Context) != 10) {
+  if (Hdr && MachoGetFileSize(&Context) > 10 && MachoGetLastAddress(&Context) != 10) {
     memcpy(&Header, Hdr, sizeof(Header));
     code++;
   }
 
-  MACH_UUID_COMMAND *Cmd = MachoGetUuid64(&Context);
+  MACH_UUID_COMMAND *Cmd = MachoGetUuid(&Context);
   if (Cmd) {
     memcpy(&Uuid, Cmd, sizeof(Uuid));
     code++;
@@ -86,13 +90,13 @@ static int FeedMacho(void *file, uint32_t size) {
       (Indirect && !AsciiStrCmp (Indirect, "__hack"))) {
       code++;
     }
-    if (MachoSymbolIsSection (Symbol)) {
+    if (MachoSymbolIsSection64 (Symbol)) {
       code++;
     }
-    if (MachoSymbolIsDefined (Symbol)) {
+    if (MachoSymbolIsDefined64 (Symbol)) {
       code++;
     }
-    if (MachoSymbolIsLocalDefined (&Context, Symbol)) {
+    if (MachoSymbolIsLocalDefined64 (&Context, Symbol)) {
       code++;
     }
 
@@ -113,21 +117,21 @@ static int FeedMacho(void *file, uint32_t size) {
       code++;
     }
 
-    if (MachoSymbolNameIsSmcp64 (&Context, MachoGetSymbolName64 (&Context, Symbol))) {
+    if (MachoSymbolNameIsSmcp (&Context, MachoGetSymbolName64 (&Context, Symbol))) {
       code++;
     }
 
-    if (MachoSymbolNameIsMetaclassPointer64 (&Context, MachoGetSymbolName64 (&Context, Symbol))) {
+    if (MachoSymbolNameIsMetaclassPointer (&Context, MachoGetSymbolName64 (&Context, Symbol))) {
       code++;
     }
 
     char out[64];
-    if (MachoSymbolNameIsSmcp64 (&Context, MachoGetSymbolName64 (&Context, Symbol))
+    if (MachoSymbolNameIsSmcp (&Context, MachoGetSymbolName64 (&Context, Symbol))
       && MachoGetClassNameFromSuperMetaClassPointer (&Context, MachoGetSymbolName64 (&Context, Symbol), sizeof(out), out)) {
       code++;
     }
 
-    if (MachoSymbolNameIsVtable64 (MachoGetSymbolName64 (&Context, Symbol))) {
+    if (MachoSymbolNameIsVtable (MachoGetSymbolName64 (&Context, Symbol))) {
       if (AsciiStrCmp(MachoGetClassNameFromVtableName (MachoGetSymbolName64 (&Context, Symbol)), "sym")) {
         code++;
       }
@@ -138,7 +142,7 @@ static int FeedMacho(void *file, uint32_t size) {
       code++;
     }
 
-    if (MachoSymbolNameIsMetaclassPointer64 (&Context, MachoGetSymbolName64 (&Context, Symbol))
+    if (MachoSymbolNameIsMetaclassPointer (&Context, MachoGetSymbolName64 (&Context, Symbol))
       && MachoGetClassNameFromMetaClassPointer (&Context, MachoGetSymbolName64 (&Context, Symbol), sizeof(out), out)
       && !AsciiStrCmp("SomeReallyLongStringJustInCaseToCheckIt", out)) {
       code++;
@@ -185,20 +189,20 @@ static int FeedMacho(void *file, uint32_t size) {
     MachoRelocateSymbol64 (&Context, 0x100000000, &SSSS);
   }
 
-  Symbol = MachoGetLocalDefinedSymbolByName (&Context, "_Assert");
+  Symbol = MachoGetLocalDefinedSymbolByName64 (&Context, "_Assert");
   if (Symbol) {
     CONST CHAR8 *Indirect = MachoGetIndirectSymbolName64 (&Context, Symbol);
     if (!AsciiStrCmp (MachoGetSymbolName64 (&Context, Symbol), "__hack") ||
       (Indirect && !AsciiStrCmp (Indirect, "__hack"))) {
       code++;
     }
-    if (MachoSymbolIsSection (Symbol)) {
+    if (MachoSymbolIsSection64 (Symbol)) {
       code++;
     }
-    if (MachoSymbolIsDefined (Symbol)) {
+    if (MachoSymbolIsDefined64 (Symbol)) {
       code++;
     }
-    if (MachoSymbolIsLocalDefined (&Context, Symbol)) {
+    if (MachoSymbolIsLocalDefined64 (&Context, Symbol)) {
       code++;
     }
 
@@ -218,22 +222,22 @@ static int FeedMacho(void *file, uint32_t size) {
       code++;
     }
 
-    if (MachoSymbolNameIsSmcp64 (&Context, MachoGetSymbolName64 (&Context, Symbol))) {
+    if (MachoSymbolNameIsSmcp (&Context, MachoGetSymbolName64 (&Context, Symbol))) {
       code++;
     }
 
-    if (MachoSymbolNameIsMetaclassPointer64 (&Context, MachoGetSymbolName64 (&Context, Symbol))) {
+    if (MachoSymbolNameIsMetaclassPointer (&Context, MachoGetSymbolName64 (&Context, Symbol))) {
       code++;
     }
 
     char out[64];
-    if (MachoSymbolNameIsSmcp64 (&Context, MachoGetSymbolName64 (&Context, Symbol))
+    if (MachoSymbolNameIsSmcp (&Context, MachoGetSymbolName64 (&Context, Symbol))
       && MachoGetClassNameFromSuperMetaClassPointer (&Context, MachoGetSymbolName64 (&Context, Symbol), sizeof(out), out)
       && !AsciiStrCmp("SomeReallyLongStringJustInCaseToCheckIt", out)) {
       code++;
     }
 
-    if (MachoSymbolNameIsVtable64 (MachoGetSymbolName64 (&Context, Symbol))) {
+    if (MachoSymbolNameIsVtable (MachoGetSymbolName64 (&Context, Symbol))) {
       if (AsciiStrCmp(MachoGetClassNameFromVtableName (MachoGetSymbolName64 (&Context, Symbol)), "sym")) {
         code++;
       }
@@ -244,7 +248,7 @@ static int FeedMacho(void *file, uint32_t size) {
       code++;
     }
 
-    if (MachoSymbolNameIsMetaclassPointer64 (&Context, MachoGetSymbolName64 (&Context, Symbol))
+    if (MachoSymbolNameIsMetaclassPointer (&Context, MachoGetSymbolName64 (&Context, Symbol))
       && MachoGetClassNameFromMetaClassPointer (&Context, MachoGetSymbolName64 (&Context, Symbol), sizeof(out), out)
       && !AsciiStrCmp("SomeReallyLongStringJustInCaseToCheckIt", out)) {
       code++;

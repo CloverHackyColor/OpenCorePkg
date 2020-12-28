@@ -1,6 +1,6 @@
 <img src="https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/Logos/OpenCore_with_text_Small.png" width="200" height="48"/>
 
-[![Build Status](https://travis-ci.com/acidanthera/OpenCorePkg.svg?branch=master)](https://travis-ci.com/acidanthera/OpenCorePkg) [![Scan Status](https://scan.coverity.com/projects/18169/badge.svg?flat=1)](https://scan.coverity.com/projects/18169)
+[![Build Status](https://github.com/acidanthera/OpenCorePkg/workflows/CI/badge.svg?branch=master)](https://github.com/acidanthera/OpenCorePkg/actions) [![Scan Status](https://scan.coverity.com/projects/18169/badge.svg?flat=1)](https://scan.coverity.com/projects/18169)
 -----
 
 OpenCore bootloader with development SDK.
@@ -60,7 +60,7 @@ details.
 - [Download-Fritz](https://github.com/Download-Fritz)
 - [Goldfish64](https://github.com/Goldfish64)
 - [nms42](https://github.com/nms42)
-- [PMHeart](https://github.com/PMHeart)
+- [PMheart](https://github.com/PMheart)
 - [savvamitrofanov](https://github.com/savvamitrofanov)
 - [usr-sse2](https://github.com/usr-sse2)
 - [vit9696](https://github.com/vit9696)

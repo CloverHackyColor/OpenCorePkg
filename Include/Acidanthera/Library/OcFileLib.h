@@ -339,7 +339,7 @@ OcOpenFileByRemainingDevicePath (
 /**
   Open a file or directory by device path. This is a modified
   version of EfiOpenFileByDevicePath function, which handles paths
-  with trailing slashes, that cause Open failure on old firmwares.
+  with trailing slashes, that cause Open failure on old firmware.
   EfiOpenFileByDevicePath is additionally not available in UDK.
 
   See more details at:
@@ -467,15 +467,6 @@ OcGetDiskPartitions (
 CONST EFI_PARTITION_ENTRY *
 OcGetGptPartitionEntry (
   IN EFI_HANDLE  FsHandle
-  );
-
-/**
-  Unblocks all partition handles without a File System protocol attached from
-  driver connection, if applicable.
-**/
-VOID
-OcUnblockUnmountedPartitions (
-  VOID
   );
 
 /**

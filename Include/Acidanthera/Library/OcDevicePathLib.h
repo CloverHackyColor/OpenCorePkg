@@ -16,6 +16,14 @@
 #define OC_DEVICE_PATH_LIB_H
 
 /**
+  Apple MacPro5,1 includes NVMe driver, however, it contains a typo in MSG_SASEX_DP.
+  Instead of 0x16 aka 22 (SasEx) it uses 0x22 aka 34 (Unspecified).
+  Here we replace it with the "right" value.
+  Reference: https://forums.macrumors.com/posts/28169441.
+**/
+#define MSG_APPLE_NVME_NAMESPACE_DP 0x22
+
+/**
   Append file name to device path.
 
   @param[in] DevicePath  The device path which to append the file path.
@@ -146,6 +154,21 @@ OcFileDevicePathNameLen (
   );
 
 /**
+  Retrieve the length of the full file path described by DevicePath.
+
+  @param[in] DevicePath  The Device Path to inspect.
+
+  @returns   The length of the full file path.
+  @retval 0  DevicePath does not start with a File Path node or contains
+             non-terminating nodes that are not File Path nodes.
+
+**/
+UINTN
+OcFileDevicePathFullNameLen (
+  IN CONST EFI_DEVICE_PATH_PROTOCOL  *DevicePath
+  );
+
+/**
   Retrieve the size of the full file path described by DevicePath.
 
   @param[in] DevicePath  The Device Path to inspect.
@@ -176,6 +199,21 @@ OcFileDevicePathFullName (
   OUT CHAR16                      *PathName,
   IN  CONST FILEPATH_DEVICE_PATH  *FilePath,
   IN  UINTN                       PathNameSize
+  );
+
+/**
+  Retrieves full file path from device path allocating it on pool.
+
+  @param[in]  DevicePath      Device path to extract file path from.
+  @param[out] FileDevicePath  Pointer to file path part of the device path, optional.
+
+  @returns Path allocated from pool.
+  @retval NULL when missing.
+**/
+CHAR16 *
+OcCopyDevicePathFullName (
+  IN   EFI_DEVICE_PATH_PROTOCOL        *DevicePath,
+  OUT  EFI_DEVICE_PATH_PROTOCOL        **FileDevicePath  OPTIONAL
   );
 
 /**
@@ -352,6 +390,22 @@ EFI_DEVICE_PATH_PROTOCOL *
 OcGetNextLoadOptionDevicePath (
   IN EFI_DEVICE_PATH_PROTOCOL  *FilePath,
   IN EFI_DEVICE_PATH_PROTOCOL  *FullPath
+  );
+
+/*
+  Checks DevicePath for whether it ends with file path Suffix.
+
+  @param[in] DevicePath    The Device Path to check.
+  @param[in] Suffix        The suffix to check for.
+  @param[in] SuffixLen  Must be equal to StrLen(Suffix).
+
+  @returns  Whether DevicePath ends with Suffix.
+*/
+BOOLEAN
+OcDevicePathHasFilePathSuffix (
+  IN EFI_DEVICE_PATH_PROTOCOL  *DevicePath,
+  IN CHAR16                    *Suffix,
+  IN UINTN                     SuffixLen
   );
 
 #endif // OC_DEVICE_PATH_LIB_H

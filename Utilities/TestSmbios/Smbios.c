@@ -38,6 +38,10 @@
  rm -rf Smbios.dSYM DICT fuzz*.log Smbios
 */
 
+#ifdef FUZZING_TEST
+#define main no_main
+#endif
+
 STATIC GUID SystemUUID = {0x5BC82C38, 0x4DB6, 0x4883, {0x85, 0x2E, 0xE7, 0x8D, 0x78, 0x0A, 0x6F, 0xE6}};
 STATIC UINT8 BoardType = 0xA; // Motherboard (BaseBoardTypeMotherBoard)
 STATIC UINT8 MemoryFormFactor = 0xD; // SODIMM, 0x9 for DIMM (MemoryFormFactorSodimm)
@@ -105,7 +109,7 @@ int main(int argc, char** argv) {
   OC_SMBIOS_TABLE  SmbiosTable;
   Status = OcSmbiosTablePrepare (&SmbiosTable);
   if (!EFI_ERROR (Status)) {
-    Status = OcSmbiosCreate (&SmbiosTable, &SmbiosData, OcSmbiosUpdateCreate, &CpuInfo);
+    Status = OcSmbiosCreate (&SmbiosTable, &SmbiosData, OcSmbiosUpdateCreate, &CpuInfo, FALSE);
     if (!EFI_ERROR (Status)) {
       SMBIOS_TABLE_3_0_ENTRY_POINT *patchedTablePtr = NULL;
       Status = EfiGetSystemConfigurationTable (&gEfiSmbios3TableGuid, (VOID **) &patchedTablePtr);
@@ -150,7 +154,7 @@ INT32 LLVMFuzzerTestOneInput(CONST UINT8 *Data, UINTN Size) {
       OC_SMBIOS_TABLE  SmbiosTable;
       Status = OcSmbiosTablePrepare (&SmbiosTable);
       if (!EFI_ERROR (Status)) {
-        OcSmbiosCreate (&SmbiosTable, &SmbiosData, OcSmbiosUpdateCreate, &CpuInfo);
+        OcSmbiosCreate (&SmbiosTable, &SmbiosData, OcSmbiosUpdateCreate, &CpuInfo, FALSE);
         OcSmbiosTableFree (&SmbiosTable);
       }
 

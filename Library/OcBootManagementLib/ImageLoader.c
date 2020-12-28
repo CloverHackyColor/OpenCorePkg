@@ -80,7 +80,7 @@ STATIC OC_IMAGE_LOADER_CONFIGURE mImageLoaderConfigure;
 STATIC UINT32                    mImageLoaderCaps;
 STATIC BOOLEAN                   mImageLoaderEnabled;
 
-
+STATIC
 EFI_STATUS
 InternalEfiLoadImageFile (
   IN  EFI_DEVICE_PATH_PROTOCOL  *DevicePath,
@@ -611,8 +611,6 @@ DetectCapabilities (
   //
   // Find Mac OS X version pattern.
   // This pattern started to appear with 10.7.
-  // We will look in the second half of the binary to optimise
-  // the search a little.
   //
   Result = FindPattern (
     (CONST UINT8 *)"Mac OS X 10.",
@@ -620,7 +618,7 @@ DetectCapabilities (
     L_STR_LEN ("Mac OS X 10."),
     SourceBuffer,
     SourceSize - sizeof (UINT32),
-    (INT32) (SourceSize / 2)
+    0
     );
 
 #ifdef MDE_CPU_IA32
@@ -666,7 +664,7 @@ DetectCapabilities (
 #endif
 }
 
-
+STATIC
 EFI_STATUS
 EFIAPI
 InternalEfiLoadImage (
@@ -825,7 +823,7 @@ InternalEfiLoadImage (
   }
 
   //
-  // Some firmwares may not update loaded image protocol fields correctly
+  // Some types of firmware may not update loaded image protocol fields correctly
   // when loading via source buffer. Do it here.
   //
   if (!EFI_ERROR (Status) && SourceBuffer != NULL && DevicePath != NULL) {

@@ -42,6 +42,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/OcFirmwareVolumeLib.h>
 #include <Library/OcHashServicesLib.h>
 #include <Library/OcMiscLib.h>
+#include <Library/OcMemoryLib.h>
 #include <Library/OcRtcLib.h>
 #include <Library/OcSmcLib.h>
 #include <Library/OcOSInfoLib.h>
@@ -179,7 +180,7 @@ OcLoadDrivers (
       NULL
       );
 
-    if (EFI_ERROR (Status)  &&  Status != RETURN_ALREADY_STARTED) {
+    if (EFI_ERROR (Status)) {
       DEBUG ((
         DEBUG_ERROR,
         "OC: Driver %a at %u cannot be started - %r!\n",
@@ -190,7 +191,7 @@ OcLoadDrivers (
       gBS->UnloadImage (ImageHandle);
     }
 
-    if (!EFI_ERROR (Status)  ||   Status != RETURN_ALREADY_STARTED) {
+    if (!EFI_ERROR (Status)) {
       DEBUG ((
         DEBUG_INFO,
         "OC: Driver %a at %u is successfully loaded!\n",
@@ -260,8 +261,6 @@ OcExitBootServicesHandler (
 
   Config = (OC_GLOBAL_CONFIG *) Context;
 
-DEBUG ((DEBUG_INFO, "++++++++++++++++++++++++++++++++\n"));
-
   //
   // Printing from ExitBootServices is dangerous, as it may cause
   // memory reallocation, which can make ExitBootServices fail.
@@ -310,11 +309,11 @@ OcReinstallProtocols (
   if (OcDevicePathPropertyInstallProtocol (Config->Uefi.ProtocolOverrides.DeviceProperties) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install device properties protocol\n"));
   }
-#ifndef CLOVER_BUILD
+
   if (OcAppleImageConversionInstallProtocol (Config->Uefi.ProtocolOverrides.AppleImageConversion) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install image conversion protocol\n"));
   }
-#endif
+
   if (OcAppleDebugLogInstallProtocol (Config->Uefi.ProtocolOverrides.AppleDebugLog) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install debug log protocol\n"));
   }
@@ -335,11 +334,9 @@ OcReinstallProtocols (
     DEBUG ((DEBUG_ERROR, "OC: Failed to install hash services protocol\n"));
   }
 
-#ifndef CLOVER_BUILD
   if (OcAppleKeyMapInstallProtocols (Config->Uefi.ProtocolOverrides.AppleKeyMap) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install key map protocols\n"));
   }
-#endif
 
   if (OcAppleEventInstallProtocol (Config->Uefi.ProtocolOverrides.AppleEvent) == NULL) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to install key event protocol\n"));
@@ -449,9 +446,11 @@ OcLoadBooterUefiSupport (
   IN OC_GLOBAL_CONFIG  *Config
   )
 {
-  OC_ABC_SETTINGS  AbcSettings;
-  UINT32           Index;
-  UINT32           NextIndex;
+  OC_ABC_SETTINGS        AbcSettings;
+  UINT32                 Index;
+  UINT32                 NextIndex;
+  OC_BOOTER_PATCH_ENTRY  *UserPatch;
+  OC_BOOTER_PATCH        *Patch;
 
   ZeroMem (&AbcSettings, sizeof (AbcSettings));
 
@@ -461,6 +460,7 @@ OcLoadBooterUefiSupport (
   AbcSettings.DisableVariableWrite   = Config->Booter.Quirks.DisableVariableWrite;
   AbcSettings.ProtectSecureBoot      = Config->Booter.Quirks.ProtectSecureBoot;
   AbcSettings.DiscardHibernateMap    = Config->Booter.Quirks.DiscardHibernateMap;
+  AbcSettings.AllowRelocationBlock   = Config->Booter.Quirks.AllowRelocationBlock;
   AbcSettings.EnableSafeModeSlide    = Config->Booter.Quirks.EnableSafeModeSlide;
   AbcSettings.EnableWriteUnprotector = Config->Booter.Quirks.EnableWriteUnprotector;
   AbcSettings.ForceExitBootServices  = Config->Booter.Quirks.ForceExitBootServices;
@@ -473,6 +473,9 @@ OcLoadBooterUefiSupport (
   AbcSettings.SignalAppleOS          = Config->Booter.Quirks.SignalAppleOS;
   AbcSettings.SyncRuntimePermissions = Config->Booter.Quirks.SyncRuntimePermissions;
 
+  //
+  // Handle MmioWhitelist patches.
+  //
   if (AbcSettings.DevirtualiseMmio && Config->Booter.MmioWhitelist.Count > 0) {
     AbcSettings.MmioWhitelist = AllocatePool (
       Config->Booter.MmioWhitelist.Count * sizeof (AbcSettings.MmioWhitelist[0])
@@ -496,11 +499,145 @@ OcLoadBooterUefiSupport (
     }
   }
 
+  //
+  // Handle customised booter patches.
+  //
+  if (Config->Booter.Patch.Count > 0) {
+    AbcSettings.BooterPatches = AllocateZeroPool (
+      Config->Booter.Patch.Count * sizeof (AbcSettings.BooterPatches[0])
+      );
+
+    if (AbcSettings.BooterPatches != NULL) {
+      NextIndex = 0;
+      for (Index = 0; Index < Config->Booter.Patch.Count; ++Index) {
+        Patch = &AbcSettings.BooterPatches[NextIndex];
+        UserPatch = Config->Booter.Patch.Values[Index];
+
+        if (!UserPatch->Enabled) {
+          continue;
+        }
+
+        //
+        // Ignore patch if:
+        // - There is nothing to replace.
+        // - Find and replace mismatch in size.
+        // - Mask and ReplaceMask mismatch in size when are available.
+        //
+        if (UserPatch->Replace.Size == 0
+          || UserPatch->Find.Size != UserPatch->Replace.Size
+          || (UserPatch->Mask.Size > 0 && UserPatch->Find.Size != UserPatch->Mask.Size)
+          || (UserPatch->ReplaceMask.Size > 0 && UserPatch->Find.Size != UserPatch->ReplaceMask.Size)) {
+          DEBUG ((DEBUG_ERROR, "OC: Booter patch %u is borked\n", Index));
+          continue;
+        }
+
+        //
+        // Also, ignore patch on mismatched architecture.
+        //
+        Patch->Arch    = OC_BLOB_GET (&UserPatch->Arch);
+        if (Patch->Arch[0] != '\0' && AsciiStrCmp (Patch->Arch, "Any") != 0) {
+#if defined(MDE_CPU_X64)
+          if (AsciiStrCmp (Patch->Arch, "x86_64") != 0) {
+            continue;
+          }
+#elif defined(MDE_CPU_IA32)
+          if (AsciiStrCmp (Patch->Arch, "i386") != 0) {
+            continue;
+          }
+#else
+#error "Unsupported architecture"
+#endif
+        }
+
+        //
+        // Here we simply receive Identifier from user,
+        // and it will be parsed by the internal patch function.
+        //
+        Patch->Identifier = OC_BLOB_GET (&UserPatch->Identifier);
+
+        Patch->Find       = OC_BLOB_GET (&UserPatch->Find);
+        Patch->Replace    = OC_BLOB_GET (&UserPatch->Replace);
+
+        Patch->Comment    = OC_BLOB_GET (&UserPatch->Comment);
+        
+        if (UserPatch->Mask.Size > 0) {
+          Patch->Mask     = OC_BLOB_GET (&UserPatch->Mask);
+        }
+
+        if (UserPatch->ReplaceMask.Size > 0) {
+          Patch->ReplaceMask = OC_BLOB_GET (&UserPatch->ReplaceMask);
+        }
+
+        Patch->Size          = UserPatch->Replace.Size;
+        Patch->Count         = UserPatch->Count;
+        Patch->Skip          = UserPatch->Skip;
+        Patch->Limit         = UserPatch->Limit;
+
+        ++NextIndex;
+      }
+      AbcSettings.BooterPatchesSize = NextIndex;
+    } else {
+      DEBUG ((
+        DEBUG_ERROR,
+        "OC: Failed to allocate %u slots for user booter patches\n",
+        (UINT32) Config->Booter.Patch.Count
+        ));
+    }
+  }
+
   AbcSettings.ExitBootServicesHandlers = mOcExitBootServicesHandlers;
   AbcSettings.ExitBootServicesHandlerContexts = mOcExitBootServicesContexts;
 
   OcAbcInitialize (&AbcSettings);
 }
+
+VOID
+OcReserveMemory (
+  IN OC_GLOBAL_CONFIG    *Config
+  )
+{
+  EFI_STATUS            Status;
+  UINTN                 Index;
+  EFI_PHYSICAL_ADDRESS  ReservedAddress;
+  EFI_MEMORY_TYPE       RsvdMemoryType;
+  CHAR8                 *RsvdMemoryTypeStr;
+
+  for (Index = 0; Index < Config->Uefi.ReservedMemory.Count; ++Index) {
+    if (!Config->Uefi.ReservedMemory.Values[Index]->Enabled) {
+      continue;
+    }
+
+    if ((Config->Uefi.ReservedMemory.Values[Index]->Address & (BASE_4KB - 1)) != 0
+      || (Config->Uefi.ReservedMemory.Values[Index]->Size & (BASE_4KB - 1)) != 0) {
+      Status = EFI_INVALID_PARAMETER;
+    } else {
+      RsvdMemoryTypeStr = OC_BLOB_GET (&Config->Uefi.ReservedMemory.Values[Index]->Type);
+
+      Status = OcDescToMemoryType (RsvdMemoryTypeStr, &RsvdMemoryType);
+      if (EFI_ERROR (Status)){
+        DEBUG ((DEBUG_INFO, "OC: Invalid ReservedMemory Type: %a\n", RsvdMemoryTypeStr));
+        RsvdMemoryType = EfiReservedMemoryType;
+      }
+
+      ReservedAddress = Config->Uefi.ReservedMemory.Values[Index]->Address;
+      Status = gBS->AllocatePages (
+        AllocateAddress,
+        RsvdMemoryType,
+        (UINTN) EFI_SIZE_TO_PAGES (Config->Uefi.ReservedMemory.Values[Index]->Size),
+        &ReservedAddress
+        );
+    }
+
+    DEBUG ((
+      DEBUG_INFO,
+      "OC: Reserving region %Lx of %Lx size - %r\n",
+      Config->Uefi.ReservedMemory.Values[Index]->Address,
+      Config->Uefi.ReservedMemory.Values[Index]->Size,
+      Status
+      ));
+  }
+}
+
 
 VOID
 OcLoadUefiSupport (
@@ -509,14 +646,11 @@ OcLoadUefiSupport (
   IN OC_CPU_INFO         *CpuInfo
   )
 {
-  EFI_STATUS            Status;
   EFI_HANDLE            *DriversToConnect;
-  UINTN                 Index;
   UINT16                *BootOrder;
   UINTN                 BootOrderCount;
   BOOLEAN               BootOrderChanged;
   EFI_EVENT             Event;
-  EFI_PHYSICAL_ADDRESS  ReservedAddress;
 
   OcReinstallProtocols (Config);
 
@@ -530,7 +664,7 @@ OcLoadUefiSupport (
   // Setup Apple bootloader specific UEFI features.
   //
   OcLoadBooterUefiSupport (Config);
-#ifndef CLOVER_BUILD
+
   if (Config->Uefi.Quirks.IgnoreInvalidFlexRatio) {
     OcCpuCorrectFlexRatio (CpuInfo);
   }
@@ -538,7 +672,7 @@ OcLoadUefiSupport (
   if (Config->Uefi.Quirks.TscSyncTimeout > 0) {
     OcCpuCorrectTscSync (CpuInfo, Config->Uefi.Quirks.TscSyncTimeout);
   }
-#endif
+
   DEBUG ((
     DEBUG_INFO,
     "OC: RBVR %d DDBR %d\n",
@@ -588,32 +722,10 @@ OcLoadUefiSupport (
 
   OcMiscUefiQuirksLoaded (Config);
 
-  for (Index = 0; Index < Config->Uefi.ReservedMemory.Count; ++Index) {
-    if (!Config->Uefi.ReservedMemory.Values[Index]->Enabled) {
-      continue;
-    }
-
-    if ((Config->Uefi.ReservedMemory.Values[Index]->Address & (BASE_4KB - 1)) != 0
-      || (Config->Uefi.ReservedMemory.Values[Index]->Size & (BASE_4KB - 1)) != 0) {
-      Status = EFI_INVALID_PARAMETER;
-    } else {
-      ReservedAddress = Config->Uefi.ReservedMemory.Values[Index]->Address;
-      Status = gBS->AllocatePages (
-        AllocateAddress,
-        EfiReservedMemoryType,
-        (UINTN) EFI_SIZE_TO_PAGES (Config->Uefi.ReservedMemory.Values[Index]->Size),
-        &ReservedAddress
-        );
-    }
-
-    DEBUG ((
-      DEBUG_INFO,
-      "OC: Reserving region %Lx of %Lx size - %r\n",
-      Config->Uefi.ReservedMemory.Values[Index]->Address,
-      Config->Uefi.ReservedMemory.Values[Index]->Size,
-      Status
-      ));
-  }
+  //
+  // Reserve requested memory regions
+  //
+  OcReserveMemory (Config);
 
   if (Config->Uefi.ConnectDrivers) {
     OcLoadDrivers (Storage, Config, &DriversToConnect);
@@ -636,6 +748,7 @@ OcLoadUefiSupport (
       Config->Uefi.Apfs.MinDate,
       Config->Misc.Security.ScanPolicy,
       Config->Uefi.Apfs.GlobalConnect,
+      Config->Uefi.Quirks.UnblockFsConnect,
       Config->Uefi.Apfs.HideVerbose
       );
 

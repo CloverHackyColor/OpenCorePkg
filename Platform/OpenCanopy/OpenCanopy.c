@@ -883,7 +883,9 @@ GuiFlushScreen (
   ASSERT (DrawContext != NULL);
   ASSERT (DrawContext->Screen != NULL);
 
-  GuiRedrawPointer (DrawContext);
+  if (mPointerContext != NULL) {
+    GuiRedrawPointer (DrawContext);
+  }
 
   NumValidDrawReqs = mNumValidDrawReqs;
   ASSERT (NumValidDrawReqs <= ARRAY_SIZE (mDrawRequests));
@@ -956,7 +958,7 @@ GuiRedrawAndFlushScreen (
 
 EFI_STATUS
 GuiLibConstruct (
-  IN OC_PICKER_CONTEXT  *PickerContet,
+  IN OC_PICKER_CONTEXT  *PickerContext,
   IN UINT32             CursorDefaultX,
   IN UINT32             CursorDefaultY
   )
@@ -975,18 +977,20 @@ GuiLibConstruct (
   CursorDefaultX = MIN (CursorDefaultX, OutputInfo->HorizontalResolution - 1);
   CursorDefaultY = MIN (CursorDefaultY, OutputInfo->VerticalResolution   - 1);
 
-  mPointerContext = GuiPointerConstruct (
-    PickerContet,
-    CursorDefaultX,
-    CursorDefaultY,
-    OutputInfo->HorizontalResolution,
-    OutputInfo->VerticalResolution
-    );
-  if (mPointerContext == NULL) {
-    DEBUG ((DEBUG_WARN, "OCUI: Failed to initialise pointer\n"));
+  if ((PickerContext->PickerAttributes & OC_ATTR_USE_POINTER_CONTROL) != 0) {
+    mPointerContext = GuiPointerConstruct (
+      PickerContext,
+      CursorDefaultX,
+      CursorDefaultY,
+      OutputInfo->HorizontalResolution,
+      OutputInfo->VerticalResolution
+      );
+    if (mPointerContext == NULL) {
+      DEBUG ((DEBUG_WARN, "OCUI: Failed to initialise pointer\n"));
+    }
   }
 
-  mKeyContext = GuiKeyConstruct (PickerContet);
+  mKeyContext = GuiKeyConstruct (PickerContext);
   if (mKeyContext == NULL) {
     DEBUG ((DEBUG_WARN, "OCUI: Failed to initialise key input\n"));
   }
@@ -1149,7 +1153,9 @@ GuiDrawLoop (
   //
   // Clear previous inputs.
   //
-  GuiPointerReset (mPointerContext);
+  if (mPointerContext != NULL) {
+    GuiPointerReset (mPointerContext);
+  }
   GuiKeyReset (mKeyContext);
   //
   // Main drawing loop, time and derieve sub-frequencies as required.
@@ -1481,7 +1487,7 @@ GuiPngToImage (
   UINTN                            Index;
   UINT8                            TmpChannel;
 
-  Status = DecodePng (
+  Status = OcDecodePng (
     ImageData,
     ImageDataSize,
     (VOID **) &Image->Buffer,
