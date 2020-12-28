@@ -470,6 +470,9 @@ PatchAppleXcpmForceBoost (
   UINT8   *Current;
 
   ASSERT (Patcher != NULL);
+  if (!Patcher) {
+    return EFI_INVALID_PARAMETER;
+  }
 
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_MOUNTAIN_LION_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping XcpmForceBoost on %u\n", KernelVersion));
