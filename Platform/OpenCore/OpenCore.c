@@ -186,14 +186,14 @@ OcMain (
 //  }
 
 
-
+//Slice - to start recovery we want it
 #ifndef CLOVER_BUILD
   OcMiscBoot (
     &mOpenCoreStorage,
     &mOpenCoreConfiguration,
     Privilege,
     OcStartImage_2,
-    mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
+    FALSE, //mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
     mLoadHandle
     );
 #endif

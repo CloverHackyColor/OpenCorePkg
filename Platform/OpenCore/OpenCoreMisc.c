@@ -721,6 +721,8 @@ OcMiscBoot (
   OC_INTERFACE_PROTOCOL  *Interface;
   UINTN                  BlessOverrideSize;
   CHAR16                 **BlessOverride;
+  
+#ifndef CLOVER_BUILD
   CONST CHAR8            *AsciiPicker;
   CONST CHAR8            *AsciiDmg;
 
@@ -749,7 +751,10 @@ OcMiscBoot (
     DEBUG ((DEBUG_WARN, "OC: Unknown DmgLoading: %a, using Signed\n", AsciiDmg));
     DmgLoading = OcDmgLoadingAppleSigned;
   }
-
+#else
+  PickerMode = OcPickerModeBuiltin;
+  DmgLoading = OcDmgLoadingAnyImage;
+#endif
   //
   // Do not use our boot picker unless asked.
   //
@@ -950,6 +955,7 @@ OcMiscBoot (
 //  //  OcLoadBootEntry (Context, Context->
 //    Status = gBS->StartImage (EntryHandle, 0, NULL);
 //  }else{
+  //Context->PickerCommand == OcPickerBootAppleRecovery
     Status = OcRunBootPicker (Context);
 //  }
 
