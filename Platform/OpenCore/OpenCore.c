@@ -40,19 +40,19 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/UefiDriverEntryPoint.h>
 #include <Library/UefiLib.h>
 
-
+STATIC
 OC_GLOBAL_CONFIG
 mOpenCoreConfiguration;
 
-
+STATIC
 OC_STORAGE_CONTEXT
 mOpenCoreStorage;
 
-
+STATIC
 OC_CPU_INFO
 mOpenCoreCpuInfo;
 
-
+STATIC
 OC_RSA_PUBLIC_KEY *
 mOpenCoreVaultKey;
 
@@ -60,23 +60,35 @@ STATIC
 OC_PRIVILEGE_CONTEXT
 mOpenCorePrivilege;
 
+STATIC
 EFI_HANDLE
-mLoadHandle;
+mStorageHandle;
 
+STATIC
+EFI_DEVICE_PATH_PROTOCOL *
+mStoragePath;
 
+STATIC
+CHAR16 *
+mStorageRoot;
+
+STATIC
 EFI_STATUS
 EFIAPI
-OcStartImage_2 (
+OcStartImage (
   IN  OC_BOOT_ENTRY               *Chosen,
   IN  EFI_HANDLE                  ImageHandle,
   OUT UINTN                       *ExitDataSize,
-  OUT CHAR16                      **ExitData    OPTIONAL
+  OUT CHAR16                      **ExitData    OPTIONAL,
+  IN  BOOLEAN                     LaunchInText
   )
 {
   EFI_STATUS                       Status;
   EFI_CONSOLE_CONTROL_SCREEN_MODE  OldMode;
 
-  OldMode = OcConsoleControlSetMode (EfiConsoleControlScreenGraphics);
+  OldMode = OcConsoleControlSetMode (
+    LaunchInText ? EfiConsoleControlScreenText : EfiConsoleControlScreenGraphics
+    );
 
   Status = gBS->StartImage (
     ImageHandle,
@@ -93,7 +105,7 @@ OcStartImage_2 (
   return Status;
 }
 
-
+STATIC
 VOID
 OcMain (
   IN OC_STORAGE_CONTEXT        *Storage,
@@ -113,28 +125,21 @@ OcMain (
   if (EFI_ERROR (Status)) {
     return;
   }
-//#ifndef CLOVER_BUILD
-  //TODO: it's double Clover calculation so it is better to make copy
-  // mOpenCoreCpuInfo <- gCPUStructure
+
   OcCpuScanProcessor (&mOpenCoreCpuInfo);
-//#endif
 
   DEBUG ((DEBUG_INFO, "OC: OcLoadNvramSupport...\n"));
   OcLoadNvramSupport (Storage, &mOpenCoreConfiguration);
   DEBUG ((DEBUG_INFO, "OC: OcMiscMiddleInit...\n"));
-  OcMiscMiddleInit (Storage, &mOpenCoreConfiguration, LoadPath, &mLoadHandle);
+  OcMiscMiddleInit (Storage, &mOpenCoreConfiguration, mStorageRoot, LoadPath, mStorageHandle);
   DEBUG ((DEBUG_INFO, "OC: OcLoadUefiSupport...\n"));
   OcLoadUefiSupport (Storage, &mOpenCoreConfiguration, &mOpenCoreCpuInfo);
-#ifndef CLOVER_BUILD
   DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport...\n"));
   OcLoadAcpiSupport (&mOpenCoreStorage, &mOpenCoreConfiguration);
-
   DEBUG ((DEBUG_INFO, "OC: OcLoadPlatformSupport...\n"));
   OcLoadPlatformSupport (&mOpenCoreConfiguration, &mOpenCoreCpuInfo);
-
   DEBUG ((DEBUG_INFO, "OC: OcLoadDevPropsSupport...\n"));
   OcLoadDevPropsSupport (&mOpenCoreConfiguration);
-#endif
   DEBUG ((DEBUG_INFO, "OC: OcMiscLateInit...\n"));
   OcMiscLateInit (Storage, &mOpenCoreConfiguration);
   DEBUG ((DEBUG_INFO, "OC: OcLoadKernelSupport...\n"));
@@ -153,53 +158,17 @@ OcMain (
 
   DEBUG ((DEBUG_INFO, "OC: All green, starting boot management...\n"));
 
-
-//
-//  CHAR16* UnicodeDevicePath = NULL; (void)UnicodeDevicePath;
-//
-//  UINTN                   HandleCount = 0;
-//  EFI_HANDLE              *Handles = NULL;
-//  Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &HandleCount, &Handles);
-//  UINTN HandleIndex = 0;
-//  for (HandleIndex = 0; HandleIndex < HandleCount; HandleIndex++) {
-//    EFI_DEVICE_PATH_PROTOCOL* DevicePath = DevicePathFromHandle(Handles[HandleIndex]);
-//    UnicodeDevicePath = ConvertDevicePathToText(DevicePath, FALSE, FALSE);
-//    if ( StrCmp(L"PciRoot(0x0)/Pci(0x11,0x0)/Pci(0x5,0x0)/Sata(0x1,0x0,0x0)/HD(2,GPT,25B8F381-DC5C-40C4-BCF2-9B22412964BE,0x64028,0x4F9BFB0)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842,B1F3810AD9513533B3E3169C3640360D)", UnicodeDevicePath) == 0 ) break;
-//  }
-//  if ( HandleIndex < HandleCount )
-//  {
-//    EFI_DEVICE_PATH_PROTOCOL* jfkImagePath = FileDevicePath(Handles[HandleIndex], L"\\System\\Library\\CoreServices\\boot.efi");
-//    UnicodeDevicePath = ConvertDevicePathToText (jfkImagePath, FALSE, FALSE);
-//
-//    EFI_HANDLE EntryHandle = NULL;
-//    Status = gBS->LoadImage (
-//      FALSE,
-//      gImageHandle,
-//      jfkImagePath,
-//      NULL,
-//      0,
-//      &EntryHandle
-//      );
-//  //  OcLoadBootEntry (Context, Context->
-//    Status = gBS->StartImage (EntryHandle, 0, NULL);
-//  }else{
-//  }
-
-
-//Slice - to start recovery we want it
-#ifndef CLOVER_BUILD
   OcMiscBoot (
     &mOpenCoreStorage,
     &mOpenCoreConfiguration,
     Privilege,
-    OcStartImage_2,
-    FALSE, //mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
-    mLoadHandle
+    OcStartImage,
+    mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
+    mStorageHandle
     );
-#endif
 }
 
-
+STATIC
 EFI_STATUS
 EFIAPI
 OcBootstrapRerun (
@@ -208,7 +177,9 @@ OcBootstrapRerun (
   IN EFI_DEVICE_PATH_PROTOCOL         *LoadPath OPTIONAL
   )
 {
-  EFI_STATUS          Status;
+  EFI_STATUS                Status;
+  EFI_DEVICE_PATH_PROTOCOL  *RemainingPath;
+  UINTN                     StoragePathSize;
 
   DEBUG ((DEBUG_INFO, "OC: ReRun executed!\n"));
 
@@ -217,76 +188,67 @@ OcBootstrapRerun (
   if (This->NestedCount == 1) {
     mOpenCoreVaultKey = OcGetVaultKey (This);
 
+    //
+    // Calculate root path (never freed).
+    //
+    RemainingPath = NULL;
+    if (LoadPath != NULL) {
+      ASSERT (mStorageRoot == NULL);
+      mStorageRoot = OcCopyDevicePathFullName (LoadPath, &RemainingPath);
+      //
+      // Skipping this or later failing to call UnicodeGetParentDirectory means
+      // we got valid path to the root of the partition. This happens when
+      // OpenCore.efi was loaded from e.g. firmware and then bootstrapped
+      // on a different partition.
+      //
+      if (mStorageRoot != NULL) {
+        if (UnicodeGetParentDirectory (mStorageRoot)) {
+          //
+          // This means we got valid path to ourselves.
+          //
+          DEBUG ((DEBUG_INFO, "OC: Got launch root path %s\n", mStorageRoot));
+        } else {
+          FreePool (mStorageRoot);
+          mStorageRoot = NULL;
+        }
+      }
+    }
 
+    if (mStorageRoot == NULL) {
+      mStorageRoot = OPEN_CORE_ROOT_PATH;
+      RemainingPath = NULL;
+      DEBUG ((DEBUG_INFO, "OC: Got default root path %s\n", mStorageRoot));
+    }
 
+    //
+    // Calculate storage path.
+    //
+    if (RemainingPath != NULL) {
+      StoragePathSize = (UINTN) RemainingPath - (UINTN) LoadPath;
+      mStoragePath = AllocatePool (StoragePathSize + END_DEVICE_PATH_LENGTH);
+      if (mStoragePath != NULL) {
+        CopyMem (mStoragePath, LoadPath, StoragePathSize);
+        SetDevicePathEndNode ((UINT8 *) mStoragePath + StoragePathSize);
+      }
+    } else {
+      mStoragePath = NULL;
+    }
 
-
-
-
-    /*
-     * Jief : I declare these var here, to keep my modification grouped together and ease copy/paste each time a new version is pulled.
-     */
-
-    int oc_unused_symbol_trick = 0;
-    /*
-     * Leave a signature that wouldn't be stripped in release version
-     */
-    static const char* opencore_revision = "OpenCore revision: " OPEN_CORE_VERSION;
-    oc_unused_symbol_trick += opencore_revision[0]; // to keep it used
-    /*
-     * Leave a marker for BootloaderChooser, to prevent confusion (an efi file from a folder EFI\OCXXX that would use file from EFI\OC)
-     */
-    static const char* path_independant = "path_independant";
-    oc_unused_symbol_trick += path_independant[0]; // to keep it used
-
-    EFI_LOADED_IMAGE_PROTOCOL* LoadedImage = NULL;
-    Status = gBS->HandleProtocol (
-      gImageHandle,
-      &gEfiLoadedImageProtocolGuid,
-      (VOID **) &LoadedImage
+    RemainingPath = LoadPath;
+    gBS->LocateDevicePath (
+      &gEfiSimpleFileSystemProtocolGuid,
+      &RemainingPath,
+      &mStorageHandle
       );
 
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "OC: Failed to locate loaded image - %r\n", Status));
-      return EFI_NOT_FOUND;
-    }
-
-    // Extract dirname from LoadedImage->FilePath
-    CHAR16* UnicodeDevicePath = NULL;
-    if ( LoadedImage->FilePath ) {
-      UnicodeDevicePath = ConvertDevicePathToText(LoadedImage->FilePath, FALSE, FALSE);
-      CHAR16* p = UnicodeDevicePath + StrLen(UnicodeDevicePath);
-      while ( p > UnicodeDevicePath  &&  *p != L'\\' ) {
-        p -= 1;
-      }
-      *p = 0;
-    }
-    // If not dirname is found (LoadedImage->FilePath can be NULL), use OPEN_CORE_ROOT_PATH as before.
-    if ( UnicodeDevicePath == NULL  ||  *UnicodeDevicePath == 0 )
-    {
-
-      Status = OcStorageInitFromFs (
-        &mOpenCoreStorage,
-        FileSystem,
-        OPEN_CORE_ROOT_PATH,
-        mOpenCoreVaultKey
-        );
-
-    }else{
-
-      Status = OcStorageInitFromFs (
-        &mOpenCoreStorage,
-        FileSystem,
-        UnicodeDevicePath,
-        mOpenCoreVaultKey
-        );
-      if ( UnicodeDevicePath != NULL ) FreePool (UnicodeDevicePath);
-    }
-
-
-
-
-
+    Status = OcStorageInitFromFs (
+      &mOpenCoreStorage,
+      FileSystem,
+      mStorageHandle,
+      mStoragePath,
+      mStorageRoot,
+      mOpenCoreVaultKey
+      );
 
     if (!EFI_ERROR (Status)) {
       OcMain (&mOpenCoreStorage, LoadPath);
@@ -314,11 +276,10 @@ OcGetLoadHandle (
   IN OC_BOOTSTRAP_PROTOCOL            *This
   )
 {
-  return mLoadHandle;
+  return mStorageHandle;
 }
 
-#include <Library/SerialPortLib.h>
-
+STATIC
 OC_BOOTSTRAP_PROTOCOL
 mOpenCoreBootStrap = {
   .Revision      = OC_BOOTSTRAP_PROTOCOL_REVISION,
@@ -341,12 +302,6 @@ UefiMain (
   EFI_HANDLE                        BootstrapHandle;
   OC_BOOTSTRAP_PROTOCOL             *Bootstrap;
   EFI_DEVICE_PATH_PROTOCOL          *AbsPath;
-
-#ifdef OC_TARGET_DEBUG
-  SerialPortInitialize();
-  Status = SerialPortWrite ((UINT8 *)"Starting OpenCore...", AsciiStrLen("Starting OpenCore..."));
-  gBS->Stall(2000000);
-#endif
 
   DEBUG ((DEBUG_INFO, "OC: Starting OpenCore...\n"));
 

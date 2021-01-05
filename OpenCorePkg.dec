@@ -462,7 +462,10 @@
   gMicrosoftVariableGuid                     = { 0x77FA9ABD, 0x0359, 0x4D32, { 0xBD, 0x60, 0x28, 0xF4, 0xE7, 0x8F, 0x78, 0x4B }}
 
 [Protocols]
-  ## Include/Acidanthera/Protocol/Audio.h
+  ## Include/Acidanthera/Protocol/AudioDecode.h
+  gEfiAudioDecodeProtocolGuid                = { 0xAF3F6C23, 0x8132, 0x4880, { 0xB3, 0x29, 0x04, 0x8D, 0xF7, 0x1D, 0xD8, 0x6A }}
+
+  ## Include/Acidanthera/Protocol/AudioIo.h
   gEfiAudioIoProtocolGuid                    = { 0xF05B559C, 0x1971, 0x4AF5, { 0xB2, 0xAE, 0xD6, 0x08, 0x08, 0xF7, 0x4F, 0x70 }}
 
   ## Include/Acidanthera/Protocol/HdaCodecInfo.h
@@ -491,6 +494,9 @@
 
   ## Include/Acidanthera/Protocol/OcFirmwareRuntime.h
   gOcFirmwareRuntimeProtocolGuid             = { 0x570332E4, 0xFC50, 0x4B21, { 0xAB, 0xE8, 0xAE, 0x72, 0xF0, 0x5B, 0x4F, 0xF7 }}
+
+  ## Include/Acidanthera/Protocol/OcForceResolution.h
+  gOcForceResolutionProtocolGuid             = { 0xBC7EC589, 0x2390, 0x4DA3, { 0x80, 0x25, 0x77, 0xDA, 0xD3, 0x4F, 0x36, 0x09 }}
 
   ##  Include/AMI/Protocol/AmiPointer.h
   gAmiEfiPointerProtocolGuid                 = { 0x15A10CE7, 0xEAB5, 0x43BF, { 0x90, 0x42, 0x74, 0x43, 0x2E, 0x69, 0x63, 0x77 }}
@@ -830,6 +836,9 @@
   OcMemoryLib|Include/Acidanthera/Library/OcMemoryLib.h
 
   ##  @libraryclass
+  OcMp3Lib|Include/Acidanthera/Library/OcMp3Lib.h
+
+  ##  @libraryclass
   OcMiscLib|Include/Acidanthera/Library/OcMiscLib.h
 
   ##  @libraryclass
@@ -870,6 +879,9 @@
 
   ##  @libraryclass
   OcVirtualFsLib|Include/Acidanthera/Library/OcVirtualFsLib.h
+
+  ##  @libraryclass
+  OcWaveLib|Include/Acidanthera/Library/OcWaveLib.h
 
   ##  @libraryclass
   OcXmlLib|Include/Acidanthera/Library/OcXmlLib.h

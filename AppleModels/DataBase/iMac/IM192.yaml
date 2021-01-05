@@ -1,7 +1,7 @@
 BIOSVendor: "Apple Inc."
-BIOSVersion: "1037.140.50.0.0"
-BIOSLegacyVersion: "IM191.88Z.F000.B00.2006151939"
-BIOSReleaseDate: "06/15/2020"
+BIOSVersion: "1554.60.15.0.0"
+BIOSLegacyVersion: "IM191.88Z.F000.B00.2011032307"
+BIOSReleaseDate: "11/03/2020"
 SystemManufacturer: "Apple Inc."
 SystemProductName: "iMac19,2"
 SystemVersion: "1.0"
@@ -72,17 +72,17 @@ SmcPlatform:
 SmcEPCI: 0xF070090
 OEMStrings: |-
   Apple ROM Version
-    BIOS ID:      IM191.88Z.F000.B00.2006151939
+    BIOS ID:      IM191.88Z.F000.B00.2011032307
     Model:        IM191
-    EFI Version:  1037.140.50.0.0
-    Built by:     _securitya@osx397
-    Date:         Mon Jun 15 19:39:43 2020
-    Revision:     1037.140.50 (B&I)
+    EFI Version:  1554.60.15.0.0
+    Built by:     root@osx416
+    Date:         Tue Nov  3 23:07:25 2020
+    Revision:     1554.60.15 (B&I)
     ROM Version:  F000_B00
     Build Type:   Official Build, RELEASE
-    Compiler:     clang-1103.0.29.20
-    UUID:         076BBB9C-306F-3F7A-8BBE-D613CF5793A4
-    UUID:         A1B797A6-3166-38DA-98EF-BB820338EC1A
+    Compiler:     clang-1200.0.30.4
+    UUID:         DE2F25C7-3ACA-37CB-AFD3-7CCAA66A4D3B
+    UUID:         1C347C57-1404-30AC-96B5-8F2B17AFA5D5
 Specifications:
   CPUCodename:
     - "Coffee Lake"
@@ -126,6 +126,28 @@ AppleModelCode:
   - "N6JT"
   - "N9LN"
   - "N07H"
+  - "0LKD"
+  - "0PYY"
+  - "03C7"
+  - "0MN1"
+  - "0L08"
+  - "0KYN"
+  - "0JVT"
+  - "07F8"
+  - "07F5"
+  - "07F4"
+  - "07F7"
+  - "07F6"
+  - "07F1"
+  - "07F3"
+  - "07F2"
+  - "0L0H"
+  - "0L0F"
+  - "0L0G"
+  - "0L09"
+  - "0LX4"
+  - "0LX7"
+  - "0LX8"
 # Note, first board code is used by macserial
 AppleBoardCode:
   - "KGQG"
@@ -133,6 +155,7 @@ AppleBoardCode:
 AppleModelYear:
   - 2019
   - 2020
+  - 2021
 CloverSerialNumber: "C02Y9HACJWDW"
 MinimumOSVersion: "10.14.4"
 MaximumOSVersion: null

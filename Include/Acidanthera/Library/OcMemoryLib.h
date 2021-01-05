@@ -50,6 +50,13 @@
 **/
 #define OC_DEFAULT_MEMORY_MAP_SIZE  (EFI_PAGE_SIZE*3)
 
+#define OC_MEMORY_TYPE_DESC_COUNT 16
+
+typedef struct {
+  CHAR8            *Name;
+  EFI_MEMORY_TYPE  Type;
+} OC_MEMORY_TYPE_DESC;
+
 /**
   Lock the legacy region specified to enable modification.
 
@@ -214,6 +221,7 @@ VOID
   @param[in]      Pages            Amount of pages to allocate.
   @param[in,out]  Memory           Top address for input, allocated address for output.
   @param[in]      GetMemoryMap     Custom GetMemoryMap implementation to use, optional.
+  @param[in]      AllocatePages    Custom AllocatePages implementation to use, optional.
   @param[in]      CheckRange       Handler allowing to not allocate select ranges, optional.
 
   @retval EFI_SUCCESS on successful allocation.
@@ -223,8 +231,9 @@ OcAllocatePagesFromTop (
   IN     EFI_MEMORY_TYPE         MemoryType,
   IN     UINTN                   Pages,
   IN OUT EFI_PHYSICAL_ADDRESS    *Memory,
-  IN     EFI_GET_MEMORY_MAP      GetMemoryMap  OPTIONAL,
-  IN     CHECK_ALLOCATION_RANGE  CheckRange  OPTIONAL
+  IN     EFI_GET_MEMORY_MAP      GetMemoryMap   OPTIONAL,
+  IN     EFI_ALLOCATE_PAGES      AllocatePages  OPTIONAL,
+  IN     CHECK_ALLOCATION_RANGE  CheckRange     OPTIONAL
   );
 
 /**
@@ -322,7 +331,7 @@ OcGetMemoryAttributes (
   Refresh memory attributes entry containing the specified address.
 
   @param[in]  Address         Address contained in the updated entry.
-  @param[in]  GetMemoryMap    
+  @param[in]  GetMemoryMap
 
   @retval EFI_SUCCESS on success.
   @retval EFI_NOT_FOUND no entry contains the specified address.
@@ -393,6 +402,22 @@ OcGetPhysicalAddress (
   IN  PAGE_MAP_AND_DIRECTORY_POINTER   *PageTable  OPTIONAL,
   IN  EFI_VIRTUAL_ADDRESS              VirtualAddr,
   OUT EFI_PHYSICAL_ADDRESS             *PhysicalAddr
+  );
+
+/**
+  Return EFI memory type for given type description
+
+  @param[in]  MemoryTypeDesc  Memory type string representation.
+  @param[out] MemoryType      EFI memory type to return.
+
+  @retval EFI_NOT_FOUND on unsuccessful lookup.
+  @retval EFI_INVALID_PARAMETER on wrong passed agruments.
+  @retval EFI_SUCCESS on successful lookup.
+**/
+EFI_STATUS
+OcDescToMemoryType (
+  IN  CHAR8            *MemoryTypeDesc,
+  OUT EFI_MEMORY_TYPE  *MemoryType
   );
 
 /**

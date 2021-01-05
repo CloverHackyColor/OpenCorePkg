@@ -26,10 +26,27 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 //
 // We use this vendor name to spoof SMBIOS data on request.
-// Note, never use Apple or similar on non apple instances (e.g. VMs).
-// This breaks many internal and external os mechanisms.
+// Note, never use Apple or similar on non-Apple instances (e.g. VMs).
+// This breaks many internal and external OS mechanisms.
 //
 #define OC_SMBIOS_VENDOR_NAME "Acidanthera"
+
+typedef struct OC_SMBIOS_MEMORY_DEVICE_DATA_ {
+  //
+  // Strings.
+  //
+  CONST CHAR8     *AssetTag;
+  CONST CHAR8     *BankLocator;
+  CONST CHAR8     *DeviceLocator;
+  CONST CHAR8     *Manufacturer;
+  CONST CHAR8     *PartNumber;
+  CONST CHAR8     *SerialNumber;
+  //
+  // Size is in megabytes and speed is in MT/s.
+  //
+  CONST UINT32    *Size;
+  CONST UINT16    *Speed;
+} OC_SMBIOS_MEMORY_DEVICE_DATA;
 
 typedef struct OC_SMBIOS_DATA_ {
   //
@@ -67,9 +84,20 @@ typedef struct OC_SMBIOS_DATA_ {
   CONST CHAR8     *ChassisSerialNumber;
   CONST CHAR8     *ChassisAssetTag;
   //
+  // Type 16
+  //
+  UINT16          MemoryDevicesCount;
+  CONST UINT8     *MemoryErrorCorrection;
+  CONST UINT64    *MemoryMaxCapacity;
+  //
   // Type 17
   //
-  CONST UINT8     *MemoryFormFactor;
+  CONST UINT16                  *MemoryDataWidth;
+  OC_SMBIOS_MEMORY_DEVICE_DATA  *MemoryDevices;
+  CONST UINT8                   *MemoryFormFactor;
+  CONST UINT16                  *MemoryTotalWidth;
+  CONST UINT8                   *MemoryType;
+  CONST UINT16                  *MemoryTypeDetail;
   //
   // Type 128
   // FirmwareFeatures and FirmwareFeaturesMask are split into two UINT32
@@ -119,9 +147,9 @@ typedef enum OC_SMBIOS_UPDATE_MODE_ {
   OcSmbiosUpdateOverwrite    = 2,
   //
   // Writes first SMBIOS table (gEfiSmbiosTableGuid) to gOcCustomSmbiosTableGuid to workaround
-  // firmwares overwriting SMBIOS contents at ExitBootServices. Otherwise equivalent to
-  // OcSmbiosUpdateCreate. Requires patching AppleSmbios.kext and AppleACPIPlatform.kext to read
-  // from another GUID: "EB9D2D31" -> "EB9D2D35" (in ASCII).
+  // some types of firmware overwriting SMBIOS contents at ExitBootServices. Otherwise equivalent
+  // to OcSmbiosUpdateCreate. Requires patching AppleSmbios.kext and AppleACPIPlatform.kext 
+  // to read from another GUID: "EB9D2D31" -> "EB9D2D35" (in ASCII).
   //
   OcSmbiosUpdateCustom       = 3,
 } OC_SMBIOS_UPDATE_MODE;
@@ -189,7 +217,8 @@ OcSmbiosCreate (
   IN OUT OC_SMBIOS_TABLE        *SmbiosTable,
   IN     OC_SMBIOS_DATA         *Data,
   IN     OC_SMBIOS_UPDATE_MODE  Mode,
-  IN     OC_CPU_INFO            *CpuInfo
+  IN     OC_CPU_INFO            *CpuInfo,
+  IN     BOOLEAN                UseCustomMemory
   );
 
 VOID
