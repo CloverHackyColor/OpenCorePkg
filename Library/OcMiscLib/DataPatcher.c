@@ -17,6 +17,61 @@
 #include <Library/DebugLib.h>
 #include <Library/OcMiscLib.h>
 
+#ifdef CLOVER_BUILD
+
+#include "../../../rEFIt_UEFI/Platform/MemoryOperation.h"
+
+
+INT32
+FindPattern (
+  IN CONST UINT8   *Pattern,
+  IN CONST UINT8   *PatternMask OPTIONAL,
+  IN CONST UINT32  PatternSize,
+  IN CONST UINT8   *Data,
+  IN UINT32        DataSize,
+  IN INT32         DataOff
+  )
+{
+
+//  ASSERT (DataOff >= 0);
+
+  if (PatternSize == 0 || DataSize == 0 || (DataOff < 0) || (UINT32)DataOff >= DataSize || DataSize - DataOff < PatternSize) {
+    return -1;
+  }
+
+  UINTN result = FindMemMask(Data + DataOff, DataSize, Pattern, PatternSize, PatternMask, PatternSize);
+  if (result != MAX_UINTN) {
+    if ( result < MAX_INT32 - DataOff ) {
+      return (INT32)(result + DataOff);
+    }
+  }
+  return -1;
+}
+
+UINT32
+ApplyPatch (
+  IN CONST UINT8   *Pattern,
+  IN CONST UINT8   *PatternMask OPTIONAL,
+  IN CONST UINT32  PatternSize,
+  IN CONST UINT8   *Replace,
+  IN CONST UINT8   *ReplaceMask OPTIONAL,
+  IN UINT8         *Data,
+  IN UINT32        DataSize,
+  IN UINT32        Count,
+  IN UINT32        Skip
+  )
+{
+  UINTN res = SearchAndReplaceMask(Data, DataSize, Pattern, PatternMask, PatternSize, Replace, ReplaceMask, Count, Skip);
+  if ( res < MAX_UINT32 ) {
+    return (UINT32)res;
+  }else{
+    return MAX_UINT32;
+  }
+}
+
+
+#else
+
 INT32
 FindPattern (
   IN CONST UINT8   *Pattern,
@@ -101,13 +156,48 @@ ApplyPatch (
       //
       // Perform replacement.
       //
+      DEBUG((DEBUG_VERBOSE, "Replace " ));
+      for (UINTN Index = 0; Index < PatternSize; ++Index) {
+        DEBUG((DEBUG_VERBOSE, "%02X", Pattern[Index]));
+      }
+      if ( PatternMask ) {
+        DEBUG((DEBUG_VERBOSE, "/" ));
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          DEBUG((DEBUG_VERBOSE, "%02X", PatternMask[Index]));
+        }
+        DEBUG((DEBUG_VERBOSE, "(" ));
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          DEBUG((DEBUG_VERBOSE, "%02X", Data[DataOff + Index]));
+        }
+        DEBUG((DEBUG_VERBOSE, ")" ));
+      }
+      DEBUG((DEBUG_VERBOSE, " by " ));
+
       if (ReplaceMask == NULL) {
-        CopyMem (&Data[DataOff], Replace, PatternSize);
+        CopyMem (&Data[DataOff], (void*)Replace, PatternSize);
       } else {
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
           Data[DataOff + Index] = (Data[DataOff + Index] & ~ReplaceMask[Index]) | (Replace[Index] & ReplaceMask[Index]);
         }
       }
+
+      for (UINTN Index = 0; Index < PatternSize; ++Index) {
+        DEBUG((DEBUG_VERBOSE, "%02X", Replace[Index]));
+      }
+      if ( ReplaceMask ) {
+        DEBUG((DEBUG_VERBOSE, "/" ));
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          DEBUG((DEBUG_VERBOSE, "%02X", ReplaceMask[Index]));
+        }
+        DEBUG((DEBUG_VERBOSE, "(" ));
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          DEBUG((DEBUG_VERBOSE, "%02X", Data[DataOff + Index]));
+        }
+        DEBUG((DEBUG_VERBOSE, ")" ));
+      }
+
+      DEBUG((DEBUG_VERBOSE, " at ofs:%X\n", DataOff));
+
       ++ReplaceCount;
       DataOff += PatternSize;
 
@@ -126,3 +216,5 @@ ApplyPatch (
 
   return ReplaceCount;
 }
+
+#endif

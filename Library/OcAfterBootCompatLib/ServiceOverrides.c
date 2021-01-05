@@ -740,7 +740,7 @@ OcFreePool (
   UEFI Boot Services StartImage override. Called to start an efi image.
   If this is boot.efi, then our overrides are enabled.
 **/
-STATIC
+
 EFI_STATUS
 EFIAPI
 OcStartImage (
@@ -799,7 +799,7 @@ OcStartImage (
       NULL,
       NULL
       );
-    DEBUG ((DEBUG_INFO, "OCABC: VMware Mac installed on %p - %r\n", ImageHandle, Status));
+//    DEBUG ((DEBUG_INFO, "OCABC: VMware Mac installed on %p - %r\n", ImageHandle, Status));
 
     BootCompat->ServiceState.AppleHibernateWake = OcIsAppleHibernateWake ();
     BootCompat->ServiceState.AppleCustomSlide = OcCheckArgumentFromEnv (

@@ -221,6 +221,10 @@ UefiMain (
   EFI_HANDLE                        OcImageHandle;
   EFI_DEVICE_PATH_PROTOCOL          *OcImagePath;
 
+#ifdef JIEF_DEBUG
+  gBS->Stall(3500000); // to allow gdb to connect
+#endif
+
   DEBUG ((DEBUG_INFO, "BS: Starting OpenCore...\n"));
 
   //
