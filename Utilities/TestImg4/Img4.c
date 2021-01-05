@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <File.h>
+#include <UserFile.h>
 
 #include <Base.h>
 
@@ -14,10 +14,6 @@
 #include "libDER/oids.h"
 #include "libDERImg4/Img4oids.h"
 #include "libDERImg4/libDERImg4.h"
-
-#ifdef FUZZING_TEST
-#define main no_main
-#endif
 
 EFI_GUID gAppleSecureBootVariableGuid;
 
@@ -57,7 +53,7 @@ int debugManifest (char *manifestName)
   uint32_t ManSize;
   DERImg4ManifestInfo ManInfo;
 
-  Manifest = readFile (manifestName, &ManSize);
+  Manifest = UserReadFile (manifestName, &ManSize);
   if (Manifest == NULL) {
     printf ("\n!!! read error !!!\n");
     return -1;
@@ -116,7 +112,7 @@ int verifyImg4 (char *imageName, char *manifestName, char *type)
   uint32_t ManSize, ImgSize;
   DERImg4ManifestInfo ManInfo;
 
-  Manifest = readFile (manifestName, &ManSize);
+  Manifest = UserReadFile (manifestName, &ManSize);
   if (Manifest == NULL) {
     printf ("\n!!! read error !!!\n");
     return -1;
@@ -136,7 +132,7 @@ int verifyImg4 (char *imageName, char *manifestName, char *type)
 
   InternalDebugEnvInfo (&ManInfo.environment);
 
-  Image = readFile (imageName, &ImgSize);
+  Image = UserReadFile (imageName, &ImgSize);
   if (Image == NULL) {
     printf ("\n!!! read error !!!\n");
     return -1;
@@ -164,7 +160,7 @@ int verifyImg4 (char *imageName, char *manifestName, char *type)
   return 0;
 }
 
-int main (int argc, char *argv[])
+int ENTRY_POINT (int argc, char *argv[])
 {
   if (argc < 2 || ((argc % 3) != 1 && argc != 2)) {
     printf ("Img4 ([image path] [manifest path] [object type])*\n");

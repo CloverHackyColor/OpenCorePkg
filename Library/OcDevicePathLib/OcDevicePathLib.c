@@ -82,8 +82,8 @@ FindDevicePathNodeWithType (
   DevicePathNode = NULL;
 
   while (!IsDevicePathEnd (DevicePath)) {
-    if ((DevicePathType (DevicePath) == Type)
-     && ((SubType == 0) || (DevicePathSubType (DevicePath) == SubType))) {
+    if (DevicePathType (DevicePath) == Type
+     && (SubType == 0 || DevicePathSubType (DevicePath) == SubType)) {
       DevicePathNode = DevicePath;
 
       break;
@@ -148,7 +148,9 @@ TrailedBooterDevicePath (
           // Already appended, good. It should never be true with Apple entries though.
           //
           return NULL;
-        } else if (Length > 4 &&                      (FilePath->PathName[Length - 4] != '.'
+        }
+
+        if (Length > 4 && (FilePath->PathName[Length - 4] != '.'
           || (FilePath->PathName[Length - 3] != 'e' && FilePath->PathName[Length - 3] != 'E')
           || (FilePath->PathName[Length - 2] != 'f' && FilePath->PathName[Length - 2] != 'F')
           || (FilePath->PathName[Length - 1] != 'i' && FilePath->PathName[Length - 1] != 'I'))) {
@@ -357,7 +359,7 @@ InternalExpandNewPath (
     //
     // The suffix is handled implicitly (by OcGetNextLoadOptionDevicePath).
     // Keep in mind that with this logic our broken node may expand to an
-    // arbitrary number of nodes now. 
+    // arbitrary number of nodes now.
     //
     ExpandedNode = (EFI_DEVICE_PATH_PROTOCOL *) (
       (UINTN) ExpandedPath + PrefixSize
@@ -484,16 +486,13 @@ OcFixAppleBootDevicePathNode (
 
       case MSG_NVME_NAMESPACE_DP:
         //
-        // Apple MacPro5,1 includes NVMe driver, however, it contains a typo in MSG_SASEX_DP.
-        // Instead of 0x16 aka 22 (SasEx) it uses 0x22 aka 34 (Unspecified).
-        // Here we replace it with the "right" value.
-        // Reference: https://forums.macrumors.com/posts/28169441.
+        // Workaround for MacPro5,1 using custom NVMe type.
         //
         if (RestoreContext != NULL) {
           RestoreContext->Types.SasExNvme.SubType = Node.DevPath->SubType;
         }
 
-        Node.NvmeNamespace->Header.SubType = 0x22;
+        Node.NvmeNamespace->Header.SubType = MSG_APPLE_NVME_NAMESPACE_DP;
         return 1;
 
       default:
@@ -509,7 +508,7 @@ OcFixAppleBootDevicePathNode (
 
         if (EISA_ID_TO_NUM (Node.Acpi->HID) == 0x0A03) {
           //
-          // In some firmwares UIDs for PciRoot do not match between ACPI tables and UEFI
+          // In some types of firmware, UIDs for PciRoot do not match between ACPI tables and UEFI
           // UEFI Device Paths. The former contain 0x00, 0x40, 0x80, 0xC0 values, while
           // the latter have ascending numbers.
           // Reference: https://github.com/acidanthera/bugtracker/issues/664.
@@ -521,7 +520,7 @@ OcFixAppleBootDevicePathNode (
           switch (Node.Acpi->UID) {
             case 0x1:
               Node.Acpi->UID = 0;
-              return 1;            
+              return 1;
 
             case 0x10:
             case 0x40:
@@ -550,7 +549,7 @@ OcFixAppleBootDevicePathNode (
               break;
           }
           //
-          // Apple uses PciRoot (EISA 0x0A03) nodes while some firmwares might use
+          // Apple uses PciRoot (EISA 0x0A03) nodes while some types of firmware might use
           // PcieRoot (EISA 0x0A08).
           //
           Node.Acpi->HID = BitFieldWrite32 (
@@ -570,7 +569,7 @@ OcFixAppleBootDevicePathNode (
           RestoreContext->Types.ExtendedAcpi.CID = Node.ExtendedAcpi->CID;
         }
         //
-        // Apple uses PciRoot (EISA 0x0A03) nodes while some firmwares might use
+        // Apple uses PciRoot (EISA 0x0A03) nodes while some types of firmware might use
         // PcieRoot (EISA 0x0A08).
         //
         if (EISA_ID_TO_NUM (Node.ExtendedAcpi->HID) == 0x0A03) {
@@ -582,7 +581,7 @@ OcFixAppleBootDevicePathNode (
             );
           return 1;
         }
-        
+
         if (EISA_ID_TO_NUM (Node.ExtendedAcpi->CID) == 0x0A03
          && EISA_ID_TO_NUM (Node.ExtendedAcpi->HID) != 0x0A08) {
           Node.ExtendedAcpi->CID = BitFieldWrite32 (
@@ -1036,6 +1035,47 @@ OcFileDevicePathNameLen (
 }
 
 /**
+  Retrieve the length of the full file path described by DevicePath.
+
+  @param[in] DevicePath  The Device Path to inspect.
+
+  @returns   The length of the full file path.
+  @retval 0  DevicePath does not start with a File Path node or contains
+             non-terminating nodes that are not File Path nodes.
+
+**/
+UINTN
+OcFileDevicePathFullNameLen (
+  IN CONST EFI_DEVICE_PATH_PROTOCOL  *DevicePath
+  )
+{
+  UINTN                      PathLength;
+  CONST FILEPATH_DEVICE_PATH *FilePath;
+
+  ASSERT (DevicePath != NULL);
+  ASSERT (IsDevicePathValid (DevicePath, 0));
+
+  PathLength = 0;
+  do {
+    //
+    // On the first iteration, this ensures the path is not immediately
+    // terminated.
+    //
+    if (DevicePath->Type    != MEDIA_DEVICE_PATH
+     || DevicePath->SubType != MEDIA_FILEPATH_DP) {
+      return 0;
+    }
+
+    FilePath    = (FILEPATH_DEVICE_PATH *)DevicePath;
+    PathLength += OcFileDevicePathNameLen (FilePath);
+
+    DevicePath = NextDevicePathNode (DevicePath);
+  } while (!IsDevicePathEnd (DevicePath));
+
+  return PathLength;
+}
+
+/**
   Retrieve the size of the full file path described by DevicePath.
 
   @param[in] DevicePath  The Device Path to inspect.
@@ -1050,29 +1090,7 @@ OcFileDevicePathFullNameSize (
   IN CONST EFI_DEVICE_PATH_PROTOCOL  *DevicePath
   )
 {
-  UINTN                      PathSize;
-  CONST FILEPATH_DEVICE_PATH *FilePath;
-
-  ASSERT (DevicePath != NULL);
-  ASSERT (IsDevicePathValid (DevicePath, 0));
-
-  PathSize = 1;
-  do {
-    //
-    // On the first iteration, this ensures the path is not immediately
-    // terminated.
-    //
-    if (DevicePath->Type    != MEDIA_DEVICE_PATH
-     || DevicePath->SubType != MEDIA_FILEPATH_DP) {
-      return 0;
-    }
-
-    FilePath  = (FILEPATH_DEVICE_PATH *)DevicePath;
-    PathSize += OcFileDevicePathNameLen (FilePath);
-
-    DevicePath = NextDevicePathNode (DevicePath);
-  } while (!IsDevicePathEnd (DevicePath));
-  return PathSize * sizeof (*FilePath->PathName);
+  return (OcFileDevicePathFullNameLen (DevicePath) + 1) * sizeof (CHAR16);
 }
 
 /**
@@ -1116,6 +1134,50 @@ OcFileDevicePathFullName (
     FilePath = (CONST FILEPATH_DEVICE_PATH *)NextDevicePathNode (FilePath);
   } while (!IsDevicePathEnd (FilePath));
   *PathName = CHAR_NULL;
+}
+
+CHAR16 *
+OcCopyDevicePathFullName (
+  IN   EFI_DEVICE_PATH_PROTOCOL        *DevicePath,
+  OUT  EFI_DEVICE_PATH_PROTOCOL        **FileDevicePath  OPTIONAL
+  )
+{
+  CHAR16                      *Path;
+  EFI_DEVICE_PATH_PROTOCOL    *CurrNode;
+  UINTN                       PathSize;
+
+  Path = NULL;
+
+  if (FileDevicePath != NULL) {
+    *FileDevicePath = NULL;
+  }
+
+  for (CurrNode = DevicePath; !IsDevicePathEnd (CurrNode); CurrNode = NextDevicePathNode (CurrNode)) {
+    if ((DevicePathType (CurrNode) == MEDIA_DEVICE_PATH)
+     && (DevicePathSubType (CurrNode) == MEDIA_FILEPATH_DP)) {
+      if (FileDevicePath != NULL) {
+        *FileDevicePath = CurrNode;
+      }
+
+      //
+      // Perform copying of all the underlying nodes due to potential unaligned access.
+      //
+      PathSize = OcFileDevicePathFullNameSize (CurrNode);
+      if (PathSize == 0) {
+        return NULL;
+      }
+
+      Path = AllocatePool (PathSize);
+      if (Path == NULL) {
+        return NULL;
+      }
+
+      OcFileDevicePathFullName (Path, (FILEPATH_DEVICE_PATH *) CurrNode, PathSize);
+      break;
+    }
+  }
+
+  return Path;
 }
 
 EFI_DEVICE_PATH_PROTOCOL *
@@ -1187,4 +1249,54 @@ OcGetNumDevicePathInstances (
   }
 
   return NumInstances;
+}
+
+BOOLEAN
+OcDevicePathHasFilePathSuffix (
+  IN EFI_DEVICE_PATH_PROTOCOL  *DevicePath,
+  IN CHAR16                    *Suffix,
+  IN UINTN                     SuffixLen
+  )
+{
+  FILEPATH_DEVICE_PATH *FilePath;
+  UINTN                PathNameLen;
+  UINTN                PathNameSize;
+  CHAR16               *PathName;
+  INTN                 Result;
+  //
+  // OcStrinCmp will be needed in case of a mismatch.
+  //
+  ASSERT (SuffixLen == StrLen (Suffix));
+
+  FilePath = (FILEPATH_DEVICE_PATH *) FindDevicePathNodeWithType (
+    DevicePath,
+    MEDIA_DEVICE_PATH,
+    MEDIA_FILEPATH_DP
+    );
+  if (FilePath == NULL) {
+    return FALSE;
+  }
+
+  PathNameLen = OcFileDevicePathFullNameLen (&FilePath->Header);
+  if (PathNameLen < SuffixLen) {
+    return FALSE;
+  }
+
+  PathNameSize = (PathNameLen + 1) * sizeof (CHAR16);
+
+  PathName = AllocatePool (PathNameSize);
+  if (PathName == NULL) {
+    return FALSE;
+  }
+
+  OcFileDevicePathFullName (PathName, FilePath, PathNameSize);
+
+  Result = OcStriCmp (
+    &PathName[PathNameLen - SuffixLen],
+    Suffix
+    );
+
+  FreePool (PathName);
+
+  return Result == 0;
 }

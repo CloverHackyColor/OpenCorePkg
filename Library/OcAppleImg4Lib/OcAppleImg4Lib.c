@@ -40,6 +40,7 @@ typedef struct OC_SB_MODEL_DESC_ {
   UINT32       BoardId;
 } OC_SB_MODEL_DESC;
 
+STATIC CHAR8 mCryptoDigestMethod[16] = "sha2-384";
 STATIC DERImg4Environment mEnvInfo;
 STATIC CONST CHAR8 *mModelDefault = "j137";
 ///
@@ -47,22 +48,23 @@ STATIC CONST CHAR8 *mModelDefault = "j137";
 /// Alphabetically sorted (!), for release order refer to the documentation.
 ///
 STATIC OC_SB_MODEL_DESC mModelInformation[] = {
-  { "j132",  0x0C }, ///< MacBookPro15,2
-  { "j137",  0x0A }, ///< iMacPro1,1
-  { "j140a", 0x37 }, ///< MacBookAir8,2
-  { "j140k", 0x17 }, ///< MacBookAir8,1
-  { "j152f", 0x3A }, ///< MacBookPro16,1
-  { "j160",  0x0F }, ///< MacPro7,1
-  { "j174",  0x0E }, ///< Macmini8,1
-  { "j185",  0x22 }, ///< iMac20,1
-  { "j185f", 0x23 }, ///< iMac20,2
-  { "j213",  0x18 }, ///< MacBookPro15,4
-  { "j214k", 0x3E }, ///< MacBookPro16,2
-  { "j215",  0x38 }, ///< MacBookPro16,4
-  { "j223",  0x3B }, ///< MacBookPro16,3
-  { "j230k", 0x3F }, ///< MacBookAir9,1
-  { "j680",  0x0B }, ///< MacBookPro15,1
-  { "j780",  0x07 }, ///< MacBookPro15,3
+  { "j132",      0x0C }, ///< MacBookPro15,2
+  { "j137",      0x0A }, ///< iMacPro1,1
+  { "j140a",     0x37 }, ///< MacBookAir8,2
+  { "j140k",     0x17 }, ///< MacBookAir8,1
+  { "j152f",     0x3A }, ///< MacBookPro16,1
+  { "j160",      0x0F }, ///< MacPro7,1
+  { "j174",      0x0E }, ///< Macmini8,1
+  { "j185",      0x22 }, ///< iMac20,1
+  { "j185f",     0x23 }, ///< iMac20,2
+  { "j213",      0x18 }, ///< MacBookPro15,4
+  { "j214k",     0x3E }, ///< MacBookPro16,2
+  { "j215",      0x38 }, ///< MacBookPro16,4
+  { "j223",      0x3B }, ///< MacBookPro16,3
+  { "j230k",     0x3F }, ///< MacBookAir9,1
+  { "j680",      0x0B }, ///< MacBookPro15,1
+  { "j780",      0x07 }, ///< MacBookPro15,3
+  { "x86legacy", 0xF0 }, ///< Generic x86 from Big Sur
 };
 
 STATIC BOOLEAN mHasDigestOverride;
@@ -361,6 +363,7 @@ OcAppleImg4BootstrapValues (
   mEnvInfo.effectiveSecurityMode      = 1;
   mEnvInfo.internalUseOnlyUnit        = FALSE;
   mEnvInfo.xugs                       = 1;
+  mEnvInfo.allowMixNMatch             = FALSE;
 
   //
   // Expose all the variables via NVRAM.
@@ -382,6 +385,17 @@ OcAppleImg4BootstrapValues (
     EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
     sizeof (mEnvInfo.chipId),
     &mEnvInfo.chipId
+    );
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  Status = gRT->SetVariable (
+    L"CertificateEpoch",
+    &gAppleSecureBootVariableGuid,
+    EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
+    sizeof (mEnvInfo.certificateEpoch),
+    &mEnvInfo.certificateEpoch
     );
   if (EFI_ERROR (Status)) {
     return Status;
@@ -463,6 +477,30 @@ OcAppleImg4BootstrapValues (
   if (EFI_ERROR (Status)) {
     return Status;
   }
+
+  Status = gRT->SetVariable (
+    L"MixNMatchPreventionStatus",
+    &gAppleSecureBootVariableGuid,
+    EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
+    sizeof (mEnvInfo.allowMixNMatch),
+    &mEnvInfo.allowMixNMatch
+    );
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  Status = gRT->SetVariable (
+    L"CryptoDigestMethod",
+    &gAppleSecureBootVariableGuid,
+    EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
+    sizeof (mCryptoDigestMethod),
+    &mCryptoDigestMethod
+    );
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  
 
   return EFI_SUCCESS;
 }

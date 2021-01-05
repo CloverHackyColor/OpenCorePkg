@@ -27,14 +27,6 @@
 #include <Protocol/LoadedImage.h>
 #include <Protocol/OcFirmwareRuntime.h>
 
-#if defined(MDE_CPU_X64)
-#include "X64/ContextSwitch.h"
-#elif defined(MDE_CPU_IA32)
-#include <Ia32/ContextSwitch.h>
-#else
-#error "Unsupported architecture!"
-#endif
-
 //
 // The kernel is normally allocated at base 0x100000 + slide address.
 //
@@ -61,6 +53,11 @@
 #define RT_DESC_ENTRY_NUM        ((UINTN) 64)
 
 /**
+  Kernel static vaddr mapping base.
+**/
+#define KERNEL_STATIC_VADDR      ((UINT64) 0xFFFFFF8000000000ULL)
+
+/**
   Kernel __HIB segment virtual address.
 **/
 #define KERNEL_HIB_VADDR         ((UINTN) (0xFFFFFF8000100000ULL & MAX_UINTN))
@@ -73,7 +70,12 @@
 /**
   Kernel physical base address.
 **/
-#define KERNEL_BASE_PADDR        (KERNEL_TEXT_VADDR - KERNEL_HIB_VADDR)
+#define KERNEL_BASE_PADDR        ((UINT32) (KERNEL_HIB_VADDR & MAX_UINT32))
+
+/**
+  Kernel physical base address.
+**/
+#define KERNEL_TEXT_PADDR        ((UINT32) (KERNEL_TEXT_VADDR & MAX_UINT32))
 
 /**
   Slide offset per slide entry
@@ -97,8 +99,58 @@
 
 /**
   Assume the kernel is roughly 128 MBs.
+  And the recovery introduced with Big Sur has roughly 200 MBs.
+  See 11.0b10 EB.MM.AKMR function (EfiBoot.MemoryMap.AllocateKernelMemoryRecovery),
+  it has 0xC119 pages requested. This value is likely calculated from KC size.
 **/
-#define ESTIMATED_KERNEL_SIZE    ((UINTN) SIZE_128MB)
+#define ESTIMATED_KERNEL_SIZE    ((UINTN) (200 * SIZE_1MB))
+
+/**
+  Assume call gate (normally a little over 100 bytes) can be up to 256 bytes.
+  It is allocated in its own page and is relocatable.
+
+  WARNING: Keep this in sync with RelocationCallGate assembly!
+**/
+#define ESTIMATED_CALL_GATE_SIZE 256
+
+/**
+  Size of jump from call gate inserted before Call Gate to jump to our code.
+**/
+#define CALL_GATE_JUMP_SIZE      (sizeof (CALL_GATE_JUMP))
+
+/**
+  Command used to perform an absolute 64-bit jump from Call Gate to our code.  
+**/
+#pragma pack(push,1)
+typedef struct CALL_GATE_JUMP_ {
+  UINT16  Command;
+  UINT32  Argument;
+  UINT64  Address;
+} CALL_GATE_JUMP;
+STATIC_ASSERT (sizeof (CALL_GATE_JUMP) == 14, "Invalid CALL_GATE_JUMP size");
+#pragma pack(pop)
+
+/**
+  Kernel call gate prototype.
+**/
+typedef
+UINTN
+(EFIAPI *KERNEL_CALL_GATE) (
+  IN UINTN    Args,
+  IN UINTN    EntryPoint
+  );
+
+/**
+  Relocation call gate prototype.
+**/
+typedef
+UINTN
+(EFIAPI *RELOCATION_CALL_GATE) (
+  IN UINTN                  QWordCount,
+  IN UINTN                  EntryPoint,
+  IN EFI_PHYSICAL_ADDRESS   Source,
+  IN UINTN                  Args
+  );
 
 /**
   Preserved relocation entry.
@@ -179,7 +231,7 @@ typedef struct UEFI_SERVICES_POINTERS_ {
   ///
   /// Original virtual address mapping function. We override
   /// it to perform runtime area protection to prevent boot.efi
-  /// defragmentation and setup virtual memory for firmwares
+  /// defragmentation and setup virtual memory for firmware
   /// accessing it after exit boot services.
   ///
   EFI_SET_VIRTUAL_ADDRESS_MAP SetVirtualAddressMap;
@@ -198,13 +250,16 @@ typedef struct SERVICES_OVERRIDE_STATE_ {
   ///
   OC_FIRMWARE_RUNTIME_PROTOCOL  *FwRuntime;
   ///
-  /// Minimum address allocated by AlocatePages.
+  /// Kernel call gate is an assembly function that takes boot arguments (rcx)
+  /// and kernel entry point (rdx) and jumps to the kernel (pstart) in 32-bit mode.
   ///
-  EFI_PHYSICAL_ADDRESS          MinAllocatedAddr;
+  /// It is only used for normal booting, so for general interception we do not
+  /// use call gate but rather patch the kernel entry point. However, when it comes
+  /// to booting with relocation block (it does not support hibernation) we need
+  /// to update kernel entry point with the relocation block offset and that can
+  /// only be done in the call gate as it will otherwise jump to lower memory.
   ///
-  /// Apple hibernate image address allocated by AlocatePages.
-  ///
-  EFI_PHYSICAL_ADDRESS          HibernateImageAddress;
+  EFI_PHYSICAL_ADDRESS          KernelCallGate;
   ///
   /// Last descriptor size obtained from GetMemoryMap.
   ///
@@ -236,18 +291,6 @@ typedef struct SERVICES_OVERRIDE_STATE_ {
 **/
 typedef struct KERNEL_SUPPORT_STATE_ {
   ///
-  /// Assembly support internal state.
-  ///
-  ASM_SUPPORT_STATE        AsmState;
-  ///
-  /// Kernel jump trampoline.
-  ///
-  ASM_KERNEL_JUMP          KernelJump;
-  ///
-  /// Original kernel memory.
-  ///
-  UINT8                    KernelOrg[sizeof (ASM_KERNEL_JUMP)];
-  ///
   /// Custom kernel UEFI System Table.
   ///
   EFI_PHYSICAL_ADDRESS     SysTableRtArea;
@@ -277,6 +320,24 @@ typedef struct KERNEL_SUPPORT_STATE_ {
   /// Virtual memory map descriptor size in bytes.
   ///
   UINTN                    VmMapDescSize;
+  ///
+  /// Relocation block is a scratch buffer allocated in lower 4GB to be used for
+  /// loading the kernel and related structures by EfiBoot on firmwares where
+  /// lower memory is otherwise occupied (assumed to be) non-runtime data.
+  /// Relocation block can be used when:
+  /// - no better slide exists (all the memory is used)
+  /// - slide=0 is forced (by an argument or safe mode)
+  /// - KASLR (slide) is unsupported (macOS 10.7 or older) 
+  /// Right before kernel startup the relocation block is copied back to lower
+  /// addresses. Similarly all the other addresses pointing to relocation block
+  /// are also carefully adjusted.
+  ///
+  EFI_PHYSICAL_ADDRESS     RelocationBlock;
+  ///
+  /// Real amount of memory used in the relocation block.
+  /// This value should match ksize in XNU BootArgs.
+  ///
+  UINTN                    RelocationBlockUsed;
 } KERNEL_SUPPORT_STATE;
 
 /**
@@ -407,29 +468,15 @@ AppleMapPrepareBooterState (
   );
 
 /**
-  Save UEFI environment state in implementation specific way.
-
-  @param[in,out]  AsmState      Assembly state to update, can be preserved.
-  @param[out]     KernelJump    Kernel jump trampoline to fill.
-**/
-VOID
-AppleMapPlatformSaveState (
-  IN OUT ASM_SUPPORT_STATE  *AsmState,
-     OUT ASM_KERNEL_JUMP    *KernelJump
-  );
-
-/**
   Patch kernel entry point with KernelJump to later land in AppleMapPrepareKernelState.
 
   @param[in,out]  BootCompat          Boot compatibility context.
-  @param[in]      ImageAddress        Kernel or hibernation image address.
-  @param[in]      AppleHibernateWake  TRUE when ImageAddress points to hibernation image.
+  @param[in]      CallGate            Kernel call gate address.
 **/
 VOID
 AppleMapPrepareKernelJump (
   IN OUT BOOT_COMPAT_CONTEXT    *BootCompat,
-  IN     UINTN                  ImageAddress,
-  IN     BOOLEAN                AppleHibernateWake
+  IN     EFI_PHYSICAL_ADDRESS   CallGate
   );
 
 /**
@@ -452,18 +499,20 @@ AppleMapPrepareMemState (
 
 /**
   Prepare environment for Apple kernel bootloader in boot or wake cases.
-  This callback arrives when boot.efi jumps to kernel.
+  This callback arrives when boot.efi jumps to kernel call gate.
+  Should transfer control to kernel call gate + CALL_GATE_JUMP_SIZE
+  with the same arguments.
 
-  @param[in]  Args     Case-specific kernel argument handle.
-  @param[in]  ModeX64  Debug flag about kernel context type, TRUE when X64.
+  @param[in]  Args         Case-specific kernel argument handle.
+  @param[in]  EntryPoint   Case-specific kernel entry point.
 
-  @retval  Args must be returned with the necessary modifications if any.
+  @returns Case-specific value if any.
 **/
 UINTN
 EFIAPI
 AppleMapPrepareKernelState (
   IN UINTN    Args,
-  IN BOOLEAN  ModeX64
+  IN UINTN    EntryPoint
   );
 
 /**
@@ -521,6 +570,99 @@ VOID
 AppleSlideRestore (
   IN OUT BOOT_COMPAT_CONTEXT   *BootCompat,
   IN OUT OC_BOOT_ARGUMENTS     *BootArgs
+  );
+
+/**
+  Get calculated relocation block size for booting with slide=0
+  (e.g. Safe Mode) or without KASLR (older macOS) when it is
+  otherwise impossible.
+
+  @param[in,out]  BootCompat    Boot compatibility context.
+
+  @returns Size of the relocation block (maximum).
+  @retval 0 otherwise.
+**/
+UINTN
+AppleSlideGetRelocationSize (
+  IN OUT BOOT_COMPAT_CONTEXT   *BootCompat
+  );
+
+/**
+  Allocate memory from a relocation block when zero slide is unavailable.
+  EfiLoaderData at address.
+
+  @param[in,out]  BootCompat     Boot compatibility context.
+  @param[in]      GetMemoryMap   Unmodified GetMemoryMap pointer, optional.
+  @param[in]      AllocatePages  Unmodified AllocatePages pointer.
+  @param[in]      NumberOfPages  Number of pages to allocate.
+  @param[in,out]  Memory         Memory address to allocate, may be updated.
+
+  @retval EFI_SUCCESS on success.
+  @retval EFI_UNSUPPORTED when zero slide is available.
+**/
+EFI_STATUS
+AppleRelocationAllocatePages (
+  IN OUT BOOT_COMPAT_CONTEXT   *BootCompat,
+  IN     EFI_GET_MEMORY_MAP    GetMemoryMap,
+  IN     EFI_ALLOCATE_PAGES    AllocatePages,
+  IN     UINTN                 NumberOfPages,
+  IN OUT EFI_PHYSICAL_ADDRESS  *Memory
+  );
+
+/**
+  Release relocation block if present.
+
+  @param[in,out]  BootCompat     Boot compatibility context.
+
+  @retval EFI_SUCCESS on success.
+  @retval EFI_UNSUPPORTED when zero slide is available.
+**/
+EFI_STATUS
+AppleRelocationRelease (
+  IN OUT BOOT_COMPAT_CONTEXT   *BootCompat
+  );
+
+/**
+  Transitions to virtual memory for the relocation block.
+
+  @param[in,out]  BootCompat    Boot compatibility context.
+  @param[in,out]  BootArgs      Apple kernel boot arguments.
+**/
+EFI_STATUS
+AppleRelocationVirtualize (
+  IN OUT BOOT_COMPAT_CONTEXT  *BootCompat,
+  IN OUT OC_BOOT_ARGUMENTS    *BA
+  );
+
+/**
+  Transition from relocation block address space to normal low
+  memory address space in the relevant XNU areas.
+
+  @param[in,out]  BootCompat    Boot compatibility context.
+  @param[in,out]  BootArgs      Apple kernel boot arguments.
+**/
+VOID
+AppleRelocationRebase (
+  IN OUT BOOT_COMPAT_CONTEXT  *BootCompat,
+  IN OUT OC_BOOT_ARGUMENTS    *BA
+  );
+
+/**
+  Boot Apple Kernel through relocation block.
+
+  @param[in,out] BootCompat   Boot compatibility context.
+  @param[in]     Args         Case-specific kernel argument handle.
+  @param[in]     CallGate     Kernel call gate address.
+  @param[in]     EntryPoint   Case-specific kernel entry point.
+
+  @returns Case-specific value if any.
+**/
+UINTN
+AppleRelocationCallGate (
+  IN OUT BOOT_COMPAT_CONTEXT  *BootCompat,
+  IN     KERNEL_CALL_GATE     CallGate,
+  IN     UINTN                Args,
+  IN     UINTN                EntryPoint
   );
 
 #endif // BOOT_COMPAT_INTERNAL_H

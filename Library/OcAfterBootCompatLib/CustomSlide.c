@@ -636,6 +636,12 @@ AppleSlideUnlockForSafeMode (
   //   }
   // }
   //
+  // The even newer workaround for 11.0 a newer is to patch the test.
+  // if (State & BOOT_MODE_SAFE) {
+  //   * Do roughly nothing *
+  // } else {
+  //   * Setup KASLR *
+  //
 
   //
   // This is a reasonable maximum distance to expect between the instructions.
@@ -643,6 +649,8 @@ AppleSlideUnlockForSafeMode (
   STATIC CONST UINTN MaxDist         = 0x10;
   STATIC CONST UINT8 SearchSeqNew[]  = {0xF6, 0xC4, 0x40, 0x75};
   STATIC CONST UINT8 SearchSeqNew2[] = {0x0F, 0xBA, 0xE0, 0x0E, 0x72};
+  STATIC CONST UINT8 SearchSeqSur[]  = {0xF6, 0xC1, 0x01, 0x75};
+  STATIC CONST UINT8 SearchSeqSur2[] = {0xF6, 0xC1, 0x01, 0x74};
   STATIC CONST UINT8 SearchSeq[]     = {0x01, 0x40, 0x00, 0x00};
 
   UINT8       *StartOff;
@@ -651,55 +659,84 @@ AppleSlideUnlockForSafeMode (
   UINTN       SecondOff;
   UINTN       SearchSeqNewSize;
   BOOLEAN     NewWay;
-
+  BOOLEAN     IsSur;
 
   StartOff = ImageBase;
   EndOff   = StartOff + ImageSize - sizeof (SearchSeq) - MaxDist;
 
+  //
+  // Rebranding started with macOS 11. All the ones before had Mac OS X or none.
+  //
+  IsSur = FindPattern (
+    (CONST UINT8 *) "macOS ",
+    NULL,
+    L_STR_LEN ("macOS "),
+    ImageBase,
+    (UINT32) ImageSize,
+    0
+    ) >= 0;
+
+  if (IsSur) {
+    for (FirstOff = 0; StartOff + FirstOff <= EndOff; ++FirstOff) {
+      if (CompareMem (StartOff + FirstOff, SearchSeqSur, sizeof (SearchSeqSur)) == 0) {
+        DEBUG ((DEBUG_INFO, "OCABC: Patching safe mode sur-1 at off %X\n", (UINT32) FirstOff));
+        SetMem (StartOff + FirstOff, sizeof (SearchSeqSur) + 1, 0x90);
+        return;
+      }
+
+      if (CompareMem (StartOff + FirstOff, SearchSeqSur2, sizeof (SearchSeqSur2)) == 0) {
+        DEBUG ((DEBUG_INFO, "OCABC: Patching safe mode sur-2 at off %X\n", (UINT32) FirstOff));
+        *(StartOff + FirstOff + 3) = 0xEB;
+        return;
+      }
+    }
+
+    DEBUG ((DEBUG_INFO, "OCABC: Failed to find safe mode sur sequence\n"));
+    return;
+  }
+
   FirstOff  = 0;
   SecondOff = 0;
-  NewWay    = FALSE;
 
   do {
+    NewWay    = FALSE;
+
     while (StartOff + FirstOff <= EndOff) {
       if (StartOff + FirstOff <= EndOff - 1
        && CompareMem (StartOff + FirstOff, SearchSeqNew2, sizeof (SearchSeqNew2)) == 0) {
         SearchSeqNewSize = sizeof (SearchSeqNew2);
         NewWay = TRUE;
         break;
-      } else if (CompareMem (StartOff + FirstOff, SearchSeqNew, sizeof (SearchSeqNew)) == 0) {
+      }
+
+      if (CompareMem (StartOff + FirstOff, SearchSeqNew, sizeof (SearchSeqNew)) == 0) {
         SearchSeqNewSize = sizeof (SearchSeqNew);
         NewWay = TRUE;
         break;
-      } else if (CompareMem (StartOff + FirstOff, SearchSeq, sizeof (SearchSeq)) == 0) {
+      }
+
+      if (CompareMem (StartOff + FirstOff, SearchSeq, sizeof (SearchSeq)) == 0) {
         break;
       }
+
       FirstOff++;
     }
 
-    DEBUG ((
-      DEBUG_VERBOSE,
-      "OCABC: Found first %d at off %X\n",
-      (UINT32) NewWay,
-      (UINT32) FirstOff
-      ));
-
     if (StartOff + FirstOff > EndOff) {
-      DEBUG ((
-        DEBUG_INFO,
-        "OCABC: Failed to find first BOOT_MODE_SAFE | BOOT_MODE_ASLR sequence\n"
-        ));
-      break;
+      DEBUG ((DEBUG_INFO, "OCABC: Failed to find safe mode sequence\n"));
+      return;
     }
 
     if (NewWay) {
       //
       // Here we just patch the comparison code and the check by straight nopping.
       //
-      DEBUG ((DEBUG_VERBOSE, "OCABC: Patching new safe mode aslr check...\n"));
+      DEBUG ((DEBUG_INFO, "OCABC: Patching safe mode new at off %X\n", (UINT32) FirstOff));
       SetMem (StartOff + FirstOff, SearchSeqNewSize + 1, 0x90);
       return;
     }
+
+    DEBUG ((DEBUG_INFO, "OCABC: Found safe mode legacy p1 at off %X\n", (UINT32) FirstOff));
 
     SecondOff = FirstOff + sizeof (SearchSeq);
 
@@ -709,13 +746,14 @@ AppleSlideUnlockForSafeMode (
       SecondOff++;
     }
 
-    DEBUG ((DEBUG_VERBOSE, "OCABC: Found second at off %X\n", (UINT32) SecondOff));
-
     if (FirstOff + MaxDist < SecondOff) {
-      DEBUG ((DEBUG_VERBOSE, "OCABC: Trying next match...\n"));
+      DEBUG ((DEBUG_INFO, "OCABC: Trying safe mode next legacy match\n"));
       SecondOff = 0;
       FirstOff += sizeof (SearchSeq);
+      continue;
     }
+
+    DEBUG ((DEBUG_INFO, "OCABC: Found safe mode legacy p2 at off %X\n", (UINT32) SecondOff));
   } while (SecondOff == 0);
 
   if (SecondOff != 0) {
@@ -724,7 +762,7 @@ AppleSlideUnlockForSafeMode (
     // Since the state values are contradictive (e.g. safe & single at the same time)
     // We are allowed to use this instead of to simulate if (false).
     //
-    DEBUG ((DEBUG_VERBOSE, "OCABC: Patching safe mode aslr check...\n"));
+    DEBUG ((DEBUG_INFO, "OCABC: Patching safe mode legacy\n"));
     SetMem (StartOff + FirstOff, sizeof (SearchSeq), 0xFF);
     SetMem (StartOff + SecondOff, sizeof (SearchSeq), 0xFF);
   }
@@ -766,8 +804,9 @@ AppleSlideGetVariable (
         Data
         );
     } else if (StrCmp (VariableName, L"boot-args") == 0
-      && !BootCompat->ServiceState.AppleCustomSlide
-      && ShouldUseCustomSlideOffset (&BootCompat->SlideSupport, GetMemoryMap, FilterMap, FilterMapContext)) {
+      && (!BootCompat->ServiceState.AppleCustomSlide || BootCompat->Settings.AllowRelocationBlock)
+      && ShouldUseCustomSlideOffset (&BootCompat->SlideSupport, GetMemoryMap, FilterMap, FilterMapContext)
+      && !BootCompat->ServiceState.AppleCustomSlide) {
       //
       // When we cannot allow some KASLR values due to used address we generate
       // a random slide value among the valid options, which we we pass via boot-args.
@@ -779,6 +818,9 @@ AppleSlideGetVariable (
       // because on older boards allocated memory above BASE_4GB causes instant reboots, and
       // on the only (so far) problematic X99 and X299 we have no free region for our pool anyway.
       // In any case, the current APTIOFIX_SPECULATED_KERNEL_SIZE value appears to work reliably.
+      //
+      // Note, when relocation block support is enabled, we always do the slide analysis
+      // (even when slide=0 is requested) to understand whether we need it or not at a later stage.
       //
       return GetVariableBootArgs (
         &BootCompat->SlideSupport,
@@ -818,4 +860,37 @@ AppleSlideRestore (
   // this is especially important.
   //
   HideSlideFromOs (SlideSupport, BootArgs);
+}
+
+UINTN
+AppleSlideGetRelocationSize (
+  IN OUT BOOT_COMPAT_CONTEXT   *BootCompat
+  )
+{
+  SLIDE_SUPPORT_STATE  *SlideSupport;
+
+  SlideSupport = &BootCompat->SlideSupport;
+
+  //
+  // When we could not have performed the analysis we have nothing to offer.
+  //
+  if (!SlideSupport->HasMemoryMapAnalysis) {
+    return 0;
+  }
+
+  //
+  // When we have no slides available we assume 0 is also unavailable.
+  //
+  if (SlideSupport->ValidSlideCount == 0) {
+    return BootCompat->SlideSupport.EstimatedKernelArea;
+  }
+
+  //
+  // If the first slide is not zero, then zero is unavailable.
+  //
+  if (SlideSupport->ValidSlides[0] != 0) {
+    return BootCompat->SlideSupport.EstimatedKernelArea;
+  }
+
+  return 0;
 }

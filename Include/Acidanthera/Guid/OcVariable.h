@@ -47,7 +47,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 // Boot protection guids.
 //
 #define OC_BOOT_PROTECT_VARIABLE_BOOTSTRAP BIT0
-#define OC_BOOT_PROTECT_VARIABLE_NAMESPACE BIT1
 
 //
 // Variable used to report OpenCore version in the following format:
@@ -79,6 +78,22 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 // Variable used to mark blacklisted RTC values.
 //
 #define OC_RTC_BLACKLIST_VARIABLE_NAME       L"rtc-blacklist"
+
+//
+// Boot prefix used instead of normal Boot in OC_VENDOR_VARIABLE_GUID
+//
+#define OC_VENDOR_BOOT_VARIABLE_PREFIX       L"OCBt"
+
+//
+// BootOrder variable name for OC_VENDOR_VARIABLE_GUID
+//
+#define OC_VENDOR_BOOT_ORDER_VARIABLE_NAME   OC_VENDOR_BOOT_VARIABLE_PREFIX L"Order"
+
+
+//
+// BootNext variable name for OC_VENDOR_VARIABLE_GUID
+//
+#define OC_VENDOR_BOOT_NEXT_VARIABLE_NAME   OC_VENDOR_BOOT_VARIABLE_PREFIX L"Next"
 
 //
 // 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102

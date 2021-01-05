@@ -134,7 +134,7 @@ OcPlatformUpdateDataHub (
     //
     Data.PlatformName = MacInfo->DataHub.PlatformName;
     Data.SystemProductName = MacInfo->DataHub.SystemProductName;
-  
+
     if (OC_BLOB_GET (&Config->PlatformInfo.Generic.SystemSerialNumber)[0] != '\0') {
       Data.SystemSerialNumber = OC_BLOB_GET (&Config->PlatformInfo.Generic.SystemSerialNumber);
     }
@@ -174,8 +174,13 @@ OcPlatformUpdateSmbios (
 {
   EFI_STATUS       Status;
   OC_SMBIOS_DATA   Data;
+  UINT32           PlatformFeature;
   EFI_GUID         Uuid;
   UINT8            SmcVersion[APPLE_SMBIOS_SMC_VERSION_SIZE];
+  CONST CHAR8      *SystemMemoryStatus;
+  UINT16           Index;
+
+  OC_PLATFORM_MEMORY_DEVICE_ENTRY *MemoryEntry;
 
   ZeroMem (&Data, sizeof (Data));
 
@@ -271,10 +276,6 @@ OcPlatformUpdateSmbios (
       Data.ChassisAssetTag = OC_BLOB_GET (&Config->PlatformInfo.Smbios.ChassisAssetTag);
     }
 
-    if (Config->PlatformInfo.Smbios.MemoryFormFactor != 0) {
-      Data.MemoryFormFactor = &Config->PlatformInfo.Smbios.MemoryFormFactor;
-    }
-
     Data.FirmwareFeatures     = Config->PlatformInfo.Smbios.FirmwareFeatures;
     Data.FirmwareFeaturesMask = Config->PlatformInfo.Smbios.FirmwareFeaturesMask;
 
@@ -345,12 +346,77 @@ OcPlatformUpdateSmbios (
       Data.FirmwareFeaturesMask |= FW_FEATURE_SUPPORTS_CSM_LEGACY_MODE | FW_FEATURE_SUPPORTS_UEFI_WINDOWS_BOOT;
     }
 
-    Data.ProcessorType        = NULL;
-    Data.PlatformFeature      = MacInfo->Smbios.PlatformFeature;
+    //
+    // Permit overriding the CPU type for those that want it.
+    //
+    if (Config->PlatformInfo.Generic.ProcessorType != 0) {
+      Data.ProcessorType = &Config->PlatformInfo.Generic.ProcessorType;
+    }
+
+    Data.PlatformFeature = MacInfo->Smbios.PlatformFeature;
+    if (Data.PlatformFeature != NULL) {
+      PlatformFeature = *Data.PlatformFeature;
+    } else {
+      PlatformFeature = 0;
+    }
+
+    if (OC_BLOB_GET (&Config->PlatformInfo.Generic.SystemMemoryStatus)[0] != '\0') {
+      SystemMemoryStatus = OC_BLOB_GET (&Config->PlatformInfo.Generic.SystemMemoryStatus);
+
+      if (AsciiStrCmp (SystemMemoryStatus, "Upgradable") == 0) {
+        PlatformFeature &= ~PT_FEATURE_HAS_SOLDERED_SYSTEM_MEMORY;
+        Data.PlatformFeature = &PlatformFeature;
+      } else if (AsciiStrCmp (SystemMemoryStatus, "Soldered") == 0) {
+        PlatformFeature |= PT_FEATURE_HAS_SOLDERED_SYSTEM_MEMORY;
+        Data.PlatformFeature = &PlatformFeature;
+      } else if (AsciiStrCmp (SystemMemoryStatus, "Auto") != 0) {
+        DEBUG ((DEBUG_WARN, "OC: Invalid SMBIOS system memory status %a\n", SystemMemoryStatus));
+      }
+    }
 
     if (MacInfo->DataHub.SmcRevision != NULL) {
       OcSmbiosGetSmcVersion (MacInfo->DataHub.SmcRevision, SmcVersion);
       Data.SmcVersion           = SmcVersion;
+    }
+  }
+
+  //
+  // Inject custom memory info.
+  //
+  if (Config->PlatformInfo.CustomMemory) {
+    if (Config->PlatformInfo.Memory.Devices.Count <= MAX_UINT16) {
+      Data.MemoryDevicesCount   = (UINT16) Config->PlatformInfo.Memory.Devices.Count;
+    } else {
+      Data.MemoryDevicesCount   = MAX_UINT16;
+    }
+    
+    Data.MemoryErrorCorrection  = &Config->PlatformInfo.Memory.ErrorCorrection;
+    Data.MemoryMaxCapacity      = &Config->PlatformInfo.Memory.MaxCapacity;
+    Data.MemoryDataWidth        = &Config->PlatformInfo.Memory.DataWidth;
+    Data.MemoryFormFactor       = &Config->PlatformInfo.Memory.FormFactor;
+    Data.MemoryTotalWidth       = &Config->PlatformInfo.Memory.TotalWidth;
+    Data.MemoryType             = &Config->PlatformInfo.Memory.Type;
+    Data.MemoryTypeDetail       = &Config->PlatformInfo.Memory.TypeDetail;
+
+    if (Data.MemoryDevicesCount) {
+      Data.MemoryDevices = AllocateZeroPool (sizeof (OC_SMBIOS_MEMORY_DEVICE_DATA) * Data.MemoryDevicesCount);
+      if (Data.MemoryDevices == NULL) {
+        DEBUG ((DEBUG_WARN, "OC: Failed to allocate custom memory devices\n"));
+        Data.MemoryDevicesCount = 0;
+      }
+
+      for (Index = 0; Index < Data.MemoryDevicesCount; Index++) {
+        MemoryEntry = Config->PlatformInfo.Memory.Devices.Values[Index];
+
+        Data.MemoryDevices[Index].AssetTag      = OC_BLOB_GET (&MemoryEntry->AssetTag);
+        Data.MemoryDevices[Index].BankLocator   = OC_BLOB_GET (&MemoryEntry->BankLocator);
+        Data.MemoryDevices[Index].DeviceLocator = OC_BLOB_GET (&MemoryEntry->DeviceLocator);
+        Data.MemoryDevices[Index].Manufacturer  = OC_BLOB_GET (&MemoryEntry->Manufacturer);
+        Data.MemoryDevices[Index].PartNumber    = OC_BLOB_GET (&MemoryEntry->PartNumber);
+        Data.MemoryDevices[Index].SerialNumber  = OC_BLOB_GET (&MemoryEntry->SerialNumber);
+        Data.MemoryDevices[Index].Size          = &MemoryEntry->Size;
+        Data.MemoryDevices[Index].Speed         = &MemoryEntry->Speed;
+      }
     }
   }
 
@@ -362,9 +428,13 @@ OcPlatformUpdateSmbios (
     }
   }
 
-  Status = OcSmbiosCreate (SmbiosTable, &Data, UpdateMode, CpuInfo);
+  Status = OcSmbiosCreate (SmbiosTable, &Data, UpdateMode, CpuInfo, Config->PlatformInfo.CustomMemory);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_WARN, "OC: Failed to update SMBIOS - %r\n", Status));
+  }
+
+  if (Data.MemoryDevices != NULL) {
+    FreePool (Data.MemoryDevices);
   }
 }
 
@@ -382,6 +452,8 @@ OcPlatformUpdateNvram (
   UINTN        MlbSize;
   CONST  UINT8 *Rom;
   UINTN        RomSize;
+  CONST CHAR8  *AsciiUuid;
+  EFI_GUID     Uuid;
   UINT64       ExFeatures;
   UINT64       ExFeaturesMask;
   UINT32       Features;
@@ -394,6 +466,7 @@ OcPlatformUpdateNvram (
     MlbSize        = Config->PlatformInfo.Nvram.Mlb.Size - 1;
     Rom            = &Config->PlatformInfo.Nvram.Rom[0];
     RomSize        = sizeof (Config->PlatformInfo.Nvram.Rom);
+    AsciiUuid      = OC_BLOB_GET (&Config->PlatformInfo.Nvram.SystemUuid);
     ExFeatures     = Config->PlatformInfo.Nvram.FirmwareFeatures;
     ExFeaturesMask = Config->PlatformInfo.Nvram.FirmwareFeaturesMask;
   } else {
@@ -403,6 +476,7 @@ OcPlatformUpdateNvram (
     MlbSize        = Config->PlatformInfo.Generic.Mlb.Size - 1;
     Rom            = &Config->PlatformInfo.Generic.Rom[0];
     RomSize        = sizeof (Config->PlatformInfo.Generic.Rom);
+    AsciiUuid      = OC_BLOB_GET (&Config->PlatformInfo.Generic.SystemUuid);
     ExFeatures     = MacInfo->Smbios.FirmwareFeatures;
     ExFeaturesMask = MacInfo->Smbios.FirmwareFeaturesMask;
 
@@ -495,6 +569,27 @@ OcPlatformUpdateNvram (
       EFI_ERROR (Status) ? DEBUG_WARN : DEBUG_INFO,
       "OC: Setting MLB %a - %r\n",
       Mlb,
+      Status
+      ));
+  }
+
+  //
+  // system-id is only visible in BS scope and may be used by EfiBoot
+  // in macOS 11.0 to generate x86legacy ApECID from the first 8 bytes.
+  //
+  Status = AsciiStrToGuid (AsciiUuid, &Uuid);
+  if (!EFI_ERROR (Status)) {
+    Status = gRT->SetVariable (
+      L"system-id",
+      &gAppleVendorVariableGuid,
+      EFI_VARIABLE_BOOTSERVICE_ACCESS,
+      sizeof (Uuid),
+      &Uuid
+      );
+    DEBUG ((
+      EFI_ERROR (Status) ? DEBUG_WARN : DEBUG_INFO,
+      "OC: Setting system-id %g - %r\n",
+      &Uuid,
       Status
       ));
   }
