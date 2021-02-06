@@ -15,6 +15,8 @@
 #ifndef OC_AFTER_BOOT_COMPAT_LIB_H
 #define OC_AFTER_BOOT_COMPAT_LIB_H
 
+#include <Uefi/UefiSpec.h> // for EFI_EVENT_NOTIFY
+
 /**
   Apple Boot Compatibility layer configuration.
 **/

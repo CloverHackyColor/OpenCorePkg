@@ -89,15 +89,15 @@ FindPattern (
 
   ASSERT (DataOff >= 0);
 
-  if (PatternSize == 0 || DataSize == 0 || (DataOff < 0) || (UINT32)DataOff >= DataSize || DataSize - DataOff < PatternSize) {
+  if (PatternSize == 0 || DataSize == 0 || (DataOff < 0) || (UINT32)DataOff >= DataSize || DataSize - (UINT32)DataOff < PatternSize) {
     return -1;
   }
 
-  while (DataOff + PatternSize < DataSize) {
+  while ((UINT32)DataOff + PatternSize < DataSize) {
     Matches = TRUE;
     for (Index = 0; Index < PatternSize; ++Index) {
-      if ((PatternMask == NULL && Data[DataOff + Index] != Pattern[Index])
-      || (PatternMask != NULL && (Data[DataOff + Index] & PatternMask[Index]) != Pattern[Index])) {
+      if ((PatternMask == NULL && Data[(UINT32)DataOff + Index] != Pattern[Index])
+      || (PatternMask != NULL && (Data[(UINT32)DataOff + Index] & PatternMask[Index]) != Pattern[Index])) {
         Matches = FALSE;
         break;
       }
@@ -106,6 +106,7 @@ FindPattern (
     if (Matches) {
       return DataOff;
     }
+    // Theoretically, DataOff can overflow because DataSize is UINT32.
     ++DataOff;
   }
 
@@ -169,7 +170,7 @@ ApplyPatch (
         }
         AsciiSPrint(buf, length, "%a(", buf );
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
-          AsciiSPrint(buf, length, "%a%02X", buf, Data[DataOff + Index]);
+          AsciiSPrint(buf, length, "%a%02X", buf, Data[(UINT32)DataOff + Index]); // Safe cast, DataOff is >= 0
         }
         AsciiSPrint(buf, length, "%a)", buf );
       }
@@ -179,7 +180,7 @@ ApplyPatch (
         CopyMem (&Data[DataOff], (void*)Replace, PatternSize);
       } else {
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
-          Data[DataOff + Index] = (Data[DataOff + Index] & ~ReplaceMask[Index]) | (Replace[Index] & ReplaceMask[Index]);
+          Data[(UINT32)DataOff + Index] = (Data[(UINT32)DataOff + Index] & ~ReplaceMask[Index]) | (Replace[Index] & ReplaceMask[Index]); // Safe cast, DataOff is >= 0
         }
       }
 
@@ -193,7 +194,7 @@ ApplyPatch (
         }
         AsciiSPrint(buf, length, "%a(", buf );
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
-          AsciiSPrint(buf, length, "%a%02X", buf, Data[DataOff + Index]);
+          AsciiSPrint(buf, length, "%a%02X", buf, Data[(UINT32)DataOff + Index]); // Safe cast, DataOff is >= 0
         }
         AsciiSPrint(buf, length, "%a)", buf );
       }
