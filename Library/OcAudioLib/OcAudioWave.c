@@ -76,7 +76,7 @@ InternalGetRawData (
   //
   // Find format and data chunks.
   //
-  while (BufferEnd - BufferPtr >= sizeof (RIFF_CHUNK)) {
+  while ((UINTN)(BufferEnd - BufferPtr) >= sizeof (RIFF_CHUNK)) {
     TmpChunk = (RIFF_CHUNK *) BufferPtr;
 
     //

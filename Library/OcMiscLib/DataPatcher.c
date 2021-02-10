@@ -43,7 +43,7 @@ FindPattern (
 
   UINTN result = FindMemMask(Data + DataOff, DataSize, Pattern, PatternSize, PatternMask, PatternSize);
   if (result != MAX_UINTN) {
-    if ( result < MAX_INT32 - DataOff ) {
+    if ( result < (UINT32)(MAX_INT32 - DataOff) ) { // safe cast, MAX_INT32 - DataOff (which is >= 0) is always >= 0
       return (INT32)(result + DataOff);
     }
   }
