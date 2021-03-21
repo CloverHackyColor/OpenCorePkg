@@ -1285,7 +1285,7 @@ list of checks to do first. Prior to starting please ensure that you have:
   firmware settings if present. Consider
 \href{https://github.com/LongSoft/UEFITool/blob/master/UEFIPatch/patches.txt}{patching it}
   if you have enough skills and no option is available. See
-\hyperref[kernelpropsquirks]{VerifyMsrE2}
+\hyperref[kernelpropsquirks]{ControlMsrE2}
   notes for more details.
 \item \texttt{CSM} (Compatibility Support Module) disabled in firmware settings
   if present. You may need to flash GOP ROM on NVIDIA 6xx/AMD 2xx or older. Use
@@ -2282,7 +2282,7 @@ blocking.
   kernel panic, when it is locked from writing.
 
   Certain firmwares lock \texttt{PKG\_CST\_CONFIG\_CONTROL} MSR register. To check its
-  state one can use bundled \texttt{VerifyMsrE2} tool. Select firmwares have this
+  state one can use bundled \texttt{ControlMsrE2} tool. Select firmwares have this
   register locked on some cores only.
 
   As modern firmwares provide \texttt{CFG Lock} setting, which allows configuring
@@ -5151,7 +5151,7 @@ Some of the known tools are listed below (builtin tools are marked with \textbf{
   Defaults to \texttt{ColdReset}. \\
 \href{https://github.com/acidanthera/OpenCorePkg}{\texttt{RtcRw}}\textbf{*}
 & Utility to read and write RTC (CMOS) memory. \\
-\href{https://github.com/acidanthera/OpenCorePkg}{\texttt{VerifyMsrE2}}\textbf{*}
+\href{https://github.com/acidanthera/OpenCorePkg}{\texttt{ControlMsrE2}}\textbf{*}
 & Check \texttt{CFG Lock} (MSR \texttt{0xE2} write protection) consistency across all cores.
 \end{tabular}
 
