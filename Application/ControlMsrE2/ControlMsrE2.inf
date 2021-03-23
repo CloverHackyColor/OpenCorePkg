@@ -33,6 +33,7 @@
 #
 
 [Sources]
+  ControlMsrE2.h
   ControlMsrE2.c
   VerifyMsrE2.c
   ControlMsrE2UI.c
