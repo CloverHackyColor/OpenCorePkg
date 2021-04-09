@@ -114,7 +114,7 @@ OcMain (
     return;
   }
 //#ifndef CLOVER_BUILD
-  // it's double Clover calculation so it is better to make copy
+  //TODO: it's double Clover calculation so it is better to make copy
   // mOpenCoreCpuInfo <- gCPUStructure
   OcCpuScanProcessor (&mOpenCoreCpuInfo);
 //#endif
@@ -131,9 +131,10 @@ OcMain (
 
   DEBUG ((DEBUG_INFO, "OC: OcLoadPlatformSupport...\n"));
   OcLoadPlatformSupport (&mOpenCoreConfiguration, &mOpenCoreCpuInfo);
-#endif
+
   DEBUG ((DEBUG_INFO, "OC: OcLoadDevPropsSupport...\n"));
   OcLoadDevPropsSupport (&mOpenCoreConfiguration);
+#endif
   DEBUG ((DEBUG_INFO, "OC: OcMiscLateInit...\n"));
   OcMiscLateInit (Storage, &mOpenCoreConfiguration);
   DEBUG ((DEBUG_INFO, "OC: OcLoadKernelSupport...\n"));
