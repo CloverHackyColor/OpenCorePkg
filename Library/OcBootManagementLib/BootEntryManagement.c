@@ -1897,7 +1897,16 @@ OcEnumerateEntries (
   ASSERT (BootContext->DefaultEntry == NULL || BootContext->DefaultEntry->EntryIndex > 0);
   return Entries;
 }
-
+//called from OcBootManagementLib.c:OcRunBootPicker (
+//                                        IN OC_PICKER_CONTEXT  *Context
+//)
+/*
+Status = OcLoadBootEntry (
+                          Context,
+                          Chosen,
+                          gImageHandle
+                          );
+*/
 EFI_STATUS
 OcLoadBootEntry (
   IN  OC_PICKER_CONTEXT  *Context,

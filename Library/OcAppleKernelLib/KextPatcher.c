@@ -128,6 +128,9 @@ PatcherGetSymbolAddress (
   UINT64         SymbolAddress;
   UINT32         Offset;
   UINT32         Index;
+  BOOLEAN        FullName = FALSE;
+  
+  FullName = (Name[0] == '_' && Name[1] == '_');
 
   Index  = 0;
   Offset = 0;
@@ -163,7 +166,9 @@ PatcherGetSymbolAddress (
 
     SymbolName = MachoGetSymbolName64 (&Context->MachContext, Symbol);
 //    if (SymbolName != NULL && AsciiStrCmp (Name, SymbolName) == 0) {
-    if (SymbolName != NULL && AsciiStrStr (SymbolName, Name) != NULL) {
+    if (SymbolName != NULL &&
+        (( FullName && AsciiStrCmp (Name, SymbolName) == 0) ||
+         (!FullName && AsciiStrStr (SymbolName, Name) != NULL))) {
       //
       // Once we have a symbol, get its ondisk offset.
       //

@@ -101,7 +101,9 @@ OcMain (
   )
 {
   EFI_STATUS                Status;
+#ifndef CLOVER_BUILD
   OC_PRIVILEGE_CONTEXT      *Privilege;
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: OcMiscEarlyInit...\n"));
   Status = OcMiscEarlyInit (
@@ -146,9 +148,13 @@ OcMain (
     mOpenCorePrivilege.Salt         = OC_BLOB_GET (&mOpenCoreConfiguration.Misc.Security.PasswordSalt);
     mOpenCorePrivilege.SaltSize     = mOpenCoreConfiguration.Misc.Security.PasswordSalt.Size;
 
-    Privilege = &mOpenCorePrivilege;
+    #ifndef CLOVER_BUILD
+      Privilege = &mOpenCorePrivilege;
+    #endif
   } else {
-    Privilege = NULL;
+    #ifndef CLOVER_BUILD
+      Privilege = NULL;
+    #endif
   }
 
   DEBUG ((DEBUG_INFO, "OC: All green, starting boot management...\n"));
@@ -186,14 +192,14 @@ OcMain (
 //  }
 
 
-
+//Slice - to start recovery we want it
 #ifndef CLOVER_BUILD
   OcMiscBoot (
     &mOpenCoreStorage,
     &mOpenCoreConfiguration,
     Privilege,
     OcStartImage_2,
-    mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
+    FALSE, //mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
     mLoadHandle
     );
 #endif

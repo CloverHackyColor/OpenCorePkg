@@ -171,14 +171,14 @@ ParseSerializedDict (
       }
     }
 
-    if (Index2 == DictSize) {
-      DEBUG ((
-        DEBUG_WARN,
-        "OCS: Missing key %a, context <%a>!\n",
-        Info->Dict.Schema[Index].Name,
-        Context
-        ));
-    }
+//    if (Index2 == DictSize) {
+//      DEBUG ((
+//        DEBUG_WARN,
+//        "OCS: Missing key %a, context <%a>!\n",
+//        Info->Dict.Schema[Index].Name,
+//        Context
+//        ));
+//    }
   }
 
   DEBUG_CODE_END ();

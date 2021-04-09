@@ -243,7 +243,7 @@ OpenCore Changelog
 - Fixed 5 second delay when exiting Shell to OpenCore Picker
 - Added default boot option update and `AllowSetDefault` `Security` option
 - Fixed CPU package detection on configurations with multiple CPUs
-- Bundled CleanNvram and VerifyMsrE2 tools for debugging
+- Bundled CleanNvram and ControlMsrE2 tools for debugging
 - Added screen clearing after choosing boot entry in picker
 - Added `WriteFlash` NVRAM option to enable writing variables in `Add`
 - Added `LegacyOverwrite` NVRAM option to allow overwriting variables by nvram.plist
