@@ -745,7 +745,7 @@ OcCpuScanProcessor (
 
     Cpu->ExtFeatures = LShiftU64 (Cpu->CpuidExtSigEcx.Uint32, 32) | Cpu->CpuidExtSigEdx.Uint32;
   }
-
+#ifndef CLOVER_BUILD
   DEBUG ((DEBUG_INFO, "OCCPU: Found %a\n", Cpu->BrandString));
 
   DEBUG ((
@@ -760,7 +760,7 @@ OcCpuScanProcessor (
     Cpu->ExtFamily,
     Cpu->MicrocodeRevision
     ));
-
+#endif
   Cpu->CPUFrequencyFromVMT = InternalCalculateVMTFrequency (
     &Cpu->FSBFrequency,
     &Cpu->Hypervisor
@@ -821,7 +821,7 @@ OcCpuScanProcessor (
   } else if (Cpu->ExternalClock >= 265 && Cpu->ExternalClock <= 267) {
     Cpu->ExternalClock = 266;
   }
-
+#ifndef CLOVER_BUILD
   DEBUG ((
     DEBUG_INFO,
     "OCCPU: CPUFrequencyFromTSC %11LuHz %5LuMHz\n",
@@ -850,6 +850,7 @@ OcCpuScanProcessor (
     Cpu->CoreCount,
     Cpu->ThreadCount
     ));
+#endif
 }
 
 VOID
