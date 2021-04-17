@@ -115,11 +115,11 @@ OcMain (
   if (EFI_ERROR (Status)) {
     return;
   }
-//#ifndef CLOVER_BUILD
+#ifndef CLOVER_BUILD
   //TODO: it's double Clover calculation so it is better to make copy
   // mOpenCoreCpuInfo <- gCPUStructure
   OcCpuScanProcessor (&mOpenCoreCpuInfo);
-//#endif
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: OcLoadNvramSupport...\n"));
   OcLoadNvramSupport (Storage, &mOpenCoreConfiguration);
