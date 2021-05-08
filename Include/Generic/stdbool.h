@@ -37,7 +37,9 @@
 #define	true	1
 
 #define	bool	_Bool
-#if __STDC_VERSION__ < 199901L && __GNUC__ < 3
+// 2021-05 Jief : maybe some old visual studio needs it, but visual studio 2017 doesn't.
+//                not testing with old VS so I'm disabling it for all Microsoft version. Can be adjusted, of course.
+#if __STDC_VERSION__ < 199901L && __GNUC__ < 3 && !defined(_MSC_VER)
 typedef	int	_Bool;
 #endif
 
