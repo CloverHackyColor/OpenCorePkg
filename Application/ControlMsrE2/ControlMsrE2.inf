@@ -38,7 +38,8 @@
   VerifyMsrE2.c
   ControlMsrE2UI.c
   ControlMsrE2Hii.c
-
+  ../../Library/OcMiscLib/ProtocolSupport.c
+  
 [Packages]
   CloverPkg.dec
   MdePkg/MdePkg.dec
@@ -51,8 +52,8 @@
   BaseMemoryLib
   DebugLib
   MemoryAllocationLib
-  OcMemoryLib
-  OcMiscLib
+#  OcMemoryLib
+#  OcMiscLib
 #  OcConsoleControlEntryModeGenericLib
   UefiApplicationEntryPoint
   UefiLib
@@ -60,11 +61,14 @@
   UefiHiiServicesLib
   PcdLib
   IoLib
+  OcStringLib
 
 [Guids]
-gEfiHiiPlatformSetupFormsetGuid
+  gEfiHiiPlatformSetupFormsetGuid
 
 [Protocols]
-gEfiMpServiceProtocolGuid                 ## CONSUMES
-gEfiHiiDatabaseProtocolGuid
+  gEfiMpServiceProtocolGuid                 ## CONSUMES
+  gEfiHiiDatabaseProtocolGuid
+  gEfiLoadedImageProtocolGuid
+  gEfiShellParametersProtocolGuid
 
