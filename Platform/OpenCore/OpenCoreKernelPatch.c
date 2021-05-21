@@ -220,7 +220,7 @@ OcKernelApplyPatches (
       ));
   }
 
-//  if (!IsKernelPatch) {
+  if (!IsKernelPatch) {
     if (Config->Kernel.Quirks.AppleCpuPmCfgLock) {
       OcKernelApplyQuirk (KernelQuirkAppleCpuPmCfgLock, CacheType, DarwinVersion, Context, NULL);
     }
@@ -259,7 +259,7 @@ OcKernelApplyPatches (
     if (Config->Kernel.Quirks.DummyPowerManagement) {
       OcKernelApplyQuirk (KernelQuirkDummyPowerManagement, CacheType, DarwinVersion, Context, NULL);
     }
-//  } else {
+  } else {
     if (Config->Kernel.Quirks.AppleXcpmCfgLock) {
       OcKernelApplyQuirk (KernelQuirkAppleXcpmCfgLock, CacheType, DarwinVersion, NULL, &KernelPatcher);
     }
@@ -287,7 +287,6 @@ OcKernelApplyPatches (
     if (Config->Kernel.Quirks.DisableLinkeditJettison) {
       OcKernelApplyQuirk (KernelQuirkSegmentJettison, CacheType, DarwinVersion, NULL, &KernelPatcher);     
     }
-//  }
   
   if (Config->Kernel.Emulate.Cpuid1Data[0] != 0
       || Config->Kernel.Emulate.Cpuid1Data[1] != 0
@@ -299,6 +298,7 @@ OcKernelApplyPatches (
                       Config->Kernel.Emulate.Cpuid1Data,
                       Config->Kernel.Emulate.Cpuid1Mask
                       );
+  }
   }
 
 }
