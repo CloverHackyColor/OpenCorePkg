@@ -1449,8 +1449,9 @@ PatchKernelCpuId (
   }
 
   Record = CpuidSetInfo;
-  
+  DEBUG ((DEBUG_INFO, "OCAK: Use FakeCPUID=0x%x\n", Data[0]));
   if (KernelCPUIDPatch(Record, Data[0])) {
+    DEBUG ((DEBUG_INFO, "OCAK: FakeCPUID by Clover success\n"));
     return EFI_SUCCESS;
   }
   
@@ -1479,6 +1480,7 @@ PatchKernelCpuId (
   if (!FoundReleaseKernel) {
     Status = PatchKernelCpuIdLegacy (Patcher, CpuInfo, Data, DataMask, CpuidSetInfo);
     if (!EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_INFO, "OCAK: Fake CpuId Legacy success\n"));
       return EFI_SUCCESS;
     }
   }

@@ -220,7 +220,7 @@ OcKernelApplyPatches (
       ));
   }
 
-  if (!IsKernelPatch) {
+//  if (!IsKernelPatch) {
     if (Config->Kernel.Quirks.AppleCpuPmCfgLock) {
       OcKernelApplyQuirk (KernelQuirkAppleCpuPmCfgLock, CacheType, DarwinVersion, Context, NULL);
     }
@@ -259,7 +259,7 @@ OcKernelApplyPatches (
     if (Config->Kernel.Quirks.DummyPowerManagement) {
       OcKernelApplyQuirk (KernelQuirkDummyPowerManagement, CacheType, DarwinVersion, Context, NULL);
     }
-  } else {
+//  } else {
     if (Config->Kernel.Quirks.AppleXcpmCfgLock) {
       OcKernelApplyQuirk (KernelQuirkAppleXcpmCfgLock, CacheType, DarwinVersion, NULL, &KernelPatcher);
     }
@@ -276,18 +276,6 @@ OcKernelApplyPatches (
       OcKernelApplyQuirk (KernelQuirkPanicNoKextDump, CacheType, DarwinVersion, NULL, &KernelPatcher);
     }
 
-    if (Config->Kernel.Emulate.Cpuid1Data[0] != 0
-      || Config->Kernel.Emulate.Cpuid1Data[1] != 0
-      || Config->Kernel.Emulate.Cpuid1Data[2] != 0
-      || Config->Kernel.Emulate.Cpuid1Data[3] != 0) {
-      PatchKernelCpuId (
-        &KernelPatcher,
-        CpuInfo,
-        Config->Kernel.Emulate.Cpuid1Data,
-        Config->Kernel.Emulate.Cpuid1Mask
-        );
-    }
-
     if (Config->Kernel.Quirks.LapicKernelPanic) {
       OcKernelApplyQuirk (KernelQuirkLapicKernelPanic, CacheType, DarwinVersion, NULL, &KernelPatcher);
     }
@@ -299,7 +287,20 @@ OcKernelApplyPatches (
     if (Config->Kernel.Quirks.DisableLinkeditJettison) {
       OcKernelApplyQuirk (KernelQuirkSegmentJettison, CacheType, DarwinVersion, NULL, &KernelPatcher);     
     }
+//  }
+  
+  if (Config->Kernel.Emulate.Cpuid1Data[0] != 0
+      || Config->Kernel.Emulate.Cpuid1Data[1] != 0
+      || Config->Kernel.Emulate.Cpuid1Data[2] != 0
+      || Config->Kernel.Emulate.Cpuid1Data[3] != 0) {
+    PatchKernelCpuId (
+                      &KernelPatcher,
+                      CpuInfo,
+                      Config->Kernel.Emulate.Cpuid1Data,
+                      Config->Kernel.Emulate.Cpuid1Mask
+                      );
   }
+
 }
 
 VOID
