@@ -1127,7 +1127,8 @@ OcKernelFileOpen (
 
 
 #ifdef CLOVER_BUILD
-  if ( StrStr(FileName, L".efi.log") == NULL ) {
+  extern int g_OpeningLogFile;
+  if ( !g_OpeningLogFile ) {
 #endif
     DEBUG ((
       DEBUG_VERBOSE,
