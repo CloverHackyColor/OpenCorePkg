@@ -467,18 +467,17 @@ OcMiscGetVersionString (
 }
 
 EFI_STATUS
-OcMiscEarlyInit (
+ClOcReadConfigurationFile(
   IN  OC_STORAGE_CONTEXT *Storage,
-  OUT OC_GLOBAL_CONFIG   *Config,
-  IN  OC_RSA_PUBLIC_KEY  *VaultKey  OPTIONAL
-  )
+  IN  CONST CHAR16* configPath,
+  OUT OC_GLOBAL_CONFIG   *Config
+ )
 {
   EFI_STATUS                Status;
   CHAR8                     *ConfigData;
   UINT32                    ConfigDataSize;
-  EFI_TIME                  BootTime;
-  CONST CHAR8               *AsciiVault;
-  OCS_VAULT_MODE            Vault;
+
+  SetMem(Config, sizeof(*Config), 0);
 
   ConfigData = OcStorageReadFileUnicode (
     Storage,
@@ -502,6 +501,25 @@ OcMiscEarlyInit (
     CpuDeadLoop ();
     return EFI_UNSUPPORTED; ///< Should be unreachable.
   }
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
+OcMiscEarlyInit (
+  IN  OC_STORAGE_CONTEXT *Storage,
+  OUT OC_GLOBAL_CONFIG   *Config,
+  IN  OC_RSA_PUBLIC_KEY  *VaultKey  OPTIONAL
+  )
+{
+  EFI_STATUS                Status;
+  EFI_TIME                  BootTime;
+  CONST CHAR8               *AsciiVault;
+  OCS_VAULT_MODE            Vault;
+
+#ifndef CLOVER_BUILD
+  Status = ClOcReadConfigurationFile(Storage, OPEN_CORE_CONFIG_PATH, Config);
+  if (EFI_ERROR (Status)) return EFI_UNSUPPORTED;
+#endif
 
   AsciiVault = OC_BLOB_GET (&Config->Misc.Security.Vault);
   if (AsciiStrCmp (AsciiVault, "Secure") == 0) {
@@ -951,7 +969,39 @@ OcMiscBoot (
     }
   }
 
-  Status = OcRunBootPicker (Context);
+
+//  CHAR16* UnicodeDevicePath = NULL; (void)UnicodeDevicePath;
+//
+//  UINTN                   HandleCount = 0;
+//  EFI_HANDLE              *Handles = NULL;
+//  Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &HandleCount, &Handles);
+//  UINTN HandleIndex = 0;
+//  for (HandleIndex = 0; HandleIndex < HandleCount; HandleIndex++) {
+//    EFI_DEVICE_PATH_PROTOCOL* DevicePath = DevicePathFromHandle(Handles[HandleIndex]);
+//    UnicodeDevicePath = ConvertDevicePathToText(DevicePath, FALSE, FALSE);
+//    if ( StrCmp(L"PciRoot(0x0)/Pci(0x11,0x0)/Pci(0x5,0x0)/Sata(0x1,0x0,0x0)/HD(2,GPT,25B8F381-DC5C-40C4-BCF2-9B22412964BE,0x64028,0x4F9BFB0)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842,B1F3810AD9513533B3E3169C3640360D)", UnicodeDevicePath) == 0 ) break;
+//  }
+//  if ( HandleIndex < HandleCount )
+//  {
+//    EFI_DEVICE_PATH_PROTOCOL* jfkImagePath = FileDevicePath(Handles[HandleIndex], L"\\System\\Library\\CoreServices\\boot.efi");
+//    UnicodeDevicePath = ConvertDevicePathToText (jfkImagePath, FALSE, FALSE);
+//
+//    EFI_HANDLE EntryHandle = NULL;
+//    Status = gBS->LoadImage (
+//      FALSE,
+//      gImageHandle,
+//      jfkImagePath,
+//      NULL,
+//      0,
+//      &EntryHandle
+//      );
+//  //  OcLoadBootEntry (Context, Context->
+//    Status = gBS->StartImage (EntryHandle, 0, NULL);
+//  }else{
+    Status = OcRunBootPicker (Context);
+//  }
+
+
 
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "OC: Failed to show boot menu!\n"));

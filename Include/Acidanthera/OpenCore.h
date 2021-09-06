@@ -46,13 +46,13 @@
 #error "Unknown target definition"
 #endif
 
-#define OPEN_CORE_ROOT_PATH        L"EFI\\OC"
+#define OPEN_CORE_ROOT_PATH        L"EFI\\CLOVER"
 
 #define OPEN_CORE_DRIVER_PATH      L"OpenCore.efi"
 
 #define OPEN_CORE_BOOTSTRAP_PATH   L"Bootstrap\\Bootstrap.efi"
 
-#define OPEN_CORE_CONFIG_PATH      L"config.plist"
+#define OPEN_CORE_CONFIG_PATH      L"config-oc.plist"
 
 #define OPEN_CORE_LOG_PREFIX_PATH  L"opencore"
 
@@ -60,9 +60,13 @@
 
 #define OPEN_CORE_ACPI_PATH        L"ACPI\\"
 
-#define OPEN_CORE_UEFI_DRIVER_PATH L"Drivers\\"
+#define OPEN_CORE_UEFI_DRIVER_PATH L"Drivers\\UEFI\\"
 
+#ifdef CLOVER_BUILD
+#define OPEN_CORE_KEXT_PATH        L""
+#else
 #define OPEN_CORE_KEXT_PATH        L"Kexts\\"
+#endif
 
 #define OPEN_CORE_TOOL_PATH        L"Tools\\"
 

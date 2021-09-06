@@ -124,7 +124,7 @@ UefiEntrypoint (
     NULL
     );
 
-  ASSERT_EFI_ERROR (Status);
+//  ASSERT_EFI_ERROR (Status);
 
-  return EFI_SUCCESS;
+  return Status;
 }

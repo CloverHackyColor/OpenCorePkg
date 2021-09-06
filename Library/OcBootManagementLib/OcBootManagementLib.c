@@ -491,7 +491,7 @@ OcShowSimplePasswordRequest (
   gRT->ResetSystem (EfiResetWarm, EFI_SUCCESS, 0, NULL);
   return EFI_ACCESS_DENIED;
 }
-
+//Context->PickerCommand == OcPickerBootAppleRecovery
 EFI_STATUS
 OcRunBootPicker (
   IN OC_PICKER_CONTEXT  *Context

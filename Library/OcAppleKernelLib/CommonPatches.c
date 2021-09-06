@@ -23,6 +23,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/OcStringLib.h>
 #include <Library/UefiLib.h>
 
+int KernelCPUIDPatch(UINT8* kernelData, UINT32 FakeCPUID);
+
 STATIC CONST UINT8 mMovEcxE2[] = {
   0xB9, 0xE2, 0x00, 0x00, 0x00 // mov ecx, 0E2h
 };
@@ -343,6 +345,9 @@ PatchAppleXcpmExtraMsrs (
   UINT32              Replacements;
 
   ASSERT (Patcher != NULL);
+  if (!Patcher) {
+    return EFI_INVALID_PARAMETER;
+  }
 
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_MOUNTAIN_LION_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping XcpmExtraMsrs on %u\n", KernelVersion));
@@ -470,6 +475,9 @@ PatchAppleXcpmForceBoost (
   UINT8   *Current;
 
   ASSERT (Patcher != NULL);
+  if (!Patcher) {
+    return EFI_INVALID_PARAMETER;
+  }
 
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_MOUNTAIN_LION_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping XcpmForceBoost on %u\n", KernelVersion));
@@ -1929,3 +1937,200 @@ KernelApplyQuirk (
 
   return gKernelQuirks[Name].PatchFunction (Patcher, KernelVersion);
 }
+
+//Slice - FakeCPUID substitution, (c)2014
+
+//procedure location
+STATIC UINT8 StrCpuid1_tigLeo[]  = {0xb9, 0x01, 0x00, 0x00, 0x00, 0x89, 0xc8, 0x0f, 0xa2};
+STATIC UINT8 StrCpuid1_snowLeo[] = {0xb8, 0x01, 0x00, 0x00, 0x00, 0x31, 0xdb, 0x89, 0xd9, 0x89, 0xda, 0x0f, 0xa2};
+STATIC UINT8 StrMsr8b[]          = {0xb9, 0x8b, 0x00, 0x00, 0x00, 0x0f, 0x32};
+
+// Tiger/Leopard/Snow Leopard
+/*
+ This patch searches
+ and eax, 0xf0   ||    and eax, 0x0f0000
+ shr eax, 0x04   ||    shr eax, 0x10
+ and replaces to
+ mov eax, FakeModel  | mov eax, FakeExt
+ */
+STATIC UINT8 TigLeoSLSearchModel[]  = {0x25, 0xf0, 0x00, 0x00, 0x00, 0xc1, 0xe8, 0x04};
+STATIC UINT8 TigLeoSLSearchExt[]    = {0x25, 0x00, 0x00, 0x0f, 0x00, 0xc1, 0xe8, 0x10};
+STATIC UINT8 TigLeoSLReplaceModel[] = {0xb8, 0x07, 0x00, 0x00, 0x00, 0x90, 0x90, 0x90};
+
+// Lion
+/*
+ This patch searches
+ mov ecx, eax
+ shr ecx, 0x04   ||  shr ecx, 0x10
+ and replaces to
+ mov ecx, FakeModel  || mov ecx, FakeExt
+ */
+STATIC UINT8 LionSearchModel[]  = {0x89, 0xc1, 0xc1, 0xe9, 0x04};
+STATIC UINT8 LionSearchExt[]    = {0x89, 0xc1, 0xc1, 0xe9, 0x10};
+STATIC UINT8 LionReplaceModel[] = {0xb9, 0x07, 0x00, 0x00, 0x00};
+
+// Mountain Lion/Mavericks
+/*
+ This patch searches
+ mov bl, al     ||   shr eax, 0x10
+ shr bl, 0x04   ||   and al,0x0f
+ and replaces to
+ mov ebx, FakeModel || mov eax, FakeExt
+ */
+STATIC UINT8 MLMavSearchModel[]   = {0x88, 0xc3, 0xc0, 0xeb, 0x04};
+STATIC UINT8 MLMavSearchExt[]     = {0xc1, 0xe8, 0x10, 0x24, 0x0f};
+STATIC UINT8 MLMavReplaceModel[]  = {0xbb, 0x0a, 0x00, 0x00, 0x00};
+STATIC UINT8 MLMavReplaceExt[]    = {0xb8, 0x02, 0x00, 0x00, 0x00};
+
+// Yosemite/El Capitan/Sierra
+/*
+ This patch searches
+ mov cl, al     ||   mov ecx, eax
+ shr cl, 0x04   ||   shr ecx, 0x10
+ and replaces to
+ mov ecx, FakeModel || mov ecx, FakeExt
+ */
+STATIC UINT8 YosECSieSearchModel[]   = {0x88, 0xc1, 0xc0, 0xe9, 0x04};
+STATIC UINT8 YosECSieSearchExt[]     = {0x89, 0xc1, 0xc1, 0xe9, 0x10};
+// Need to use LionReplaceModel
+
+// High Sierra/Mojave
+/*
+ This patch searches
+ mov ecx, ecx   ||   mov ecx, eax
+ shr cl, 0x04   ||   shr ecx, 0x10
+ and replaces to
+ mov ecx, FakeModel || mov ecx, FakeExt
+ */
+STATIC UINT8 HSieMojSearchModel[]   = {0x89, 0xc1, 0xc0, 0xe9, 0x04};
+// Need to use YosECSieSearchExt, LionReplaceModel
+
+// Catalina
+/*
+ This patch searches
+ mov eax, r12   ||   mov eax, r12
+ shr al, 0x4    ||   shr eax, 0x10
+ and replaces to
+ mov eax, FakeModel || mov eax, FakeExt
+ nop                || nop
+ */
+STATIC UINT8 CataSearchModel[]      = {0x44, 0x89, 0xE0, 0xC0, 0xE8, 0x04};
+STATIC UINT8 CataSearchExt[]        = {0x44, 0x89, 0xE0, 0xC1, 0xE8, 0x10};
+STATIC UINT8 CataReplaceMovEax[]    = {0xB8, 0x00, 0x00, 0x00, 0x00, 0x90}; // mov eax, val || nop
+
+INT32 FindBin (UINT8 *array, UINT32 len, const UINT8* bin, UINT32 N)
+{
+  UINT32 i, j;
+  BOOLEAN eq;
+  
+  for (i=0; len >= N && i < len - N; i++) {
+    eq = TRUE;
+    for (j=0; j<N; j++) {
+      if (array[i+j] != bin[j]) {
+        eq = FALSE;
+        break;
+      }
+    }
+    if (eq) {
+      return (INT32)i; // TODO that is an usafe cast !!!
+    }
+  }
+  return -1;
+}
+
+BOOLEAN PatchCPUID(UINT8* bytes, UINT8* Location, INT32 LenLoc,
+                   UINT8* Search4, UINT8* Search10, UINT8* ReplaceModel,
+                   UINT8* ReplaceExt, INT32 Len, UINT32 FakeCPUID)
+{
+  INT32 patchLocation=0, patchLocation1=0;
+  INT32 Adr = 0, Num;
+  BOOLEAN Patched = FALSE;
+  UINT8 FakeModel = (FakeCPUID >> 4) & 0x0f;
+  UINT8 FakeExt = (FakeCPUID >> 0x10) & 0x0f;
+  for (Num = 0; Num < 2; Num++) {
+    Adr = FindBin(&bytes[Adr], 0x800000 - Adr, Location, LenLoc);
+    if (Adr < 0) {
+      break;
+    }
+//    DBG_RT(Entry, "found location at %x\n", Adr);
+    patchLocation = FindBin(&bytes[Adr], 0x100, Search4, Len);
+    if (patchLocation > 0 && patchLocation < 70) {
+      //found
+//      DBG_RT(Entry, "found Model location at %x\n", Adr + patchLocation);
+      CopyMem(&bytes[Adr + patchLocation], ReplaceModel, Len);
+      bytes[Adr + patchLocation + 1] = FakeModel;
+      patchLocation1 = FindBin(&bytes[Adr], 0x100, Search10, Len);
+      if (patchLocation1 > 0 && patchLocation1 < 100) {
+//        DBG_RT(Entry, "found ExtModel location at %x\n", Adr + patchLocation1);
+        CopyMem(&bytes[Adr + patchLocation1], ReplaceExt, Len);
+        bytes[Adr + patchLocation1 + 1] = FakeExt;
+      }
+      Patched = TRUE;
+    }
+  }
+  return Patched;
+}
+
+int KernelCPUIDPatch(UINT8* kernelData, UINT32 FakeCPUID)
+{
+  // Tiger/Leopard patterns
+//  DBG_RT(Entry, "CPUID: try Tiger/Leopard patch...\n");
+  if (PatchCPUID(kernelData, &StrCpuid1_tigLeo[0], sizeof(StrCpuid1_tigLeo), &TigLeoSLSearchModel[0],
+                 &TigLeoSLSearchExt[0], &TigLeoSLReplaceModel[0], &TigLeoSLReplaceModel[0],
+                 sizeof(TigLeoSLSearchModel), FakeCPUID)) {
+//    DBG_RT(Entry, "...done!\n");
+    return 1;
+  }
+  // Snow Leopard patterns
+//  DBG_RT(Entry, "CPUID: try Snow Leopard patch...\n");
+  if (PatchCPUID(kernelData, &StrCpuid1_snowLeo[0], sizeof(StrCpuid1_snowLeo), &TigLeoSLSearchModel[0],
+                 &TigLeoSLSearchExt[0], &TigLeoSLReplaceModel[0], &TigLeoSLReplaceModel[0],
+                 sizeof(TigLeoSLSearchModel), FakeCPUID)) {
+//    DBG_RT(Entry, "...done!\n");
+    return 1;
+  }
+  // Lion patterns
+//  DBG_RT(Entry, "CPUID: try Lion patch...\n");
+  if (PatchCPUID(kernelData, &StrMsr8b[0], sizeof(StrMsr8b), &LionSearchModel[0],
+                 &LionSearchExt[0], &LionReplaceModel[0], &LionReplaceModel[0],
+                 sizeof(LionSearchModel), FakeCPUID)) {
+//    DBG_RT(Entry, "...done!\n");
+    return 1;
+  }
+  // Mountain Lion/Mavericks patterns
+//  DBG_RT(Entry, "CPUID: try Mountain Lion/Mavericks patch...\n");
+  if (PatchCPUID(kernelData, &StrMsr8b[0], sizeof(StrMsr8b), &MLMavSearchModel[0],
+                 &MLMavSearchExt[0], &MLMavReplaceModel[0], &MLMavReplaceExt[0],
+                 sizeof(MLMavSearchModel), FakeCPUID)) {
+//    DBG_RT(Entry, "...done!\n");
+    return 1;
+  }
+  // Yosemite/El Capitan/Sierra patterns
+//  DBG_RT(Entry, "CPUID: try Yosemite/El Capitan/Sierra patch...\n");
+  if (PatchCPUID(kernelData, &StrMsr8b[0], sizeof(StrMsr8b), &YosECSieSearchModel[0],
+                 &YosECSieSearchExt[0], &LionReplaceModel[0], &LionReplaceModel[0],
+                 sizeof(YosECSieSearchModel), FakeCPUID)) {
+//    DBG_RT(Entry, "...done!\n");
+    return 1;
+  }
+  // High Sierra/Mojave patterns
+  // Sherlocks: 10.13/10.14
+//  DBG_RT(Entry, "CPUID: try High Sierra/Mojave patch...\n");
+  if (PatchCPUID(kernelData, &StrMsr8b[0], sizeof(StrMsr8b), &HSieMojSearchModel[0],
+                 &YosECSieSearchExt[0], &LionReplaceModel[0], &LionReplaceModel[0],
+                 sizeof(HSieMojSearchModel), FakeCPUID)) {
+//    DBG_RT(Entry, "...done!\n");
+    return 1;
+  }
+  // Catalina patterns
+  // PMheart: 10.15.DP1
+//  DBG_RT(Entry, "CPUID: try Catalina patch...\n");
+  if (PatchCPUID(kernelData, &StrMsr8b[0], sizeof(StrMsr8b), &CataSearchModel[0],
+                 &CataSearchExt[0], &CataReplaceMovEax[0], &CataReplaceMovEax[0],
+                 sizeof(CataSearchModel), FakeCPUID)) {
+//    DBG_RT(Entry, "...done!\n");
+    return 1;
+  }
+  return 0;
+}
+
