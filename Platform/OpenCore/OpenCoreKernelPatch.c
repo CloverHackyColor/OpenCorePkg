@@ -91,7 +91,8 @@ OcKernelApplyPatches (
     Status = PatcherInitContextFromBuffer (
       &KernelPatcher,
       Kernel,
-      Size
+      Size,
+      Is32Bit
       );
 
     if (EFI_ERROR (Status)) {
@@ -100,29 +101,15 @@ OcKernelApplyPatches (
     }
   }
 
-  for (Index = 0; Index < Config->Kernel.Patch.Count; ++Index)
-  {
+  for (Index = 0; Index < Config->Kernel.Patch.Count; ++Index) {
     UserPatch = Config->Kernel.Patch.Values[Index];
     Target    = OC_BLOB_GET (&UserPatch->Identifier);
-    Comment     = OC_BLOB_GET (&UserPatch->Comment);
 
     if (!UserPatch->Enabled || (AsciiStrCmp (Target, "kernel") == 0) != IsKernelPatch) {
-      DEBUG ((
-        DEBUG_INFO,
-        "OC: Kernel patch skipped [%u] %a\n",
-        Index,
-        AsciiStrLen(Comment) > 0 ? Comment : "no label"
-        ));
       continue;
     }
-    DEBUG ((
-      DEBUG_INFO,
-      "OC: Kernel patch [%u] %a\n",
-      Index,
-      AsciiStrLen(Comment) > 0 ? Comment : "no label"
-      ));
 
-
+    Comment     = OC_BLOB_GET (&UserPatch->Comment);
     Arch        = OC_BLOB_GET (&UserPatch->Arch);
     MaxKernel   = OcParseDarwinVersion (OC_BLOB_GET (&UserPatch->MaxKernel));
     MinKernel   = OcParseDarwinVersion (OC_BLOB_GET (&UserPatch->MinKernel));
@@ -130,7 +117,8 @@ OcKernelApplyPatches (
     if (AsciiStrCmp (Arch, Is32Bit ? "x86_64" : "i386") == 0) {
       DEBUG ((
         DEBUG_INFO,
-        "OC: Kernel patcher skips %a (%a) patch at %u due to arch %a != %a\n",
+        "OC: %a patcher skips %a (%a) patch at %u due to arch %a != %a\n",
+        PRINT_KERNEL_CACHE_TYPE (CacheType),
         Target,
         Comment,
         Index,
@@ -143,7 +131,8 @@ OcKernelApplyPatches (
     if (!OcMatchDarwinVersion (DarwinVersion, MinKernel, MaxKernel)) {
       DEBUG ((
         DEBUG_INFO,
-        "OC: Kernel patcher skips %a (%a) patch at %u due to version %u <= %u <= %u\n",
+        "OC: %a patcher skips %a (%a) patch at %u due to version %u <= %u <= %u\n",
+        PRINT_KERNEL_CACHE_TYPE (CacheType),
         Target,
         Comment,
         Index,
@@ -212,7 +201,8 @@ OcKernelApplyPatches (
 
     DEBUG ((
       EFI_ERROR (Status) ? DEBUG_WARN : DEBUG_INFO,
-      "OC: Kernel patcher result %u for %a (%a) - %r\n",
+      "OC: %a patcher result %u for %a (%a) - %r\n",
+      PRINT_KERNEL_CACHE_TYPE (CacheType),
       Index,
       Target,
       Comment,
@@ -220,6 +210,9 @@ OcKernelApplyPatches (
       ));
   }
 
+  //
+  // Handle Quirks/Emulate here...
+  //
   if (!IsKernelPatch) {
     if (Config->Kernel.Quirks.AppleCpuPmCfgLock) {
       OcKernelApplyQuirk (KernelQuirkAppleCpuPmCfgLock, CacheType, DarwinVersion, Context, NULL);
@@ -256,8 +249,30 @@ OcKernelApplyPatches (
       OcKernelApplyQuirk (KernelQuirkCustomSmbiosGuid2, CacheType, DarwinVersion, Context, NULL);
     }
 
-    if (Config->Kernel.Quirks.DummyPowerManagement) {
-      OcKernelApplyQuirk (KernelQuirkDummyPowerManagement, CacheType, DarwinVersion, Context, NULL);
+    if (Config->Kernel.Quirks.ExtendBTFeatureFlags) {
+      OcKernelApplyQuirk (KernelQuirkExtendBTFeatureFlags, CacheType, DarwinVersion, Context, NULL);
+    }
+
+    if (Config->Kernel.Quirks.ForceSecureBootScheme) {
+      OcKernelApplyQuirk (KernelQuirkForceSecureBootScheme, CacheType, DarwinVersion, Context, NULL);
+    }
+
+    if (Config->Kernel.Emulate.DummyPowerManagement) {
+      MaxKernel   = OcParseDarwinVersion (OC_BLOB_GET (&Config->Kernel.Emulate.MaxKernel));
+      MinKernel   = OcParseDarwinVersion (OC_BLOB_GET (&Config->Kernel.Emulate.MinKernel));
+      if (OcMatchDarwinVersion (DarwinVersion, MinKernel, MaxKernel)) {
+        OcKernelApplyQuirk (KernelQuirkDummyPowerManagement, CacheType, DarwinVersion, Context, NULL);
+      } else {
+        DEBUG ((
+          DEBUG_INFO,
+          "OC: %a patcher skips DummyPowerManagement patch due to version %u <= %u <= %u\n",
+          PRINT_KERNEL_CACHE_TYPE (CacheType),
+          Target,
+          MinKernel,
+          DarwinVersion,
+          MaxKernel
+          ));
+      }
     }
   } else {
     if (Config->Kernel.Quirks.AppleXcpmCfgLock) {
@@ -276,6 +291,33 @@ OcKernelApplyPatches (
       OcKernelApplyQuirk (KernelQuirkPanicNoKextDump, CacheType, DarwinVersion, NULL, &KernelPatcher);
     }
 
+    if (Config->Kernel.Emulate.Cpuid1Data[0] != 0
+      || Config->Kernel.Emulate.Cpuid1Data[1] != 0
+      || Config->Kernel.Emulate.Cpuid1Data[2] != 0
+      || Config->Kernel.Emulate.Cpuid1Data[3] != 0) {
+      MaxKernel   = OcParseDarwinVersion (OC_BLOB_GET (&Config->Kernel.Emulate.MaxKernel));
+      MinKernel   = OcParseDarwinVersion (OC_BLOB_GET (&Config->Kernel.Emulate.MinKernel));
+      if (OcMatchDarwinVersion (DarwinVersion, MinKernel, MaxKernel)) {
+        PatchKernelCpuId (
+          &KernelPatcher,
+          CpuInfo,
+          Config->Kernel.Emulate.Cpuid1Data,
+          Config->Kernel.Emulate.Cpuid1Mask,
+          DarwinVersion
+          );
+      } else {
+        DEBUG ((
+          DEBUG_INFO,
+          "OC: %a patcher skips CPUID patch due to version %u <= %u <= %u\n",
+          PRINT_KERNEL_CACHE_TYPE (CacheType),
+          Target,
+          MinKernel,
+          DarwinVersion,
+          MaxKernel
+          ));
+      }
+    }
+
     if (Config->Kernel.Quirks.LapicKernelPanic) {
       OcKernelApplyQuirk (KernelQuirkLapicKernelPanic, CacheType, DarwinVersion, NULL, &KernelPatcher);
     }
@@ -287,20 +329,11 @@ OcKernelApplyPatches (
     if (Config->Kernel.Quirks.DisableLinkeditJettison) {
       OcKernelApplyQuirk (KernelQuirkSegmentJettison, CacheType, DarwinVersion, NULL, &KernelPatcher);     
     }
-  
-  if (Config->Kernel.Emulate.Cpuid1Data[0] != 0
-      || Config->Kernel.Emulate.Cpuid1Data[1] != 0
-      || Config->Kernel.Emulate.Cpuid1Data[2] != 0
-      || Config->Kernel.Emulate.Cpuid1Data[3] != 0) {
-    PatchKernelCpuId (
-                      &KernelPatcher,
-                      CpuInfo,
-                      Config->Kernel.Emulate.Cpuid1Data,
-                      Config->Kernel.Emulate.Cpuid1Mask
-                      );
-  }
-  }
 
+    if (Config->Kernel.Quirks.LegacyCommpage) {
+      OcKernelApplyQuirk (KernelQuirkLegacyCommpage, CacheType, DarwinVersion, NULL, &KernelPatcher);     
+    }
+  }
 }
 
 VOID
@@ -308,11 +341,11 @@ OcKernelBlockKexts (
   IN     OC_GLOBAL_CONFIG  *Config,
   IN     UINT32            DarwinVersion,
   IN     BOOLEAN           Is32Bit,
-  IN     PRELINKED_CONTEXT *Context
+  IN     KERNEL_CACHE_TYPE CacheType,
+  IN     VOID              *Context
   )
 {
   EFI_STATUS             Status;
-  PATCHER_CONTEXT        Patcher;
   UINT32                 Index;
   OC_KERNEL_BLOCK_ENTRY  *Kext;
   CONST CHAR8            *Target;
@@ -337,7 +370,8 @@ OcKernelBlockKexts (
     if (AsciiStrCmp (Arch, Is32Bit ? "x86_64" : "i386") == 0) {
       DEBUG ((
         DEBUG_INFO,
-        "OC: Prelink blocker skips %a (%a) block at %u due to arch %a != %a\n",
+        "OC: %a blocker skips %a (%a) block at %u due to arch %a != %a\n",
+        PRINT_KERNEL_CACHE_TYPE (CacheType),
         Target,
         Comment,
         Index,
@@ -350,7 +384,8 @@ OcKernelBlockKexts (
     if (!OcMatchDarwinVersion (DarwinVersion, MinKernel, MaxKernel)) {
       DEBUG ((
         DEBUG_INFO,
-        "OC: Prelink blocker skips %a (%a) block at %u due to version %u <= %u <= %u\n",
+        "OC: %a blocker skips %a (%a) block at %u due to version %u <= %u <= %u\n",
+        PRINT_KERNEL_CACHE_TYPE (CacheType),
         Target,
         Comment,
         Index,
@@ -361,22 +396,19 @@ OcKernelBlockKexts (
       continue;
     }
 
-    Status = PatcherInitContextFromPrelinked (
-      &Patcher,
-      Context,
-      Target
-      );
-
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_WARN, "OC: Prelink blocker %a (%a) init failure - %r\n", Target, Comment, Status));
-      continue;
+    if (CacheType == CacheTypeCacheless) {
+      Status = CachelessContextBlock (Context, Target);
+    } else if (CacheType == CacheTypeMkext) {
+      Status = MkextContextBlock (Context, Target);
+    } else if (CacheType == CacheTypePrelinked) {
+      Status = PrelinkedContextBlock (Context, Target);
     }
-
-    Status = PatcherBlockKext (&Patcher);
 
     DEBUG ((
       EFI_ERROR (Status) ? DEBUG_WARN : DEBUG_INFO,
-      "OC: Prelink blocker %a (%a) - %r\n",
+      "OC: %a blocker result %u for %a (%a) - %r\n",
+      PRINT_KERNEL_CACHE_TYPE (CacheType),
+      Index,
       Target,
       Comment,
       Status

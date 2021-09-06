@@ -329,7 +329,7 @@ InternalCalculateARTFrequencyIntel (
         Model = (UINT8) CpuidVerEax.Bits.Model | (UINT8) (CpuidVerEax.Bits.ExtendedModelId << 4U);
         //
         // Fall back to identifying ART frequency based on known models
-        // Slice: this is wrong
+        //
         switch (Model) {
           case CPU_MODEL_SKYLAKE:
           case CPU_MODEL_SKYLAKE_DT:
@@ -383,7 +383,6 @@ InternalCalculateARTFrequencyIntel (
         // If we still can't determine the core crystal clock frequency, assume
         // it's 24 Mhz like most Intel chips to date.
         //
-        /*
         if (ARTFrequency == 0ULL) {
           ARTFrequency = DEFAULT_ART_CLOCK_SOURCE;
           DEBUG ((DEBUG_INFO, "OCCPU: Fallback Core Crystal Clock Frequency %11LuHz\n", ARTFrequency));
@@ -408,7 +407,6 @@ InternalCalculateARTFrequencyIntel (
           CpuidNumeratorEbx,
           CpuidDenominatorEax
           ));
-         */
       }
     }
   }

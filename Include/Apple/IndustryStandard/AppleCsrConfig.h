@@ -35,7 +35,7 @@
 #define CSR_ALLOW_ANY_RECOVERY_OS             BIT8
 #define CSR_ALLOW_UNAPPROVED_KEXTS            BIT9
 #define CSR_ALLOW_EXECUTABLE_POLICY_OVERRIDE  BIT10
-#define CSR_ALLOW_NON_AUTHENTICATED_ROOT        BIT11 ///< Temporary name till 11.0 csr.h release
+#define CSR_ALLOW_UNAUTHENTICATED_ROOT        BIT11 ///< Temporary name till 11.0 csr.h release
 
 #define CSR_VALID_FLAGS (CSR_ALLOW_UNTRUSTED_KEXTS | \
                          CSR_ALLOW_UNRESTRICTED_FS | \
@@ -48,7 +48,7 @@
                          CSR_ALLOW_ANY_RECOVERY_OS | \
                          CSR_ALLOW_UNAPPROVED_KEXTS | \
                          CSR_ALLOW_EXECUTABLE_POLICY_OVERRIDE | \
-                         CSR_ALLOW_NON_AUTHENTICATED_ROOT)
+                         CSR_ALLOW_UNAUTHENTICATED_ROOT)
 
 #define CSR_ALWAYS_ENFORCED_FLAGS (CSR_ALLOW_DEVICE_CONFIGURATION | CSR_ALLOW_ANY_RECOVERY_OS)
 

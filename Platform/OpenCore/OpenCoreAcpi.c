@@ -48,8 +48,6 @@ OcAcpiAddTables (
       continue;
     }
 
-    DEBUG ((DEBUG_INFO, "OC: add ACPI %a\n", TablePath));
-
     Status = OcUnicodeSafeSPrint (FullPath, sizeof (FullPath), OPEN_CORE_ACPI_PATH "%a", TablePath);
     if (EFI_ERROR (Status)) {
       DEBUG ((
@@ -148,10 +146,8 @@ OcAcpiPatchTables (
     UserPatch = Config->Acpi.Patch.Values[Index];
 
     if (!UserPatch->Enabled) {
-      DEBUG ((DEBUG_INFO, "OC: Skipping disabled patch ACPI %a\n", OC_BLOB_GET(&Config->Acpi.Patch.Values[Index]->Comment)));
       continue;
     }
-    DEBUG ((DEBUG_INFO, "OC: Apply patch ACPI %a\n", OC_BLOB_GET(&Config->Acpi.Patch.Values[Index]->Comment)));
 
     //
     // Ignore patch if:

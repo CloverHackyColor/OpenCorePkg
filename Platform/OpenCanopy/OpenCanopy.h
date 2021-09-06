@@ -127,12 +127,12 @@ struct GUI_DRAWING_CONTEXT_ {
   //
   // Scene objects
   //
-  GUI_OBJ              *Screen;
-  GUI_CURSOR_GET_IMAGE GetCursorImage;
-  GUI_EXIT_LOOP        ExitLoop;
-  LIST_ENTRY           Animations;
-  VOID                 *GuiContext;
-  UINT8                Scale;
+  GUI_OBJ                  *Screen;
+  GUI_CURSOR_GET_IMAGE     GetCursorImage;
+  GUI_EXIT_LOOP            ExitLoop;
+  LIST_ENTRY               Animations;
+  BOOT_PICKER_GUI_CONTEXT  *GuiContext;
+  UINT8                    Scale;
 };
 
 EFI_STATUS
@@ -251,6 +251,11 @@ GuiViewCurrentCursor (
   );
 
 VOID
+GuiRedrawAndFlushScreen (
+  IN OUT GUI_DRAWING_CONTEXT  *DrawContext
+  );
+
+VOID
 GuiDrawLoop (
   IN OUT GUI_DRAWING_CONTEXT  *DrawContext,
   IN     UINT32               TimeoutSeconds
@@ -264,7 +269,7 @@ GuiClearScreen (
 
 EFI_STATUS
 GuiLibConstruct (
-  IN OC_PICKER_CONTEXT  *PickerContet,
+  IN OC_PICKER_CONTEXT  *PickerContext,
   IN UINT32             CursorDefaultX,
   IN UINT32             CursorDefaultY
   );
