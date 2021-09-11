@@ -68,11 +68,14 @@
   DxeServicesTableLib|MdePkg/Library/DxeServicesTableLib/DxeServicesTableLib.inf
   UefiBootManagerLib|MdeModulePkg/Library/UefiBootManagerLib/UefiBootManagerLib.inf
   PlatformHookLib|MdeModulePkg/Library/BasePlatformHookLibNull/BasePlatformHookLibNull.inf
+  SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
   SerialPortLib|MdeModulePkg/Library/BaseSerialPortLib16550/BaseSerialPortLib16550.inf
   SortLib|MdeModulePkg/Library/UefiSortLib/UefiSortLib.inf
   AuthVariableLib|MdeModulePkg/Library/AuthVariableLibNull/AuthVariableLibNull.inf
   TpmMeasurementLib|MdeModulePkg/Library/TpmMeasurementLibNull/TpmMeasurementLibNull.inf
   VarCheckLib|MdeModulePkg/Library/VarCheckLib/VarCheckLib.inf
+  VariablePolicyLib|MdeModulePkg/Library/VariablePolicyLib/VariablePolicyLib.inf
+  VariablePolicyHelperLib|MdeModulePkg/Library/VariablePolicyHelperLib/VariablePolicyHelperLib.inf
   #
   # Generic Modules
   #
@@ -97,11 +100,17 @@
   HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
   CpuExceptionHandlerLib|MdeModulePkg/Library/CpuExceptionHandlerLibNull/CpuExceptionHandlerLibNull.inf
   ExtractGuidedSectionLib|MdePkg/Library/DxeExtractGuidedSectionLib/DxeExtractGuidedSectionLib.inf
+  OcDevicePathLib|OpenCorePkg/Library/OcDevicePathLib/OcDevicePathLib.inf
+  OcFileLib|OpenCorePkg/Library/OcFileLib/OcFileLib.inf
+  OcGuardLib|OpenCorePkg/Library/OcGuardLib/OcGuardLib.inf
+  OcMemoryLib|OpenCorePkg/Library/OcMemoryLib/OcMemoryLib.inf
+  OcMiscLib|OpenCorePkg/Library/OcMiscLib/OcMiscLib.inf
+  OcStringLib|OpenCorePkg/Library/OcStringLib/OcStringLib.inf
   #
   # To save size, use NULL library for DebugLib and ReportStatusCodeLib.
   # If need status code output, do library instance overriden.
   #
-  DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+  DebugLib|OpenCorePkg/Library/OcDebugLogLibNull/OcDebugLogLibNull.inf
   DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
   ReportStatusCodeLib|MdePkg/Library/BaseReportStatusCodeLibNull/BaseReportStatusCodeLibNull.inf
 
@@ -111,6 +120,10 @@
 
 [LibraryClasses.common.DXE_DRIVER]
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+
+[LibraryClasses.common.DXE_RUNTIME_DRIVER]
+  MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+  VariablePolicyLib|MdeModulePkg/Library/VariablePolicyLib/VariablePolicyLibRuntimeDxe.inf
 
 [Components]
   OpenCorePkg/Legacy/BootPlatform/DxeIpl/DxeIpl.inf
@@ -134,8 +147,7 @@
       gEfiMdeModulePkgTokenSpaceGuid.PcdConOutRow|0
       gEfiMdeModulePkgTokenSpaceGuid.PcdConOutColumn|0
   }
-  MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
-  MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
+  OpenCorePkg/Legacy/BootPlatform/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf {
     <LibraryClasses>
       DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
@@ -221,14 +233,14 @@
   gEfiMdePkgTokenSpaceGuid.PcdReportStatusCodePropertyMask|0x0
 
 [BuildOptions]
-  MSFT:NOOPT_*_*_CC_FLAGS        = /FAcs -Dinline=__inline
-  MSFT:DEBUG_*_*_CC_FLAGS        = /FAcs -Dinline=__inline -DMDEPKG_NDEBUG
-  MSFT:RELEASE_*_*_CC_FLAGS      = /FAcs -Dinline=__inline -DMDEPKG_NDEBUG
+  MSFT:NOOPT_*_*_CC_FLAGS    = -D OC_TARGET_RELEASE=1 /FAcs -Dinline=__inline
+  MSFT:DEBUG_*_*_CC_FLAGS    = -D OC_TARGET_RELEASE=1 /FAcs -Dinline=__inline -DMDEPKG_NDEBUG
+  MSFT:RELEASE_*_*_CC_FLAGS  = -D OC_TARGET_RELEASE=1 /FAcs -Dinline=__inline -DMDEPKG_NDEBUG
 
-  XCODE:NOOPT_*_*_CC_FLAGS   = -fno-unwind-tables -O0
-  XCODE:DEBUG_*_*_CC_FLAGS   = -fno-unwind-tables -flto -Os -DMDEPKG_NDEBUG
-  XCODE:RELEASE_*_*_CC_FLAGS = -fno-unwind-tables -flto -Os -DMDEPKG_NDEBUG
+  XCODE:NOOPT_*_*_CC_FLAGS   = -D OC_TARGET_RELEASE=1 -fno-unwind-tables -O0
+  XCODE:DEBUG_*_*_CC_FLAGS   = -D OC_TARGET_RELEASE=1 -fno-unwind-tables -flto -Os -DMDEPKG_NDEBUG
+  XCODE:RELEASE_*_*_CC_FLAGS = -D OC_TARGET_RELEASE=1 -fno-unwind-tables -flto -Os -DMDEPKG_NDEBUG
 
-  GCC:NOOPT_*_*_CC_FLAGS     = -Wno-unused-but-set-variable
-  GCC:DEBUG_*_*_CC_FLAGS     = -DMDEPKG_NDEBUG -Wno-unused-but-set-variable
-  GCC:RELEASE_*_*_CC_FLAGS   = -DMDEPKG_NDEBUG -Wno-unused-but-set-variable
+  GCC:NOOPT_*_*_CC_FLAGS     = -D OC_TARGET_RELEASE=1 -Wno-unused-but-set-variable
+  GCC:DEBUG_*_*_CC_FLAGS     = -D OC_TARGET_RELEASE=1 -DMDEPKG_NDEBUG -Wno-unused-but-set-variable
+  GCC:RELEASE_*_*_CC_FLAGS   = -D OC_TARGET_RELEASE=1 -DMDEPKG_NDEBUG -Wno-unused-but-set-variable

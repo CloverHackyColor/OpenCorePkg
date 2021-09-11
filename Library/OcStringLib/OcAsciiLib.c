@@ -35,12 +35,27 @@ IsAsciiPrint (
   return ((Char >= ' ') && (Char < '~'));
 }
 
+// IsAsciiAlpha
+/** Check if character is alphabetical.
+
+  @param[in] Char  The ascii character to check if is alphabetical.
+
+  @retval  TRUE, if character is alphabetical.
+**/
+INTN
+IsAsciiAlpha (
+  IN CHAR8  Char
+  )
+{
+  return ((Char >= 'A' && Char <= 'Z') || (Char >= 'a' && Char <= 'z'));
+}
+
 // IsAsciiSpace
-/** Check if character is a white space character
+/** Check if character is a white space character.
 
   @param[in] Char  The ascii character to check if is white space.
 
-  @retval  TRUE, if character is a white space character
+  @retval  TRUE, if character is a white space character.
 **/
 INTN
 IsAsciiSpace (
@@ -187,11 +202,50 @@ OcAsciiSafeSPrint (
   return Status;
 }
 
+INTN
+EFIAPI
+OcAsciiStrniCmp (
+  IN CONST CHAR8   *FirstString,
+  IN CONST CHAR8   *SecondString,
+  IN UINTN         Length
+  )
+{
+  CHAR8  UpperFirstString;
+  CHAR8  UpperSecondString;
+
+  if (Length == 0) {
+    return 0;
+  }
+
+  //
+  // ASSERT both strings are less long than PcdMaximumAsciiStringLength.
+  // Length tests are performed inside AsciiStrLen().
+  //
+  ASSERT (AsciiStrSize (FirstString) != 0);
+  ASSERT (AsciiStrSize (SecondString) != 0);
+
+  UpperFirstString  = AsciiCharToUpper (*FirstString);
+  UpperSecondString = AsciiCharToUpper (*SecondString);
+  while ((*FirstString != '\0') &&
+         (*SecondString != '\0') &&
+         (UpperFirstString == UpperSecondString) &&
+         (Length > 1)) {
+    FirstString++;
+    SecondString++;
+    UpperFirstString  = AsciiCharToUpper (*FirstString);
+    UpperSecondString = AsciiCharToUpper (*SecondString);
+    Length--;
+  }
+
+  return UpperFirstString - UpperSecondString;
+}
+
 BOOLEAN
 EFIAPI
 OcAsciiEndsWith (
   IN CONST CHAR8      *String,
-  IN CONST CHAR8      *SearchString
+  IN CONST CHAR8      *SearchString,
+  IN BOOLEAN          CaseInsensitiveMatch
   )
 {
   UINTN   StringLength;
@@ -203,6 +257,101 @@ OcAsciiEndsWith (
   StringLength        = AsciiStrLen (String);
   SearchStringLength  = AsciiStrLen (SearchString);
 
+  if (CaseInsensitiveMatch) {
+    return StringLength >= SearchStringLength
+      && OcAsciiStrniCmp (&String[StringLength - SearchStringLength], SearchString, SearchStringLength) == 0;
+  }
   return StringLength >= SearchStringLength
     && AsciiStrnCmp (&String[StringLength - SearchStringLength], SearchString, SearchStringLength) == 0;
+}
+
+CHAR8 *
+EFIAPI
+OcAsciiStriStr (
+  IN      CONST CHAR8              *String,
+  IN      CONST CHAR8              *SearchString
+  )
+{
+  CONST CHAR8 *FirstMatch;
+  CONST CHAR8 *SearchStringTmp;
+
+  ASSERT (AsciiStrSize (String) != 0);
+  ASSERT (AsciiStrSize (SearchString) != 0);
+
+  if (*SearchString == '\0') {
+    return (CHAR8 *) String;
+  }
+
+  while (*String != '\0') {
+    SearchStringTmp = SearchString;
+    FirstMatch = String;
+
+    while ((AsciiCharToUpper (*String) == AsciiCharToUpper (*SearchStringTmp))
+            && (*String != '\0')) {
+      String++;
+      SearchStringTmp++;
+    }
+
+    if (*SearchStringTmp == '\0') {
+      return (CHAR8 *) FirstMatch;
+    }
+
+    if (*String == '\0') {
+      return NULL;
+    }
+
+    String = FirstMatch + 1;
+  }
+
+  return NULL;
+}
+
+CHAR8 *
+EFIAPI
+OcAsciiStrChr (
+  IN      CONST CHAR8              *String,
+  IN            CHAR8              Char
+  )
+{
+  ASSERT (AsciiStrSize (String) != 0);
+
+  while (*String != '\0') {
+    //
+    // Return immediately when matching first occurrence of Char.
+    //
+    if (*String == Char) {
+      return (CHAR8 *) String;
+    }
+
+    ++String;
+  }
+
+  return NULL;
+}
+
+CHAR8 *
+EFIAPI
+OcAsciiStrrChr (
+  IN      CONST CHAR8              *String,
+  IN            CHAR8              Char
+  )
+{
+  CHAR8 *Save;
+
+  ASSERT (AsciiStrSize (String) != 0);
+
+  Save = NULL;
+
+  while (*String != '\0') {
+    //
+    // Record the last occurrence of Char.
+    //
+    if (*String == Char) {
+      Save = (CHAR8 *) String;
+    }
+
+    ++String;
+  }
+
+  return Save;
 }

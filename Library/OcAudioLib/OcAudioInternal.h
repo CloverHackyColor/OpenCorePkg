@@ -48,6 +48,7 @@ typedef struct {
   VOID                                  *ProviderContext;
   VOID                                  *CurrentBuffer;
   EFI_EVENT                             PlaybackEvent;
+  UINTN                                 PlaybackDelay;
   UINT8                                 Language;
   UINT8                                 OutputIndex;
   UINT8                                 Volume;
@@ -90,6 +91,13 @@ InternalOcAudioStopPlayBack (
   IN     BOOLEAN                    Wait
   );
 
+UINTN
+EFIAPI
+InternalOcAudioSetDelay (
+  IN OUT OC_AUDIO_PROTOCOL          *This,
+  IN     UINTN                      Delay
+  );
+
 EFI_STATUS
 EFIAPI
 InternalOcAudioGenBeep (
@@ -125,17 +133,6 @@ InternalOcAudioVoiceOverGetLanguage (
   IN     APPLE_VOICE_OVER_AUDIO_PROTOCOL  *This,
   OUT    UINT8                            *LanguageCode,
   OUT    CONST CHAR8                      **LanguageString
-  );
-
-EFI_STATUS
-InternalGetRawData (
-  IN UINT8                           *Buffer,
-  IN UINTN                           BufferSize,
-  OUT UINT8                          **RawBuffer,
-  OUT UINTN                          *RawBufferSize,
-  OUT EFI_AUDIO_IO_PROTOCOL_FREQ     *Frequency,
-  OUT EFI_AUDIO_IO_PROTOCOL_BITS     *Bits,
-  OUT UINT8                          *Channels
   );
 
 #endif // OC_AUDIO_INTERNAL_H

@@ -16,8 +16,6 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/OcMiscLib.h>
-#include <Library/MemoryAllocationLib.h>
-#include <Library/PrintLib.h>
 
 #ifdef CLOVER_BUILD
 
@@ -43,7 +41,8 @@ FindPattern (
 
   UINTN result = FindMemMask(Data + DataOff, DataSize, Pattern, PatternSize, PatternMask, PatternSize);
   if (result != MAX_UINTN) {
-    if ( result < (UINT32)(MAX_INT32 - DataOff) ) { // safe cast, MAX_INT32 - DataOff (which is >= 0) is always >= 0
+//    if ( result < MAX_INT32 - DataOff ) {
+    if ( result < MAX_UINTN - DataOff ) {
       return (INT32)(result + DataOff);
     }
   }
@@ -84,30 +83,40 @@ FindPattern (
   IN INT32         DataOff
   )
 {
-  BOOLEAN  Matches;
   UINT32   Index;
 
   ASSERT (DataOff >= 0);
 
-  if (PatternSize == 0 || DataSize == 0 || (DataOff < 0) || (UINT32)DataOff >= DataSize || DataSize - (UINT32)DataOff < PatternSize) {
+  if (PatternSize == 0 || DataSize == 0 || (DataOff < 0) || (UINT32)DataOff >= DataSize || DataSize - DataOff < PatternSize) {
     return -1;
   }
 
-  while ((UINT32)DataOff + PatternSize < DataSize) {
-    Matches = TRUE;
-    for (Index = 0; Index < PatternSize; ++Index) {
-      if ((PatternMask == NULL && Data[(UINT32)DataOff + Index] != Pattern[Index])
-      || (PatternMask != NULL && (Data[(UINT32)DataOff + Index] & PatternMask[Index]) != Pattern[Index])) {
-        Matches = FALSE;
-        break;
+  if (PatternMask == NULL) {
+    while (DataOff + PatternSize <= DataSize) {
+      for (Index = 0; Index < PatternSize; ++Index) {
+        if (Data[DataOff + Index] != Pattern[Index]) {
+          break;
+        }
       }
-    }
 
-    if (Matches) {
-      return DataOff;
+      if (Index == PatternSize) {
+        return DataOff;
+      }
+      ++DataOff;
     }
-    // Theoretically, DataOff can overflow because DataSize is UINT32.
-    ++DataOff;
+  } else {
+    while (DataOff + PatternSize <= DataSize) {
+      for (Index = 0; Index < PatternSize; ++Index) {
+        if ((Data[DataOff + Index] & PatternMask[Index]) != Pattern[Index]) {
+          break;
+        }
+      }
+
+      if (Index == PatternSize) {
+        return DataOff;
+      }
+      ++DataOff;
+    }
   }
 
   return -1;
@@ -148,60 +157,47 @@ ApplyPatch (
       //
       // Perform replacement.
       //
-      UINTN length =
-          (
-               AsciiStrLen("Replace ") +
-               PatternSize*2 +
-               (PatternMask ? 1+PatternSize*2+1+PatternSize*2+1 : 0) +
-               AsciiStrLen(" by ") +
-               PatternSize*2 +
-               (ReplaceMask ? 1+PatternSize*2+1+PatternSize*2+1 : 0) +
-               AsciiStrLen(" at ofs:%X\n") + 8 // +16 for %X
-          ) * 1 + 1; // *2 for CHAR16, +1 for \0
-      CHAR8* buf = AllocateZeroPool(length);
-      AsciiSPrint(buf, length, "%aReplace ", buf );
+      DEBUG((DEBUG_VERBOSE, "Replace " ));
       for (UINTN Index = 0; Index < PatternSize; ++Index) {
-        AsciiSPrint(buf, length, "%a%02X", buf, Pattern[Index]);
+        DEBUG((DEBUG_VERBOSE, "%02X", Pattern[Index]));
       }
       if ( PatternMask ) {
-        AsciiSPrint(buf, length, "%a/", buf );
+        DEBUG((DEBUG_VERBOSE, "/" ));
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
-          AsciiSPrint(buf, length, "%a%02X", buf, PatternMask[Index]);
+          DEBUG((DEBUG_VERBOSE, "%02X", PatternMask[Index]));
         }
-        AsciiSPrint(buf, length, "%a(", buf );
+        DEBUG((DEBUG_VERBOSE, "(" ));
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
-          AsciiSPrint(buf, length, "%a%02X", buf, Data[(UINT32)DataOff + Index]); // Safe cast, DataOff is >= 0
+          DEBUG((DEBUG_VERBOSE, "%02X", Data[DataOff + Index]));
         }
-        AsciiSPrint(buf, length, "%a)", buf );
+        DEBUG((DEBUG_VERBOSE, ")" ));
       }
-      AsciiSPrint(buf, length, "%a by ", buf );
+      DEBUG((DEBUG_VERBOSE, " by " ));
 
       if (ReplaceMask == NULL) {
         CopyMem (&Data[DataOff], (void*)Replace, PatternSize);
       } else {
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
-          Data[(UINT32)DataOff + Index] = (Data[(UINT32)DataOff + Index] & ~ReplaceMask[Index]) | (Replace[Index] & ReplaceMask[Index]); // Safe cast, DataOff is >= 0
+          Data[DataOff + Index] = (Data[DataOff + Index] & ~ReplaceMask[Index]) | (Replace[Index] & ReplaceMask[Index]);
         }
       }
 
       for (UINTN Index = 0; Index < PatternSize; ++Index) {
-        AsciiSPrint(buf, length, "%a%02X", buf, Replace[Index]);
+        DEBUG((DEBUG_VERBOSE, "%02X", Replace[Index]));
       }
       if ( ReplaceMask ) {
-        AsciiSPrint(buf, length, "%a/", buf );
+        DEBUG((DEBUG_VERBOSE, "/" ));
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
-          AsciiSPrint(buf, length, "%a%02X", buf, ReplaceMask[Index]);
+          DEBUG((DEBUG_VERBOSE, "%02X", ReplaceMask[Index]));
         }
-        AsciiSPrint(buf, length, "%a(", buf );
+        DEBUG((DEBUG_VERBOSE, "(" ));
         for (UINTN Index = 0; Index < PatternSize; ++Index) {
-          AsciiSPrint(buf, length, "%a%02X", buf, Data[(UINT32)DataOff + Index]); // Safe cast, DataOff is >= 0
+          DEBUG((DEBUG_VERBOSE, "%02X", Data[DataOff + Index]));
         }
-        AsciiSPrint(buf, length, "%a)", buf );
+        DEBUG((DEBUG_VERBOSE, ")" ));
       }
 
-      AsciiSPrint(buf, length, "%a at ofs:%X\n", buf, DataOff);
-      DEBUG((DEBUG_VERBOSE, "%a", buf ));
-      FreePool(buf);
+      DEBUG((DEBUG_VERBOSE, " at ofs:%X\n", DataOff));
 
       ++ReplaceCount;
       DataOff += PatternSize;
