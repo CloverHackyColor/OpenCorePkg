@@ -111,7 +111,8 @@ OcMain (
   )
 {
   EFI_STATUS                Status;
-  OC_PRIVILEGE_CONTEXT      *Privilege;
+  // breack Clover workflow build check with -- error: variable 'Privilege' set but not used [-Werror=unused-but-set-variable]
+  // OC_PRIVILEGE_CONTEXT      *Privilege;
 
   DEBUG ((DEBUG_INFO, "OC: OcMiscEarlyInit...\n"));
   Status = OcMiscEarlyInit (
