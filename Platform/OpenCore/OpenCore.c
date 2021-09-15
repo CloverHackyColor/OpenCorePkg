@@ -111,8 +111,11 @@ OcMain (
   )
 {
   EFI_STATUS                Status;
-  // breack Clover workflow build check with -- error: variable 'Privilege' set but not used [-Werror=unused-but-set-variable]
+  // break Clover workflow build check with -- error: variable 'Privilege' set but not used [-Werror=unused-but-set-variable]
   // OC_PRIVILEGE_CONTEXT      *Privilege;
+#ifndef CLOVER_BUILD
+   OC_PRIVILEGE_CONTEXT      *Privilege;
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: OcMiscEarlyInit...\n"));
   Status = OcMiscEarlyInit (
@@ -157,10 +160,19 @@ OcMain (
     mOpenCorePrivilege.Salt         = OC_BLOB_GET (&mOpenCoreConfiguration.Misc.Security.PasswordSalt);
     mOpenCorePrivilege.SaltSize     = mOpenCoreConfiguration.Misc.Security.PasswordSalt.Size;
 
-    Privilege = &mOpenCorePrivilege;
-  } else {
-    Privilege = NULL;
-  }
+//    Privilege = &mOpenCorePrivilege;
+//  } else {
+//    Privilege = NULL;
+//  }
+
+    #ifndef CLOVER_BUILD
+      Privilege = &mOpenCorePrivilege;
+    #endif
+   } else {
+    #ifndef CLOVER_BUILD
+      Privilege = NULL;
+    #endif
+   }
 
   DEBUG ((DEBUG_INFO, "OC: All green, starting boot management...\n"));
 
