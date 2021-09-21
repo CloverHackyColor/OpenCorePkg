@@ -66,7 +66,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 // Have to be careful about -Wformat warnings in Clang.
 #if defined(__GNUC__) || defined(__clang__)
 #if defined(MDE_CPU_X64) || defined(MDE_CPU_IA32)
-#include <stddef.h>
+//#include <stddef.h> // Jief : this would include stddef.h from the current platform, which maybe not the same as the target platform. That also prevents to use -nostdinc.
 
 #ifndef __SSIZE_TYPE__
 #define __SSIZE_TYPE__                                                         \
@@ -78,6 +78,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                       unsigned char : (signed char)0))
 #endif // __SSIZE_TYPE__
 
+#if defined(__clang__) && (__APPLE__)
+typedef unsigned long size_t; // Jief : clang on mac seems to need size_t to be unsigned long instead of unsigned long long, even if there are both 64 bits.
+#else
+typedef UINT64 size_t; // Jief : this is a shortcut because I know the only platform is X64 with 64 bits size_t
+#endif
 typedef __SSIZE_TYPE__ ssize_t;
 #else
 #error Unknown CPU arch
