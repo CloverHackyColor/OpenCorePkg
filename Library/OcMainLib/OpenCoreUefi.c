@@ -247,7 +247,7 @@ OcLoadDrivers (
                     NULL
                     );
 
-    if (EFI_ERROR (Status)) {
+    if (EFI_ERROR (Status)  &&  Status != RETURN_ALREADY_STARTED) {
       DEBUG ((
         DEBUG_ERROR,
         "OC: Driver %a at %u cannot be started - %r!\n",
@@ -258,7 +258,7 @@ OcLoadDrivers (
       gBS->UnloadImage (ImageHandle);
     }
 
-    if (!EFI_ERROR (Status)) {
+    if (!EFI_ERROR (Status)  ||   Status != RETURN_ALREADY_STARTED) {
       DEBUG ((
         DEBUG_INFO,
         "OC: Driver %a at %u is successfully loaded!\n",
