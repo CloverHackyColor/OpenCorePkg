@@ -31,7 +31,7 @@
 #include <Register/Intel/Msr/NehalemMsr.h>
 
 #include "OcCpuInternals.h"
-
+#ifndef CLOVER_BUILD
 STATIC
 EFI_STATUS
 ScanMpServices (
@@ -271,6 +271,7 @@ ScanThreadCount (
 
   return Status;
 }
+#endif
 
 STATIC
 VOID
@@ -804,8 +805,9 @@ OcCpuScanProcessor (
       (BrandString + 11)
       );
   }
-
+#ifndef CLOVER_BUILD
   ScanThreadCount (Cpu);
+#endif
 
   //
   // Get processor signature and decode
