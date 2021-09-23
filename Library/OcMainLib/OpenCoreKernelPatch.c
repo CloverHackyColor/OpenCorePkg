@@ -104,12 +104,26 @@ OcKernelApplyPatches (
   for (Index = 0; Index < Config->Kernel.Patch.Count; ++Index) {
     UserPatch = Config->Kernel.Patch.Values[Index];
     Target    = OC_BLOB_GET (&UserPatch->Identifier);
+    Comment     = OC_BLOB_GET (&UserPatch->Comment);
 
     if (!UserPatch->Enabled || (AsciiStrCmp (Target, "kernel") == 0) != IsKernelPatch) {
+      DEBUG ((
+        DEBUG_INFO,
+        "OC: %a patch skipped [%u] %a\n",
+        PRINT_KERNEL_CACHE_TYPE (CacheType),
+        Index,
+        AsciiStrLen(Comment) > 0 ? Comment : "no label"
+        ));
       continue;
     }
+    DEBUG ((
+      DEBUG_INFO,
+      "OC: %a patch [%u] %a\n",
+      PRINT_KERNEL_CACHE_TYPE (CacheType),
+      Index,
+      AsciiStrLen(Comment) > 0 ? Comment : "no label"
+      ));
 
-    Comment     = OC_BLOB_GET (&UserPatch->Comment);
     Arch        = OC_BLOB_GET (&UserPatch->Arch);
     MaxKernel   = OcParseDarwinVersion (OC_BLOB_GET (&UserPatch->MaxKernel));
     MinKernel   = OcParseDarwinVersion (OC_BLOB_GET (&UserPatch->MinKernel));
