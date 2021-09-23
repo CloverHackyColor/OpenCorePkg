@@ -274,7 +274,17 @@ DevirtualiseMmio (
     DEBUG ((DEBUG_INFO, "OCABC: MMIO devirt start\n"));
   }
 
+//DEBUG ((DEBUG_INFO, "DevirtualiseMmio: MMIOWhitelistSize=%Lu\n", WhitelistSize));
+//DEBUG ((DEBUG_INFO, "DevirtualiseMmio: Note only type==%x and attr|=0x%Lx are devirt\n", EfiMemoryMappedIO, EFI_MEMORY_RUNTIME));
+
   for (Index = 0; Index < NumEntries; ++Index) {
+//DEBUG ((DEBUG_INFO, "DevirtualiseMmio: MMIO  Type=0x%Lx, PhysicalStart=0x%Lx, VirtualStart=0x%Lx, NumberOfPages=%Ld, Attribute=0x%Lx\n",
+//  (UINT64) Desc->Type,
+//  (UINT64) Desc->PhysicalStart,
+//  (UINT64) Desc->VirtualStart,
+//  (UINT64) Desc->NumberOfPages,
+//  (UINT64) Desc->Attribute
+//  ));
     if (Desc->NumberOfPages > 0
       && Desc->Type == EfiMemoryMappedIO
       && (Desc->Attribute & EFI_MEMORY_RUNTIME) != 0) {
@@ -282,6 +292,7 @@ DevirtualiseMmio (
       Skipped = FALSE;
 
       for (Index2 = 0; Index2 < WhitelistSize; ++Index2) {
+//DEBUG ((DEBUG_INFO, "DevirtualiseMmio: MMIOWhitelist[%Lu] = 0x%Lx\n", Index2, Whitelist[Index2]));
         if (AREA_WITHIN_DESCRIPTOR (Desc, Whitelist[Index2], 1)) {
           Skipped = TRUE;
           break;
@@ -300,6 +311,7 @@ DevirtualiseMmio (
       }
 
       if (!Skipped) {
+//DEBUG ((DEBUG_INFO, "DevirtualiseMmio: !Skipped\n"));
         Desc->Attribute &= ~EFI_MEMORY_RUNTIME;
         PagesSaved      += Desc->NumberOfPages;
       }
@@ -799,7 +811,7 @@ OcStartImage (
       NULL,
       NULL
       );
-    DEBUG ((DEBUG_INFO, "OCABC: VMware Mac installed on %p - %r\n", ImageHandle, Status));
+//    DEBUG ((DEBUG_INFO, "OCABC: VMware Mac installed on %p - %r\n", ImageHandle, Status));
 
     BootCompat->ServiceState.AppleHibernateWake = OcIsAppleHibernateWake ();
     BootCompat->ServiceState.AppleCustomSlide = OcCheckArgumentFromEnv (

@@ -17,6 +17,8 @@
 #include <Library/DebugLib.h>
 #include <Library/OcGuardLib.h>
 #include <Library/OcMiscLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/PrintLib.h>
 
 STATIC
 BOOLEAN
@@ -155,13 +157,61 @@ ApplyPatch (
     //
     // Perform replacement.
     //
+      UINTN length =
+          (
+               AsciiStrLen("Replace ") +
+               PatternSize*2 +
+               (PatternMask ? 1+PatternSize*2+1+PatternSize*2+1 : 0) +
+               AsciiStrLen(" by ") +
+               PatternSize*2 +
+               (ReplaceMask ? 1+PatternSize*2+1+PatternSize*2+1 : 0) +
+               AsciiStrLen(" at ofs:%X\n") + 8 // +16 for %X
+          ) * 1 + 1; // *2 for CHAR16, +1 for \0
+      CHAR8* buf = AllocateZeroPool(length);
+      AsciiSPrint(buf, length, "%aReplace ", buf );
+      for (UINTN Index = 0; Index < PatternSize; ++Index) {
+        AsciiSPrint(buf, length, "%a%02X", buf, Pattern[Index]);
+      }
+      if ( PatternMask ) {
+        AsciiSPrint(buf, length, "%a/", buf );
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          AsciiSPrint(buf, length, "%a%02X", buf, PatternMask[Index]);
+        }
+        AsciiSPrint(buf, length, "%a(", buf );
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          AsciiSPrint(buf, length, "%a%02X", buf, Data[(UINT32)DataOff + Index]); // Safe cast, DataOff is >= 0
+        }
+        AsciiSPrint(buf, length, "%a)", buf );
+      }
+      AsciiSPrint(buf, length, "%a by ", buf );
+
     if (ReplaceMask == NULL) {
-      CopyMem (&Data[DataOff], Replace, PatternSize);
+      CopyMem (&Data[DataOff], (void*)Replace, PatternSize);
     } else {
       for (UINTN Index = 0; Index < PatternSize; ++Index) {
         Data[DataOff + Index] = (Data[DataOff + Index] & ~ReplaceMask[Index]) | (Replace[Index] & ReplaceMask[Index]);
       }
     }
+
+      for (UINTN Index = 0; Index < PatternSize; ++Index) {
+        AsciiSPrint(buf, length, "%a%02X", buf, Replace[Index]);
+      }
+      if ( ReplaceMask ) {
+        AsciiSPrint(buf, length, "%a/", buf );
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          AsciiSPrint(buf, length, "%a%02X", buf, ReplaceMask[Index]);
+        }
+        AsciiSPrint(buf, length, "%a(", buf );
+        for (UINTN Index = 0; Index < PatternSize; ++Index) {
+          AsciiSPrint(buf, length, "%a%02X", buf, Data[(UINT32)DataOff + Index]); // Safe cast, DataOff is >= 0
+        }
+        AsciiSPrint(buf, length, "%a)", buf );
+      }
+
+      AsciiSPrint(buf, length, "%a at ofs:%X\n", buf, DataOff);
+      DEBUG((DEBUG_VERBOSE, "%a", buf ));
+      FreePool(buf);
+
     ++ReplaceCount;
     DataOff += PatternSize;
 
