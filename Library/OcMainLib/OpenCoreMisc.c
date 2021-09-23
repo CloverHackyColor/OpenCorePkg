@@ -452,6 +452,7 @@ OcMiscEarlyInit (
   CONST CHAR8               *AsciiVault;
   OCS_VAULT_MODE            Vault;
 
+#ifndef CLOVER_BUILD
   ConfigData = OcStorageReadFileUnicode (
     Storage,
     OPEN_CORE_CONFIG_PATH,
@@ -474,6 +475,7 @@ OcMiscEarlyInit (
     CpuDeadLoop ();
     return EFI_UNSUPPORTED; ///< Should be unreachable.
   }
+#endif
 
   OcVariableInit (Config->Uefi.Quirks.ForceOcWriteFlash);
 
