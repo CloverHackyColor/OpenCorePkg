@@ -127,7 +127,9 @@ OcMain (
   )
 {
   EFI_STATUS                Status;
+#ifndef CLOVER_BUILD
   OC_PRIVILEGE_CONTEXT      *Privilege;
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: OcMiscEarlyInit...\n"));
   Status = OcMiscEarlyInit (
@@ -139,8 +141,11 @@ OcMain (
   if (EFI_ERROR (Status)) {
     return;
   }
-
+#ifndef CLOVER_BUILD
+  //TODO: it's double Clover calculation so it is better to make copy
+  // mOpenCoreCpuInfo <- gCPUStructure
   OcCpuScanProcessor (&mOpenCoreCpuInfo);
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: OcLoadNvramSupport...\n"));
   OcLoadNvramSupport (Storage, &mOpenCoreConfiguration);
@@ -159,12 +164,15 @@ OcMain (
   DEBUG ((DEBUG_INFO, "OC: OcMiscLoadSystemReport...\n"));
   OcMiscLoadSystemReport (&mOpenCoreConfiguration, mStorageHandle);
   DEBUG_CODE_END ();
+  // KEEP OcLoadAcpiSupport, even for Clover Build. This will do nothing except if USE_OC_SECTION_Acpi is defined in main.cpp (hybrid mode)
   DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport...\n"));
   OcLoadAcpiSupport (&mOpenCoreStorage, &mOpenCoreConfiguration);
+#ifndef CLOVER_BUILD
   DEBUG ((DEBUG_INFO, "OC: OcLoadPlatformSupport...\n"));
   OcLoadPlatformSupport (&mOpenCoreConfiguration, &mOpenCoreCpuInfo);
   DEBUG ((DEBUG_INFO, "OC: OcLoadDevPropsSupport...\n"));
   OcLoadDevPropsSupport (&mOpenCoreConfiguration);
+#endif
   DEBUG ((DEBUG_INFO, "OC: OcMiscLateInit...\n"));
   OcMiscLateInit (Storage, &mOpenCoreConfiguration);
   DEBUG ((DEBUG_INFO, "OC: OcLoadKernelSupport...\n"));
@@ -176,13 +184,51 @@ OcMain (
     mOpenCorePrivilege.Salt         = OC_BLOB_GET (&mOpenCoreConfiguration.Misc.Security.PasswordSalt);
     mOpenCorePrivilege.SaltSize     = mOpenCoreConfiguration.Misc.Security.PasswordSalt.Size;
 
-    Privilege = &mOpenCorePrivilege;
+    #ifndef CLOVER_BUILD
+      Privilege = &mOpenCorePrivilege;
+    #endif
   } else {
-    Privilege = NULL;
+    #ifndef CLOVER_BUILD
+      Privilege = NULL;
+    #endif
   }
 
   DEBUG ((DEBUG_INFO, "OC: All green, starting boot management...\n"));
 
+
+//
+//  CHAR16* UnicodeDevicePath = NULL; (void)UnicodeDevicePath;
+//
+//  UINTN                   HandleCount = 0;
+//  EFI_HANDLE              *Handles = NULL;
+//  Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &HandleCount, &Handles);
+//  UINTN HandleIndex = 0;
+//  for (HandleIndex = 0; HandleIndex < HandleCount; HandleIndex++) {
+//    EFI_DEVICE_PATH_PROTOCOL* DevicePath = DevicePathFromHandle(Handles[HandleIndex]);
+//    UnicodeDevicePath = ConvertDevicePathToText(DevicePath, FALSE, FALSE);
+//    if ( StrCmp(L"PciRoot(0x0)/Pci(0x11,0x0)/Pci(0x5,0x0)/Sata(0x1,0x0,0x0)/HD(2,GPT,25B8F381-DC5C-40C4-BCF2-9B22412964BE,0x64028,0x4F9BFB0)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842,B1F3810AD9513533B3E3169C3640360D)", UnicodeDevicePath) == 0 ) break;
+//  }
+//  if ( HandleIndex < HandleCount )
+//  {
+//    EFI_DEVICE_PATH_PROTOCOL* jfkImagePath = FileDevicePath(Handles[HandleIndex], L"\\System\\Library\\CoreServices\\boot.efi");
+//    UnicodeDevicePath = ConvertDevicePathToText (jfkImagePath, FALSE, FALSE);
+//
+//    EFI_HANDLE EntryHandle = NULL;
+//    Status = gBS->LoadImage (
+//      FALSE,
+//      gImageHandle,
+//      jfkImagePath,
+//      NULL,
+//      0,
+//      &EntryHandle
+//      );
+//  //  OcLoadBootEntry (Context, Context->
+//    Status = gBS->StartImage (EntryHandle, 0, NULL);
+//  }else{
+//  }
+
+
+#ifndef CLOVER_BUILD
   OcMiscBoot (
     &mOpenCoreStorage,
     &mOpenCoreConfiguration,
@@ -191,6 +237,7 @@ OcMain (
     mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
     mStorageHandle
     );
+#endif
 }
 
 STATIC
