@@ -20,6 +20,62 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PrintLib.h>
 
+#ifdef CLOVER_BUILD
+
+#include "../../../rEFIt_UEFI/Platform/MemoryOperation.h"
+
+
+BOOLEAN
+FindPattern (
+  IN CONST UINT8   *Pattern,
+  IN CONST UINT8   *PatternMask OPTIONAL,
+  IN CONST UINT32  PatternSize,
+  IN CONST UINT8   *Data,
+  IN UINT32        DataSize,
+  IN UINT32        *DataOff
+  )
+{
+
+//  ASSERT (DataOff >= 0);
+
+  if (PatternSize == 0 || DataSize == 0 || *DataOff >= DataSize || DataSize - *DataOff < PatternSize) {
+    return -1;
+  }
+
+  UINTN result = FindMemMask(Data + *DataOff, DataSize, Pattern, PatternSize, PatternMask, PatternSize);
+  if (result != MAX_UINTN) {
+    if ( result < MAX_INT32 - *DataOff ) {
+      *DataOff = result;
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+UINT32
+ApplyPatch (
+  IN CONST UINT8   *Pattern,
+  IN CONST UINT8   *PatternMask OPTIONAL,
+  IN CONST UINT32  PatternSize,
+  IN CONST UINT8   *Replace,
+  IN CONST UINT8   *ReplaceMask OPTIONAL,
+  IN UINT8         *Data,
+  IN UINT32        DataSize,
+  IN UINT32        Count,
+  IN UINT32        Skip
+  )
+{
+  UINTN res = SearchAndReplaceMask(Data, DataSize, Pattern, PatternMask, PatternSize, Replace, ReplaceMask, Count, Skip);
+  if ( res < MAX_UINT32 ) {
+    return (UINT32)res;
+  }else{
+    return MAX_UINT32;
+  }
+}
+
+
+#else
+
 STATIC
 BOOLEAN
 InternalFindPattern (
@@ -228,3 +284,5 @@ ApplyPatch (
 
   return ReplaceCount;
 }
+
+#endif
