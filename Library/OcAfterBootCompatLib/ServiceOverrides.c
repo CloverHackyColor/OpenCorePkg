@@ -25,6 +25,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/OcBootManagementLib.h>
 #include <Library/OcDebugLogLib.h>
+#include <Library/OcDevicePathLib.h>
 #include <Library/OcMemoryLib.h>
 #include <Library/OcMiscLib.h>
 #include <Library/OcOSInfoLib.h>
@@ -118,7 +119,7 @@ ForceExitBootServices (
     // It is too late to free memory map here, but it does not matter, because boot.efi has an old one
     // and will freely use the memory.
     // It is technically forbidden to allocate pool memory here, but we should not hit this code
-    // in the first place, and for older firmwares, where it was necessary (?), it worked just fine.
+    // in the first place, and for older firmware, where it was necessary (?), it worked just fine.
     //
     Status = OcGetCurrentMemoryMapAlloc (
       &MemoryMapSize,
@@ -209,9 +210,9 @@ ProtectMemoryRegions (
   }
 
   //
-  // Some firmwares may leave MMIO regions as reserved memory with runtime flag,
+  // Some types of firmware may leave MMIO regions as reserved memory with runtime flag,
   // which will not get mapped by macOS kernel. This will cause boot failures due
-  // to these firmwares accessing these regions at runtime for NVRAM support.
+  // to such firmware accessing these regions at runtime for NVRAM support.
   // REF: https://github.com/acidanthera/bugtracker/issues/791#issuecomment-608959387
   //
 
@@ -257,7 +258,7 @@ DevirtualiseMmio (
   WhitelistSize = ((BOOT_COMPAT_CONTEXT *) Context)->Settings.MmioWhitelistSize;
 
   //
-  // Some firmwares (normally Haswell and earlier) need certain MMIO areas to have
+  // Some types of firmware (typically Haswell and earlier) need certain MMIO areas to have
   // virtual addresses due to their firmware implementations to access NVRAM.
   // For example, on Intel Haswell with APTIO that would be:
   // 0xFED1C000 (SB_RCBA) is a 0x4 page memory region, containing SPI_BASE at 0x3800 (SPI_BASE_ADDRESS).
@@ -330,6 +331,124 @@ DevirtualiseMmio (
 }
 
 /**
+  Apply single booter patch.
+
+  @param[in,out]  ImageBase      Booter image to be patched.
+  @param[in]      ImageSize      Size of booter image.
+  @param[in]      Patch          Single patch to be applied to booter.
+**/
+STATIC
+VOID
+ApplyBooterPatch (
+  IN OUT UINT8            *ImageBase,
+  IN     UINTN            ImageSize,
+  IN     OC_BOOTER_PATCH  *Patch
+  )
+{
+  UINT32  ReplaceCount;
+
+  if (ImageSize < Patch->Size) {
+    DEBUG ((DEBUG_INFO, "OCABC: Image size is even smaller than patch size\n"));
+    return;
+  }
+
+  if (Patch->Limit > 0 && Patch->Limit < ImageSize) {
+    ImageSize = Patch->Limit;
+  }
+
+  ReplaceCount = ApplyPatch (
+    Patch->Find,
+    Patch->Mask,
+    Patch->Size,
+    Patch->Replace,
+    Patch->ReplaceMask,
+    ImageBase,
+    (UINT32) ImageSize,
+    Patch->Count,
+    Patch->Skip
+    );
+
+  if (ReplaceCount > 0 && Patch->Count > 0 && ReplaceCount != Patch->Count) {
+    DEBUG ((
+      DEBUG_INFO,
+      "OCABC: Booter patch (%a) performed only %u replacements out of %u\n",
+      Patch->Comment,
+      ReplaceCount,
+      Patch->Count
+      ));
+  } else if (ReplaceCount == 0) {
+    DEBUG ((
+      DEBUG_INFO,
+      "OCABC: Failed to apply Booter patch (%a) - not found\n",
+      Patch->Comment
+      ));
+  } else {
+    DEBUG ((DEBUG_INFO, "OCABC: Booter patch (%a) replace count - %u\n", Patch->Comment, ReplaceCount));
+  }
+}
+
+/**
+  Iterate through user booter patches and apply them.
+
+  @param[in]      ImageHandle      Loaded image handle to patch.
+  @param[in]      IsApple          Whether the booter is Apple-made.
+  @param[in]      Patches          Array of patches to be applied.
+  @param[in]      PatchesCount     Size of patches to be applied.
+**/
+STATIC
+VOID
+ApplyBooterPatches (
+  IN  EFI_HANDLE       ImageHandle,
+  IN  BOOLEAN          IsApple,
+  IN  OC_BOOTER_PATCH  *Patches,
+  IN  UINT32           PatchCount
+  )
+{
+  EFI_STATUS                  Status;
+  EFI_LOADED_IMAGE_PROTOCOL   *LoadedImage;
+  UINT32                      Index;
+  BOOLEAN                     UsePatch;
+  CONST CHAR8                 *UserIdentifier;
+  CHAR16                      *UserIdentifierUnicode;
+
+  Status = gBS->HandleProtocol (
+    ImageHandle,
+    &gEfiLoadedImageProtocolGuid,
+    (VOID **)&LoadedImage
+    );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "OCABC: Failed to handle LoadedImage protocol - %r", Status));
+    return;
+  }
+
+  for (Index = 0; Index < PatchCount; ++Index) {
+    UserIdentifier = Patches[Index].Identifier;
+
+    if (UserIdentifier[0] == '\0' || AsciiStrCmp (UserIdentifier, "Any") == 0) {
+      UsePatch = TRUE;
+    } else if (AsciiStrCmp (UserIdentifier, "Apple") == 0) {
+      UsePatch = IsApple;
+    } else {
+      UserIdentifierUnicode = AsciiStrCopyToUnicode (UserIdentifier, 0);
+      if (UserIdentifierUnicode == NULL) {
+        DEBUG ((DEBUG_INFO, "OCABC: Booter patch (%a) for %a is out of memory\n", Patches[Index].Comment, UserIdentifier));
+        continue;
+      }
+      UsePatch = OcDevicePathHasFilePathSuffix (LoadedImage->FilePath, UserIdentifierUnicode, StrLen (UserIdentifierUnicode));
+      FreePool (UserIdentifierUnicode);
+    }
+
+    if (UsePatch) {
+      ApplyBooterPatch (
+        (UINT8 *) LoadedImage->ImageBase,
+        (UINTN)LoadedImage->ImageSize,
+        &Patches[Index]
+        );
+    }
+  }
+}
+
+/**
   UEFI Boot Services AllocatePages override.
   Returns pages from free memory block to boot.efi for kernel boot image.
 **/
@@ -346,9 +465,18 @@ OcAllocatePages (
   EFI_STATUS              Status;
   BOOT_COMPAT_CONTEXT     *BootCompat;
   BOOLEAN                 IsPerfAlloc;
+  BOOLEAN                 IsCallGateAlloc;
 
-  BootCompat  = GetBootCompatContext ();
-  IsPerfAlloc = FALSE;
+  //
+  // Filter out garbage right away.
+  //
+  if (Memory == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  BootCompat      = GetBootCompatContext ();
+  IsPerfAlloc     = FALSE;
+  IsCallGateAlloc = FALSE;
 
   if (BootCompat->ServiceState.AwaitingPerfAlloc) {
     if (BootCompat->ServiceState.AppleBootNestedCount > 0) {
@@ -362,40 +490,56 @@ OcAllocatePages (
     }
   }
 
-  Status = BootCompat->ServicePtrs.AllocatePages (
-    Type,
-    MemoryType,
-    NumberOfPages,
-    Memory
-    );
+  if (BootCompat->ServiceState.AppleBootNestedCount > 0
+    && Type == AllocateMaxAddress
+    && MemoryType == EfiLoaderCode
+    && *Memory == BASE_4GB - 1
+    && NumberOfPages == 1) {
+    IsCallGateAlloc = TRUE;
+  }
+
+  if (BootCompat->Settings.AllowRelocationBlock
+    && BootCompat->ServiceState.AppleBootNestedCount > 0
+    && Type == AllocateAddress
+    && MemoryType == EfiLoaderData) {
+    Status = AppleRelocationAllocatePages (
+      BootCompat,
+      BootCompat->ServicePtrs.GetMemoryMap,
+      BootCompat->ServicePtrs.AllocatePages,
+      NumberOfPages,
+      Memory
+      );
+  } else {
+    Status = EFI_UNSUPPORTED;
+  }
+
+  if (EFI_ERROR (Status)) {
+    Status = BootCompat->ServicePtrs.AllocatePages (
+      Type,
+      MemoryType,
+      NumberOfPages,
+      Memory
+      );
+  }
+
+  DEBUG ((DEBUG_VERBOSE, "OCABC: AllocPages %u 0x%Lx (%u) - %r\n", Type, *Memory, NumberOfPages, Status));
 
   if (!EFI_ERROR (Status)) {
     FixRuntimeAttributes (BootCompat, MemoryType);
 
     if (BootCompat->ServiceState.AppleBootNestedCount > 0) {
-      if (IsPerfAlloc) {
+      if (IsCallGateAlloc) {
+        //
+        // Called from boot.efi.
+        // Memory allocated for boot.efi to kernel trampoline.
+        //
+        BootCompat->ServiceState.KernelCallGate = *Memory;
+      } else if (IsPerfAlloc) {
         //
         // Called from boot.efi.
         // New perf data, it can be reallocated multiple times.
         //
         OcAppleDebugLogPerfAllocated ((VOID *)(UINTN) *Memory, EFI_PAGES_TO_SIZE (NumberOfPages));
-      } else if (Type == AllocateAddress && MemoryType == EfiLoaderData) {
-        //
-        // Called from boot.efi.
-        // Store minimally allocated address to find kernel image start.
-        //
-        if (BootCompat->ServiceState.MinAllocatedAddr == 0
-          || *Memory < BootCompat->ServiceState.MinAllocatedAddr) {
-          BootCompat->ServiceState.MinAllocatedAddr = *Memory;
-        }
-      } else if (BootCompat->ServiceState.AppleHibernateWake
-        && Type == AllocateAnyPages && MemoryType == EfiLoaderData
-        && BootCompat->ServiceState.HibernateImageAddress == 0) {
-        //
-        // Called from boot.efi during hibernate wake,
-        // first such allocation is for hibernate image
-        //
-        BootCompat->ServiceState.HibernateImageAddress = *Memory;
       }
     }
   }
@@ -437,7 +581,7 @@ OcFreePages (
   Returns shrinked memory map as XNU can handle up to PMAP_MEMORY_REGIONS_SIZE (128) entries.
   Also applies any further memory map alterations as necessary.
 **/
-STATIC
+
 EFI_STATUS
 EFIAPI
 OcGetMemoryMap (
@@ -480,7 +624,7 @@ OcGetMemoryMap (
 
   if (BootCompat->Settings.SyncRuntimePermissions && BootCompat->ServiceState.FwRuntime != NULL) {
     //
-    // Some firmwares mark runtime drivers loaded after EndOfDxe as EfiRuntimeServicesData:
+    // Some types of firmware mark runtime drivers loaded after EndOfDxe as EfiRuntimeServicesData:
     // REF: https://github.com/acidanthera/bugtracker/issues/791#issuecomment-607935508
     //
     Status2 = BootCompat->ServiceState.FwRuntime->GetExecArea (&Address, &Pages);
@@ -643,7 +787,7 @@ OcStartImage (
   //
   // Clear monitoring vars
   //
-  BootCompat->ServiceState.MinAllocatedAddr = 0;
+  BootCompat->ServiceState.KernelCallGate = 0;
 
   if (AppleLoadedImage != NULL) {
     //
@@ -712,6 +856,16 @@ OcStartImage (
     }
   }
 
+  //
+  // Apply customised booter patches.
+  //
+  ApplyBooterPatches (
+    ImageHandle,
+    AppleLoadedImage != NULL,
+    BootCompat->Settings.BooterPatches,
+    BootCompat->Settings.BooterPatchesSize
+    );
+
   if (BootCompat->ServiceState.FwRuntime != NULL) {
     BootCompat->ServiceState.FwRuntime->GetCurrent (&Config);
 
@@ -767,6 +921,10 @@ OcStartImage (
     // We failed but other operating systems should be loadable.
     //
     --BootCompat->ServiceState.AppleBootNestedCount;
+
+    if (BootCompat->ServiceState.AppleBootNestedCount == 0) {
+      AppleRelocationRelease (BootCompat);
+    }
   }
 
   return Status;
@@ -839,19 +997,10 @@ OcExitBootServices (
     return Status;
   }
 
-  if (!BootCompat->ServiceState.AppleHibernateWake) {
-    AppleMapPrepareKernelJump (
-      BootCompat,
-      (UINTN) BootCompat->ServiceState.MinAllocatedAddr,
-      FALSE
-      );
-  } else {
-    AppleMapPrepareKernelJump (
-      BootCompat,
-      (UINTN) BootCompat->ServiceState.HibernateImageAddress,
-      TRUE
-      );
-  }
+  AppleMapPrepareKernelJump (
+    BootCompat,
+    (UINTN) BootCompat->ServiceState.KernelCallGate
+    );
 
   return Status;
 }

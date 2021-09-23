@@ -140,7 +140,7 @@ ProduceDebugReport (
     Status = AcpiDumpTables (SubReport);
     SubReport->Close (SubReport);
   }
-  DEBUG ((DEBUG_INFO, "OC: ACPI dumping - %r\n", Status)); 
+  DEBUG ((DEBUG_INFO, "OC: ACPI dumping - %r\n", Status));
 
   Status = SafeFileOpen (
     SysReport,
@@ -154,7 +154,7 @@ ProduceDebugReport (
     Status = OcSmbiosDump (SubReport);
     SubReport->Close (SubReport);
   }
-  DEBUG ((DEBUG_INFO, "OC: ACPI dumping - %r\n", Status)); 
+  DEBUG ((DEBUG_INFO, "OC: ACPI dumping - %r\n", Status));
 
   SysReport->Close (SysReport);
   Fs->Close (Fs);
@@ -170,9 +170,9 @@ OcToolLoadEntry (
   IN  OC_BOOT_ENTRY               *ChosenEntry,
   OUT VOID                        **Data,
   OUT UINT32                      *DataSize,
-  OUT EFI_DEVICE_PATH_PROTOCOL    **DevicePath         OPTIONAL,
-  OUT EFI_HANDLE                  *ParentDeviceHandle  OPTIONAL,
-  OUT EFI_DEVICE_PATH_PROTOCOL    **ParentFilePath     OPTIONAL
+  OUT EFI_DEVICE_PATH_PROTOCOL    **DevicePath,
+  OUT EFI_HANDLE                  *StorageHandle,
+  OUT EFI_DEVICE_PATH_PROTOCOL    **StoragePath
   )
 {
   EFI_STATUS          Status;
@@ -204,23 +204,25 @@ OcToolLoadEntry (
     );
   if (*Data == NULL) {
     DEBUG ((
-      DEBUG_ERROR,
+      DEBUG_WARN,
       "OC: Tool %s cannot be found!\n",
       ToolPath
       ));
     return EFI_NOT_FOUND;
   }
 
-  if (DevicePath != NULL) {
-    *DevicePath = Storage->DummyDevicePath;
-  }
-
-  if (ParentDeviceHandle != NULL) {
-    *ParentDeviceHandle = Storage->StorageHandle;
-  }
-
-  if (ParentFilePath != NULL) {
-    *ParentFilePath = Storage->DummyFilePath;
+  Status = OcStorageGetInfo (
+    Storage,
+    ToolPath,
+    DevicePath,
+    StorageHandle,
+    StoragePath,
+    ChosenEntry->ExposeDevicePath
+    );
+  if (!EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_INFO, "OC: Returning tool %s\n", ToolPath));
+    DebugPrintDevicePath (DEBUG_INFO, "OC: Tool path", *DevicePath);
+    DebugPrintDevicePath (DEBUG_INFO, "OC: Storage path", *StoragePath);
   }
 
   return EFI_SUCCESS;
@@ -509,13 +511,12 @@ OcMiscEarlyInit (
   IN  OC_RSA_PUBLIC_KEY  *VaultKey  OPTIONAL
   )
 {
+  EFI_STATUS                Status;
+  EFI_TIME                  BootTime;
   CONST CHAR8               *AsciiVault;
   OCS_VAULT_MODE            Vault;
 
 #ifndef CLOVER_BUILD
-  EFI_STATUS                Status;
-  EFI_TIME                  BootTime;
-
   Status = ClOcReadConfigurationFile(Storage, OPEN_CORE_CONFIG_PATH, Config);
   if (EFI_ERROR (Status)) return EFI_UNSUPPORTED;
 #endif
@@ -547,11 +548,9 @@ OcMiscEarlyInit (
     CpuDeadLoop ();
     return EFI_SECURITY_VIOLATION; ///< Should be unreachable.
   }
-#ifndef CLOVER_BUILD
+
   DEBUG ((DEBUG_INFO, "OC: Watchdog status is %d\n", Config->Misc.Debug.DisableWatchDog == FALSE));
-#else
-  Config->Misc.Debug.DisableWatchDog = TRUE;
-#endif
+
   if (Config->Misc.Debug.DisableWatchDog) {
     //
     // boot.efi kills watchdog only in FV2 UI.
@@ -580,7 +579,7 @@ OcMiscEarlyInit (
     Storage->HasVault,
     VaultKey != NULL
     ));
-#ifndef CLOVER_BUILD
+
   Status = gRT->GetTime (&BootTime, NULL);
   if (!EFI_ERROR (Status)) {
     DEBUG ((
@@ -600,47 +599,84 @@ OcMiscEarlyInit (
       Status
       ));
   }
-#endif
+
   return EFI_SUCCESS;
 }
 
-EFI_STATUS
+/**
+  Registers Bootstrap according to the BootProtect mode.
+
+  @param[in]  RootPath     Root load path.
+  @param[in]  LoadHandle   OpenCore loading handle.
+  @param[in]  BootProtect  Value of the BootProtect config option.
+
+  @returns  BootProtect bitmask.
+**/
+STATIC
+UINT32
+RegisterBootstrap (
+  IN CONST CHAR16  *RootPath OPTIONAL,
+  IN  EFI_HANDLE   LoadHandle OPTIONAL,
+  IN CONST CHAR8   *BootProtect
+  )
+{
+  CHAR16  *BootstrapPath;
+  UINTN   BootstrapSize;
+  BOOLEAN ShortForm;
+
+  if (LoadHandle != NULL) {
+    //
+    // Full-form paths cause entry duplication on e.g. HP 15-ab237ne, InsydeH2O.
+    //
+    if (AsciiStrCmp (BootProtect, "Bootstrap") == 0) {
+      ShortForm = FALSE;
+    } else if (AsciiStrCmp (BootProtect, "BootstrapShort") == 0) {
+      ShortForm = TRUE;
+    } else {
+      return 0;
+    }
+
+    ASSERT (RootPath != NULL);
+    BootstrapSize = StrSize (RootPath) + StrSize (OPEN_CORE_BOOTSTRAP_PATH);
+    BootstrapPath = AllocatePool (BootstrapSize);
+    if (BootstrapPath != NULL) {
+      UnicodeSPrint (BootstrapPath, BootstrapSize, L"%s\\%s", RootPath, OPEN_CORE_BOOTSTRAP_PATH);
+      OcRegisterBootstrapBootOption (
+        L"OpenCore",
+        LoadHandle,
+        BootstrapPath,
+        ShortForm,
+        OPEN_CORE_BOOTSTRAP_PATH,
+        L_STR_LEN (OPEN_CORE_BOOTSTRAP_PATH)
+        );
+      FreePool (BootstrapPath);
+      return OC_BOOT_PROTECT_VARIABLE_BOOTSTRAP;
+    }
+  }
+
+  return 0;
+}
+
+VOID
 OcMiscMiddleInit (
   IN  OC_STORAGE_CONTEXT        *Storage,
   IN  OC_GLOBAL_CONFIG          *Config,
+  IN  CONST CHAR16              *RootPath  OPTIONAL,
   IN  EFI_DEVICE_PATH_PROTOCOL  *LoadPath  OPTIONAL,
-  OUT EFI_HANDLE                *LoadHandle
+  IN  EFI_HANDLE                LoadHandle OPTIONAL
   )
 {
-  EFI_STATUS   Status;
   CONST CHAR8  *BootProtect;
   UINT32       BootProtectFlag;
-  EFI_HANDLE   OcHandle;
 
   if ((Config->Misc.Security.ExposeSensitiveData & OCS_EXPOSE_BOOT_PATH) != 0) {
     OcStoreLoadPath (LoadPath);
   }
 
-  OcHandle = NULL;
-  if (LoadPath != NULL) {
-    Status = gBS->LocateDevicePath (
-      &gEfiSimpleFileSystemProtocolGuid,
-      &LoadPath,
-      &OcHandle
-      );
-  } else {
-    Status = EFI_UNSUPPORTED;
-  }
-
   BootProtect = OC_BLOB_GET (&Config->Misc.Security.BootProtect);
-  DEBUG ((DEBUG_INFO, "OC: LoadHandle %p with BootProtect in %a mode - %r\n", OcHandle, BootProtect, Status));
+  DEBUG ((DEBUG_INFO, "OC: LoadHandle %p with BootProtect in %a mode\n", LoadHandle, BootProtect));
 
-  BootProtectFlag = Config->Uefi.Quirks.RequestBootVarRouting ? OC_BOOT_PROTECT_VARIABLE_NAMESPACE : 0;
-
-// if (OcHandle != NULL && AsciiStrCmp (BootProtect, "Bootstrap") == 0) {
-//    OcRegisterBootOption (L"OpenCore", OcHandle, OPEN_CORE_BOOTSTRAP_PATH);
-//    BootProtectFlag = OC_BOOT_PROTECT_VARIABLE_BOOTSTRAP;
-//  }
+  BootProtectFlag = RegisterBootstrap (RootPath, LoadHandle, BootProtect);
 
   //
   // Inform about boot protection.
@@ -653,15 +689,11 @@ OcMiscMiddleInit (
     &BootProtectFlag
     );
 
-  *LoadHandle = OcHandle;
-
   DEBUG_CODE_BEGIN ();
-  if (OcHandle != NULL && Config->Misc.Debug.SysReport) {
-    ProduceDebugReport (OcHandle);
+  if (LoadHandle != NULL && Config->Misc.Debug.SysReport) {
+    ProduceDebugReport (LoadHandle);
   }
   DEBUG_CODE_END ();
-
-  return Status;
 }
 
 EFI_STATUS
@@ -724,9 +756,8 @@ OcMiscBoot (
   OC_INTERFACE_PROTOCOL  *Interface;
   UINTN                  BlessOverrideSize;
   CHAR16                 **BlessOverride;
-  
-#ifndef CLOVER_BUILD
   CONST CHAR8            *AsciiPicker;
+  CONST CHAR8            *AsciiPickerVariant;
   CONST CHAR8            *AsciiDmg;
 
   AsciiPicker = OC_BLOB_GET (&Config->Misc.Boot.PickerMode);
@@ -742,6 +773,8 @@ OcMiscBoot (
     PickerMode = OcPickerModeBuiltin;
   }
 
+  AsciiPickerVariant = OC_BLOB_GET (&Config->Misc.Boot.PickerVariant);
+
   AsciiDmg = OC_BLOB_GET (&Config->Misc.Security.DmgLoading);
 
   if (AsciiStrCmp (AsciiDmg, "Disabled") == 0) {
@@ -754,10 +787,7 @@ OcMiscBoot (
     DEBUG ((DEBUG_WARN, "OC: Unknown DmgLoading: %a, using Signed\n", AsciiDmg));
     DmgLoading = OcDmgLoadingAppleSigned;
   }
-#else
-  PickerMode = OcPickerModeBuiltin;
-  DmgLoading = OcDmgLoadingAnyImage;
-#endif
+
   //
   // Do not use our boot picker unless asked.
   //
@@ -861,9 +891,15 @@ OcMiscBoot (
   Context->GetEntryLabelImage    = OcGetBootEntryLabelImage;
   Context->GetEntryIcon          = OcGetBootEntryIcon;
   Context->GetKeyIndex           = OcGetAppleKeyIndex;
+  Context->PlayAudioFile         = OcPlayAudioFile;
+  Context->PlayAudioBeep         = OcPlayAudioBeep;
+  Context->PlayAudioEntry        = OcPlayAudioEntry;
+  Context->ToggleVoiceOver       = OcToggleVoiceOver;
   Context->PickerMode            = PickerMode;
   Context->ConsoleAttributes     = Config->Misc.Boot.ConsoleAttributes;
   Context->PickerAttributes      = Config->Misc.Boot.PickerAttributes;
+  Context->PickerVariant         = AsciiPickerVariant;
+  Context->BlacklistAppleUpdate  = Config->Misc.Security.BlacklistAppleUpdate;
 
   if ((Config->Misc.Security.ExposeSensitiveData & OCS_EXPOSE_VERSION_UI) != 0) {
     Context->TitleSuffix      = OcMiscGetVersionString ();
@@ -887,6 +923,8 @@ OcMiscBoot (
       Context->CustomEntries[EntryIndex].Arguments = OC_BLOB_GET (&Config->Misc.Entries.Values[Index]->Arguments);
       Context->CustomEntries[EntryIndex].Auxiliary = Config->Misc.Entries.Values[Index]->Auxiliary;
       Context->CustomEntries[EntryIndex].Tool      = FALSE;
+      Context->CustomEntries[EntryIndex].TextMode  = Config->Misc.Entries.Values[Index]->TextMode;
+      Context->CustomEntries[EntryIndex].RealPath  = TRUE; ///< Always true for entries
       ++EntryIndex;
     }
   }
@@ -903,6 +941,8 @@ OcMiscBoot (
       Context->CustomEntries[EntryIndex].Arguments = OC_BLOB_GET (&Config->Misc.Tools.Values[Index]->Arguments);
       Context->CustomEntries[EntryIndex].Auxiliary = Config->Misc.Tools.Values[Index]->Auxiliary;
       Context->CustomEntries[EntryIndex].Tool      = TRUE;
+      Context->CustomEntries[EntryIndex].TextMode  = Config->Misc.Tools.Values[Index]->TextMode;
+      Context->CustomEntries[EntryIndex].RealPath  = Config->Misc.Tools.Values[Index]->RealPath;
       ++EntryIndex;
     }
   }
@@ -958,7 +998,6 @@ OcMiscBoot (
 //  //  OcLoadBootEntry (Context, Context->
 //    Status = gBS->StartImage (EntryHandle, 0, NULL);
 //  }else{
-  //Context->PickerCommand == OcPickerBootAppleRecovery
     Status = OcRunBootPicker (Context);
 //  }
 

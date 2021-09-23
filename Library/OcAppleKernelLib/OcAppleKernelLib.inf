@@ -44,6 +44,7 @@
   MkextContext.c
   CachelessInternal.h
   MkextInternal.h
+  CpuidPatches.c
 
 [Packages]
   MdePkg/MdePkg.dec

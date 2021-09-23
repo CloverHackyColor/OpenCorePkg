@@ -1,7 +1,7 @@
 BIOSVendor: "Apple Inc."
-BIOSVersion: "249.0.0.0.0"
-BIOSLegacyVersion: "MM71.88Z.F000.B00.2006111040"
-BIOSReleaseDate: "06/11/2020"
+BIOSVersion: "428.0.0.0.0"
+BIOSLegacyVersion: "MM71.88Z.F000.B00.2011042255"
+BIOSReleaseDate: "11/04/2020"
 SystemManufacturer: "Apple Inc."
 SystemProductName: "Macmini7,1"
 SystemVersion: "1.0"
@@ -24,10 +24,10 @@ ChassisType: 0x10
 ChassisVersion: "Mac-35C5E08120C7EEAF"
 ChassisAssetTag: ""
 PlatformFeature: 0x3
-FirmwareFeatures: 0xF803F537
-FirmwareFeaturesMask: 0xF803FF37
-ExtendedFirmwareFeatures: 0x00000000F803F537
-ExtendedFirmwareFeaturesMask: 0x00000000F803FF37
+FirmwareFeatures: 0xE00DE137
+FirmwareFeaturesMask: 0xFF1FFF3F
+ExtendedFirmwareFeatures: 0x00000000E00DE137
+ExtendedFirmwareFeaturesMask: 0x00000000FF1FFF3F
 MemoryFormFactor: 0xD
 # FIXME: check values (most should be correct?) and add missing, if any
 ProcessorType:
@@ -73,13 +73,13 @@ SmcEPCI: 0xF04008
 OEMStrings: |-
   Apple ROM Version
     Model:        MM71
-    EFI Version:  249.0.0.0.0
-    Built by:     root@xapp160
-    Date:         Thu Jun 11 10:40:46 PDT 2020
-    Revision:     249 (B&I)
+    EFI Version:  428.0.0.0.0
+    Built by:     root@osx411
+    Date:         Wed Nov  4 22:55:14 PST 2020
+    Revision:     428 (B&I)
     ROM Version:  F000_B00
     Build Type:   Official Build, Release
-    Compiler:     Apple LLVM version 5.0 (clang-500.0.68) (based on LLVM 3.3svn)
+    Compiler:     clang-1200.0.30.4
 Specifications:
   CPUCodename:
     - "Haswell"

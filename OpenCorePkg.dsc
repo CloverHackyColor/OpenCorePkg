@@ -3,13 +3,13 @@
 # Copyright (C) 2018, Download-Fritz.  All rights reserved.<BR>
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-# 
+#
 # 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 ##
@@ -26,7 +26,7 @@
 [LibraryClasses]
   BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
   # We cannot use BaseMemoryLibOptDxe since it uses SSE instructions,
-  # and some firmwares fail to properly maintain MMX register contexts
+  # and some types of firmware fail to properly maintain MMX register contexts
   # across the timers. This results in exceptions when trying to execute
   # primitives like CopyMem in timers (e.g. AIKDataWriteEntry).
   # Reproduced on ASUS M5A97 with AMD FX8320 CPU.
@@ -93,6 +93,7 @@
   OcMacInfoLib|OpenCorePkg/Library/OcMacInfoLib/OcMacInfoLib.inf
   OcMemoryLib|OpenCorePkg/Library/OcMemoryLib/OcMemoryLib.inf
   OcMiscLib|OpenCorePkg/Library/OcMiscLib/OcMiscLib.inf
+  OcMp3Lib|OpenCorePkg/Library/OcMp3Lib/OcMp3Lib.inf
   OcOSInfoLib|OpenCorePkg/Library/OcOSInfoLib/OcOSInfoLib.inf
   OcPngLib|OpenCorePkg/Library/OcPngLib/OcPngLib.inf
   OcRngLib|OpenCorePkg/Library/OcRngLib/OcRngLib.inf
@@ -107,6 +108,7 @@
   OcUnicodeCollationEngGenericLib|OpenCorePkg/Library/OcUnicodeCollationEngLib/OcUnicodeCollationEngGenericLib.inf
   OcUnicodeCollationEngLocalLib|OpenCorePkg/Library/OcUnicodeCollationEngLib/OcUnicodeCollationEngLocalLib.inf
   OcVirtualFsLib|OpenCorePkg/Library/OcVirtualFsLib/OcVirtualFsLib.inf
+  OcWaveLib|OpenCorePkg/Library/OcWaveLib/OcWaveLib.inf
   OcXmlLib|OpenCorePkg/Library/OcXmlLib/OcXmlLib.inf
   OcPeCoffLib|OpenCorePkg/Library/OcPeCoffLib/OcPeCoffLib.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
@@ -166,7 +168,7 @@
     <LibraryClasses>
       BaseMemoryLib|MdePkg/Library/BaseMemoryLibOptDxe/BaseMemoryLibOptDxe.inf
   }
-  OpenCorePkg/Application/ControlMsrE2/ControlMsrE2.inf
+  OpenCorePkg/Application/VerifyMsrE2/VerifyMsrE2.inf
   OpenCorePkg/Debug/GdbSyms/GdbSyms.inf
   OpenCorePkg/Library/OcAcpiLib/OcAcpiLib.inf
   OpenCorePkg/Library/OcAfterBootCompatLib/OcAfterBootCompatLib.inf
@@ -212,6 +214,7 @@
   OpenCorePkg/Library/OcMachoLib/OcMachoLib.inf
   OpenCorePkg/Library/OcMemoryLib/OcMemoryLib.inf
   OpenCorePkg/Library/OcMiscLib/OcMiscLib.inf
+  OpenCorePkg/Library/OcMp3Lib/OcMp3Lib.inf
   OpenCorePkg/Library/OcOSInfoLib/OcOSInfoLib.inf
   OpenCorePkg/Library/OcPngLib/OcPngLib.inf
   OpenCorePkg/Library/OcRngLib/OcRngLib.inf
@@ -225,6 +228,7 @@
   OpenCorePkg/Library/OcUnicodeCollationEngLib/OcUnicodeCollationEngGenericLib.inf
   OpenCorePkg/Library/OcUnicodeCollationEngLib/OcUnicodeCollationEngLocalLib.inf
   OpenCorePkg/Library/OcVirtualFsLib/OcVirtualFsLib.inf
+  OpenCorePkg/Library/OcWaveLib/OcWaveLib.inf
   OpenCorePkg/Library/OcXmlLib/OcXmlLib.inf
   OpenCorePkg/Library/OcPeCoffLib/OcPeCoffLib.inf
   OpenCorePkg/Platform/CrScreenshotDxe/CrScreenshotDxe.inf
@@ -272,15 +276,15 @@
 
 [BuildOptions]
   # While there are no PCDs as of now, there at least are some custom macros.
-  DEFINE OCPKG_BUILD_OPTIONS_GEN = -DDISABLE_NEW_DEPRECATED_INTERFACES $(OCPKG_BUILD_OPTIONS)
+  DEFINE OCPKG_BUILD_OPTIONS_GEN = -D DISABLE_NEW_DEPRECATED_INTERFACES $(OCPKG_BUILD_OPTIONS)
   DEFINE OCPKG_ANAL_OPTIONS_GEN = "-DANALYZER_UNREACHABLE=__builtin_unreachable" "-DANALYZER_NORETURN=__attribute__((noreturn))"
 
-  GCC:DEBUG_*_*_CC_FLAGS     = -DOC_TARGET_DEBUG=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
-  GCC:NOOPT_*_*_CC_FLAGS     = -DOC_TARGET_NOOPT=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
-  GCC:RELEASE_*_*_CC_FLAGS   = -DOC_TARGET_RELEASE=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
-  MSFT:DEBUG_*_*_CC_FLAGS    = -DOC_TARGET_DEBUG=1 $(OCPKG_BUILD_OPTIONS_GEN) /wd4723
-  MSFT:NOOPT_*_*_CC_FLAGS    = -DOC_TARGET_NOOPT=1 $(OCPKG_BUILD_OPTIONS_GEN) /wd4723
-  MSFT:RELEASE_*_*_CC_FLAGS  = -DOC_TARGET_RELEASE=1 $(OCPKG_BUILD_OPTIONS_GEN) /wd4723
-  XCODE:DEBUG_*_*_CC_FLAGS   = -DOC_TARGET_DEBUG=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
-  XCODE:NOOPT_*_*_CC_FLAGS   = -DOC_TARGET_NOOPT=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
-  XCODE:RELEASE_*_*_CC_FLAGS = -DOC_TARGET_RELEASE=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -Oz -flto
+  GCC:DEBUG_*_*_CC_FLAGS     = -D OC_TARGET_DEBUG=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
+  GCC:NOOPT_*_*_CC_FLAGS     = -D OC_TARGET_NOOPT=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
+  GCC:RELEASE_*_*_CC_FLAGS   = -D OC_TARGET_RELEASE=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
+  MSFT:DEBUG_*_*_CC_FLAGS    = -D OC_TARGET_DEBUG=1 $(OCPKG_BUILD_OPTIONS_GEN) /wd4723
+  MSFT:NOOPT_*_*_CC_FLAGS    = -D OC_TARGET_NOOPT=1 $(OCPKG_BUILD_OPTIONS_GEN) /wd4723
+  MSFT:RELEASE_*_*_CC_FLAGS  = -D OC_TARGET_RELEASE=1 $(OCPKG_BUILD_OPTIONS_GEN) /wd4723
+  XCODE:DEBUG_*_*_CC_FLAGS   = -D OC_TARGET_DEBUG=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
+  XCODE:NOOPT_*_*_CC_FLAGS   = -D OC_TARGET_NOOPT=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN)
+  XCODE:RELEASE_*_*_CC_FLAGS = -D OC_TARGET_RELEASE=1 $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -Oz -flto
