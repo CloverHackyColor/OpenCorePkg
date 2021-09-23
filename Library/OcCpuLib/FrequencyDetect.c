@@ -533,6 +533,7 @@ InternalCalculateARTFrequencyIntel (
         // If we still can't determine the core crystal clock frequency, assume
         // it's 24 Mhz like most Intel chips to date.
         //
+#ifndef CLOVER_BUILD // Jief : Slice, why are we commenting that ?
         if (ARTFrequency == 0ULL) {
           ARTFrequency = DEFAULT_ART_CLOCK_SOURCE;
           DEBUG ((DEBUG_INFO, "OCCPU: Fallback Core Crystal Clock Frequency %11LuHz\n", ARTFrequency));
@@ -548,6 +549,7 @@ InternalCalculateARTFrequencyIntel (
             );
         }
         ASSERT (CPUFrequencyFromART > 0ULL);
+#endif
         DEBUG ((
           DEBUG_INFO,
           "OCCPU: CPUFrequencyFromART %11LuHz %5LuMHz = %Lu * %u / %u\n",
