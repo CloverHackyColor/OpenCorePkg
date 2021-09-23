@@ -34,6 +34,6 @@
   UefiLib
   UefiBootServicesTableLib
   MemoryAllocationLib
-  OcDebugLogLib
+  #OcDebugLogLib
   OcMiscLib
   TimerLib

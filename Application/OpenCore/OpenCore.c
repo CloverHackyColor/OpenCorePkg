@@ -40,15 +40,21 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/UefiDriverEntryPoint.h>
 #include <Library/UefiLib.h>
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 OC_GLOBAL_CONFIG
 mOpenCoreConfiguration;
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 OC_STORAGE_CONTEXT
 mOpenCoreStorage;
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 OC_CPU_INFO
 mOpenCoreCpuInfo;
 
@@ -76,7 +82,9 @@ STATIC
 CHAR16 *
 mStorageRoot;
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 EFI_STATUS
 EFIAPI
 OcStartImage (
@@ -109,7 +117,9 @@ OcStartImage (
   return Status;
 }
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 VOID
 OcMain (
   IN OC_STORAGE_CONTEXT        *Storage,

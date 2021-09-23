@@ -1052,7 +1052,9 @@ OcKernelFuzzyMatch (
   return Status;
 }
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 EFI_STATUS
 EFIAPI
 OcKernelFileOpen (

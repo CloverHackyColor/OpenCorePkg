@@ -172,7 +172,9 @@ InternalFileExists (
   return Status;
 }
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 EFI_STATUS
 InternalGetApfsSpecialFileInfo (
   IN     EFI_FILE_PROTOCOL          *Root,
