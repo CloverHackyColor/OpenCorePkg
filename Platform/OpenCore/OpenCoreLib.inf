@@ -55,6 +55,7 @@
   gOcVendorVariableGuid
 
 [Protocols]
+  gEfiAudioDecodeProtocolGuid
   gEfiDevicePathProtocolGuid          ## CONSUMES
   gEfiDevicePathProtocolGuid          ## CONSUMES
   gEfiLoadedImageProtocolGuid         ## CONSUMES
