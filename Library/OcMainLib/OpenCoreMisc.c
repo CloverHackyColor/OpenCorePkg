@@ -506,9 +506,11 @@ OcMiscEarlyInit (
     CpuDeadLoop ();
     return EFI_SECURITY_VIOLATION; ///< Should be unreachable.
   }
-
+#ifndef CLOVER_BUILD
   DEBUG ((DEBUG_INFO, "OC: Watchdog status is %d\n", Config->Misc.Debug.DisableWatchDog == FALSE));
-
+#else
+  Config->Misc.Debug.DisableWatchDog = TRUE;
+#endif
   if (Config->Misc.Debug.DisableWatchDog) {
     //
     // boot.efi kills watchdog only in FV2 UI.
