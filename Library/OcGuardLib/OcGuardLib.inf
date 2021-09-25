@@ -37,6 +37,7 @@
   UbsanPrintf.c
   Ubsan.c
   Ubsan.h
+  GuardInternals.h
 
 [Packages]
   MdePkg/MdePkg.dec

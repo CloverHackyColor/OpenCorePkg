@@ -53,6 +53,7 @@
   TextOutputNull.c
   TextOutputSystem.c
   UgaPassThrough.c
+  ConsoleGopInternal.h
 
 [Packages]
   MdeModulePkg/MdeModulePkg.dec
