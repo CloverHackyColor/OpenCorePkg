@@ -326,6 +326,7 @@ SetMaxBusRatioAndMaxBusRatioDiv (
   }
 }
 
+#ifndef CLOVER_BUILD
 STATIC
 VOID
 ScanIntelFSBFrequency (
@@ -379,6 +380,7 @@ ScanIntelFSBFrequency (
     MaxBusRatioDiv != 0 ? ".5" : ""
     ));
 }
+#endif
 
 UINT64
 InternalConvertAppleFSBToTSCFrequency (
@@ -399,6 +401,7 @@ InternalConvertAppleFSBToTSCFrequency (
   return FSBFrequency * MaxBusRatio;
 }
 
+#ifndef CLOVER_BUILD
 STATIC
 VOID
 ScanIntelProcessorApple (
@@ -805,9 +808,7 @@ OcCpuScanProcessor (
       (BrandString + 11)
       );
   }
-#ifndef CLOVER_BUILD
   ScanThreadCount (Cpu);
-#endif
 
   //
   // Get processor signature and decode
@@ -959,6 +960,7 @@ OcCpuScanProcessor (
     Cpu->ThreadCount
     ));
 }
+#endif
 
 VOID
 OcCpuGetMsrReport (

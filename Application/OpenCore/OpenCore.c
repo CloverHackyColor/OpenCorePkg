@@ -160,10 +160,12 @@ OcMain (
     );
   DEBUG ((DEBUG_INFO, "OC: OcLoadUefiSupport...\n"));
   OcLoadUefiSupport (Storage, &mOpenCoreConfiguration, &mOpenCoreCpuInfo, mOpenCoreBooterHash);
+#ifndef CLOVER_BUILD
   DEBUG_CODE_BEGIN ();
   DEBUG ((DEBUG_INFO, "OC: OcMiscLoadSystemReport...\n"));
   OcMiscLoadSystemReport (&mOpenCoreConfiguration, mStorageHandle);
   DEBUG_CODE_END ();
+#endif
   // KEEP OcLoadAcpiSupport, even for Clover Build. This will do nothing except if USE_OC_SECTION_Acpi is defined in main.cpp (hybrid mode)
   DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport...\n"));
   OcLoadAcpiSupport (&mOpenCoreStorage, &mOpenCoreConfiguration);
