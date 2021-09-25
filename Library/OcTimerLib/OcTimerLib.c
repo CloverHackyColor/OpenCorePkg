@@ -231,6 +231,7 @@ GetTimeInNanoSecond (
   return NanoSeconds;
 }
 
+#ifndef CLOVER_BUILD
 /**
   Return cached PerformanceCounterFrequency value.
 
@@ -245,6 +246,7 @@ GetTscFrequency (
 {
   return mTscFrequency;
 }
+#endif
 
 /**
   The constructor function caches PerformanceCounterFrequency.

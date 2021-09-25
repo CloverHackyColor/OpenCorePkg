@@ -846,10 +846,12 @@ struct OC_PICKER_CONTEXT_ {
   // Get entry icon.
   //
   OC_GET_ENTRY_ICON          GetEntryIcon;
+#ifndef CLOVER_BUILD
   //
   // Entry display routine.
   //
   OC_SHOW_MENU               ShowMenu;
+#endif
   //
   // Privilege escalation requesting routine.
   //

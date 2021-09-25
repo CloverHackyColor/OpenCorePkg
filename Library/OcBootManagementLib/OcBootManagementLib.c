@@ -41,6 +41,7 @@
 #include <Library/UefiLib.h>
 #include <Library/ResetSystemLib.h>
 
+#ifndef CLOVER_BUILD
 STATIC
 EFI_STATUS
 RunShowMenu (
@@ -106,6 +107,7 @@ RunShowMenu (
 
   return Status;
 }
+#endif
 
 BOOLEAN
 EFIAPI
@@ -166,6 +168,7 @@ InternalRunRequestPrivilege (
   return Status;
 }
 
+#ifndef CLOVER_BUILD
 EFI_STATUS
 OcRunBootPicker (
   IN OC_PICKER_CONTEXT  *Context
@@ -382,6 +385,7 @@ OcRunBootPicker (
     OcFreeBootContext (BootContext);
   }
 }
+#endif
 
 EFI_STATUS
 OcRunFirmwareApplication (
