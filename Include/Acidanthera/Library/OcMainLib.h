@@ -47,16 +47,12 @@
 #endif
 
 #ifndef CLOVER_BUILD // Only used in Bootstrap that we don't use.
-#define OPEN_CORE_ROOT_PATH        L"EFI\\OC"
+#define OPEN_CORE_ROOT_PATH        L"EFI\\CLOVER"
 #endif
 
 #define OPEN_CORE_APP_PATH         L"OpenCore.efi"
 
-#ifndef CLOVER_BUILD
-#define OPEN_CORE_CONFIG_PATH      L"config.plist"
-#else
 #define OPEN_CORE_CONFIG_PATH      L"config-oc.plist"
-#endif
 
 #define OPEN_CORE_LOG_PREFIX_PATH  L"opencore"
 
@@ -64,17 +60,9 @@
 
 #define OPEN_CORE_ACPI_PATH        L"ACPI\\"
 
-#ifndef CLOVER_BUILD
-#define OPEN_CORE_UEFI_DRIVER_PATH L"Drivers\\"
-#else
 #define OPEN_CORE_UEFI_DRIVER_PATH L"Drivers\\UEFI\\"
-#endif
 
-#ifndef CLOVER_BUILD
-#define OPEN_CORE_KEXT_PATH        L"Kexts\\"
-#else
 #define OPEN_CORE_KEXT_PATH        L""
-#endif
 
 #define OPEN_CORE_TOOL_PATH        L"Tools\\"
 
