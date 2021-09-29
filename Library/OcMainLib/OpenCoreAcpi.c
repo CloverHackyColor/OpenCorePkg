@@ -207,6 +207,27 @@ OcLoadAcpiSupport (
   EFI_STATUS        Status;
   OC_ACPI_CONTEXT   Context;
 
+#ifdef CLOVER_BUILD
+  if ( Config->Acpi.Quirks.RebaseRegions || Config->Acpi.Quirks.FadtEnableReset || Config->Acpi.Quirks.ResetLogoStatus ||
+       Config->Acpi.Quirks.ResetHwSig || Config->Acpi.Quirks.NormalizeHeaders || Config->Acpi.Quirks.SyncTableIds
+       || Config->Acpi.Patch.Count > 0 || Config->Acpi.Delete.Count > 0 || Config->Acpi.Add.Count ) {
+    // proceeed
+    if ( Config->Acpi.Quirks.RebaseRegions ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.RebaseRegions"));
+    if ( Config->Acpi.Quirks.FadtEnableReset ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.FadtEnableReset"));
+    if ( Config->Acpi.Quirks.ResetLogoStatus ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.ResetLogoStatus"));
+    if ( Config->Acpi.Quirks.ResetHwSig ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.ResetHwSig"));
+    if ( Config->Acpi.Quirks.NormalizeHeaders ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.NormalizeHeaders"));
+    if ( Config->Acpi.Quirks.SyncTableIds ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.SyncTableIds"));
+    if ( Config->Acpi.Patch.Count ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Patch.Count"));
+    if ( Config->Acpi.Delete.Count ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Delete.Count"));
+    if ( Config->Acpi.Add.Count ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Add.Count"));
+  }else{
+    DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : nothing to do\n"));
+    return; // nothing to do
+  }
+#endif
+
+
   Status = AcpiInitContext (&Context);
 
   if (EFI_ERROR (Status)) {
