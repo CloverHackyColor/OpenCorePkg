@@ -344,8 +344,13 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterStride|1
 
 [BuildOptions]
+
+!ifdef JIEF_DEBUG
+DEFINE JIEF_DEBUG_FLAG = -DJIEF_DEBUG
+!endif
+
   # While there are no PCDs as of now, there at least are some custom macros.
-  DEFINE OCPKG_BUILD_OPTIONS_GEN = -D DISABLE_NEW_DEPRECATED_INTERFACES $(OCPKG_BUILD_OPTIONS) -D OC_TARGET_$(TARGET)=1
+  DEFINE OCPKG_BUILD_OPTIONS_GEN = -D DISABLE_NEW_DEPRECATED_INTERFACES $(OCPKG_BUILD_OPTIONS) -D OC_TARGET_$(TARGET)=1 $(JIEF_DEBUG_FLAG)
   DEFINE OCPKG_ANAL_OPTIONS_GEN = "-DANALYZER_UNREACHABLE=__builtin_unreachable" "-DANALYZER_NORETURN=__attribute__((noreturn))"
 
   GCC:DEBUG_*_*_CC_FLAGS        = $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -fstack-protector-strong -mstack-protector-guard=global -Wuninitialized
