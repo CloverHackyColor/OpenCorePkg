@@ -352,7 +352,7 @@ UefiMain (
 
 #ifdef OC_TARGET_DEBUG
   SerialPortInitialize();
-  Status = SerialPortWrite ((UINT8 *)"Starting OpenCore...", AsciiStrLen("Starting OpenCore..."));
+  Status = SerialPortWrite ((UINT8 *)"Starting OpenCore...\n", AsciiStrLen("Starting OpenCore...\n"));
   gBS->Stall(2000000);
 #endif
 
