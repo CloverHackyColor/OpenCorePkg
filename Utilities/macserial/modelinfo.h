@@ -15,7 +15,7 @@
 #ifdef static_assert
 static_assert(ARRAY_SIZE(AppleModelCode) == APPLE_MODEL_MAX &&
   ARRAY_SIZE(AppleBoardCode) == APPLE_MODEL_MAX &&
-  ARRAY_SIZE(ApplePlatformData) == APPLE_MODEL_MAX &&
+  ARRAY_SIZE(ApplePlatformDataOC) == APPLE_MODEL_MAX &&
   ARRAY_SIZE(AppleModelYear) == APPLE_MODEL_MAX &&
   ARRAY_SIZE(ApplePreferredModelYear) == APPLE_MODEL_MAX,
   "Inconsistent model data");

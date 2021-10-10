@@ -131,7 +131,7 @@ typedef enum {
 
 #define APPLE_MODEL_MAX 121
 
-static PLATFORMDATA ApplePlatformData[] = {
+static PLATFORMDATA ApplePlatformDataOC[] = {
   { "MacBook1,1", "W80A041AU9B" },
   { "MacBook10,1", "C02TQHACHH27" },
   { "MacBook2,1", "W88A041AWGP" },
