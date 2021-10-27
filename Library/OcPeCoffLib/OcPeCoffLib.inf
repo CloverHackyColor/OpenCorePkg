@@ -23,6 +23,7 @@
   PeCoffInit.c
   PeCoffLoad.c
   PeCoffRelocate.c
+  PeCoffInternal.h
 
 [Packages]
   MdePkg/MdePkg.dec

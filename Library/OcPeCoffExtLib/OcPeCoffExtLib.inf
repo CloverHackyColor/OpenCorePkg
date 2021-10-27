@@ -30,7 +30,8 @@
 
 [Sources]
   OcPeCoffExtLib.c
-
+  OcPeCoffExtInternal.h
+  
 [Packages]
   MdePkg/MdePkg.dec
   OpenCorePkg/OpenCorePkg.dec

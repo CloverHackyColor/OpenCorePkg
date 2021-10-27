@@ -62,3 +62,4 @@
   helix/stproc.c
   helix/trigtabs.c
   OcMp3Lib.c
+  helix/mp3compat.h

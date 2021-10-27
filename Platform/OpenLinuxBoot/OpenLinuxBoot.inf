@@ -43,3 +43,4 @@
   LoaderEntry.c
   OpenLinuxBoot.c
   VersionCompare.c
+  LinuxBootInternal.h

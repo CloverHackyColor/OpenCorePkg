@@ -43,6 +43,9 @@
   CachelessContext.c
   MkextContext.c
   CpuidPatches.c
+  LegacyBcopy.h
+  MkextInternal.h
+  CachelessInternal.h
 
 [Packages]
   MdePkg/MdePkg.dec
