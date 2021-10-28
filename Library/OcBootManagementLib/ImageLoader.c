@@ -78,7 +78,9 @@ STATIC OC_IMAGE_LOADER_CONFIGURE mImageLoaderConfigure;
 STATIC UINT32                    mImageLoaderCaps;
 STATIC BOOLEAN                   mImageLoaderEnabled;
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 EFI_STATUS
 InternalEfiLoadImageFile (
   IN  EFI_DEVICE_PATH_PROTOCOL  *DevicePath,

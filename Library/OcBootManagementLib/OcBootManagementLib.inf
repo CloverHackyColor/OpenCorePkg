@@ -128,3 +128,4 @@
   TimerLib
   FileHandleLib
   ResetSystemLib
+  OcCpuLib
