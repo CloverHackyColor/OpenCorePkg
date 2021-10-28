@@ -418,7 +418,9 @@ InternalCalculateTSCFromApplePlatformInfo (
 
 UINT64
 InternalCalculateARTFrequencyIntel (
+#ifndef CLOVER_BUILD
   OUT UINT64   *CPUFrequency,
+#endif
   OUT UINT64   *TscAdjustPtr OPTIONAL,
   IN  BOOLEAN  Recalculate
   )
@@ -429,7 +431,9 @@ InternalCalculateARTFrequencyIntel (
   // a later point in time to gather CPU information.
   //
   STATIC UINT64 ARTFrequency        = 0;
+#ifndef CLOVER_BUILD
   STATIC UINT64 CPUFrequencyFromART = 0;
+#endif
 
   UINT32                                            MaxId;
   UINT32                                            CpuVendor;
@@ -445,7 +449,9 @@ InternalCalculateARTFrequencyIntel (
 
   if (Recalculate) {
     ARTFrequency        = 0;
+#ifndef CLOVER_BUILD
     CPUFrequencyFromART = 0;
+#endif
   }
 
   if (ARTFrequency == 0) {
@@ -525,7 +531,9 @@ InternalCalculateARTFrequencyIntel (
             // Use the reported CPU frequency rather than deriving it from ARTFrequency
             //
             AsmCpuid (CPUID_PROCESSOR_FREQUENCY, &CpuidFrequencyEax.Uint32, NULL, NULL, NULL);
+#ifndef CLOVER_BUILD
             CPUFrequencyFromART = MultU64x32 (CpuidFrequencyEax.Bits.ProcessorBaseFrequency, 1000000);
+#endif
           }
         }
 
@@ -533,6 +541,7 @@ InternalCalculateARTFrequencyIntel (
         // If we still can't determine the core crystal clock frequency, assume
         // it's 24 Mhz like most Intel chips to date.
         //
+#ifndef CLOVER_BUILD // CPUFrequencyFromART not used for Clover
         if (ARTFrequency == 0ULL) {
           ARTFrequency = DEFAULT_ART_CLOCK_SOURCE;
           DEBUG ((DEBUG_INFO, "OCCPU: Fallback Core Crystal Clock Frequency %11LuHz\n", ARTFrequency));
@@ -557,12 +566,15 @@ InternalCalculateARTFrequencyIntel (
           CpuidNumeratorEbx,
           CpuidDenominatorEax
           ));
+#endif
       }
     }
   }
 
+#ifndef CLOVER_BUILD // CPUFrequencyFromART not used for Clover
   *CPUFrequency = CPUFrequencyFromART;
-  return ARTFrequency;
+#endif
+return ARTFrequency;
 }
 
 UINT64
@@ -675,7 +687,11 @@ OcGetTSCFrequency (
   // available (e.g. 300 series chipsets).
   // TODO: For AMD, the base clock can be determined from P-registers.
   //
+#ifndef CLOVER_BUILD
   InternalCalculateARTFrequencyIntel (&CPUFrequency, NULL, FALSE);
+#else
+  InternalCalculateARTFrequencyIntel (&CPUFrequency, FALSE);
+#endif
   if (CPUFrequency == 0) {
     CPUFrequency = InternalCalculateVMTFrequency (NULL, NULL);
     if (CPUFrequency == 0) {
