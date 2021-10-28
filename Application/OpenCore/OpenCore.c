@@ -289,6 +289,8 @@ OcGetLoadHandle (
   return mStorageHandle;
 }
 
+#include <Library/SerialPortLib.h>
+
 STATIC
 OC_BOOTSTRAP_PROTOCOL
 mOpenCoreBootStrap = {
@@ -309,6 +311,12 @@ UefiMain (
   EFI_HANDLE                        BootstrapHandle;
   OC_BOOTSTRAP_PROTOCOL             *Bootstrap;
   EFI_DEVICE_PATH_PROTOCOL          *AbsPath;
+
+#ifdef OC_TARGET_DEBUG
+  SerialPortInitialize();
+  Status = SerialPortWrite ((UINT8 *)"Starting OpenCore...\n", AsciiStrLen("Starting OpenCore...\n"));
+  gBS->Stall(2000000);
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: Starting OpenCore...\n"));
 
