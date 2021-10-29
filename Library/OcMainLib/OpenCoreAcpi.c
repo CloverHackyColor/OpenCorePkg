@@ -208,6 +208,36 @@ OcLoadAcpiSupport (
   EFI_STATUS       Status;
   OC_ACPI_CONTEXT  Context;
 
+#ifdef CLOVER_BUILD
+  // At each upgrade, check that this condition match. In case something is added in the body of this function, the condition needs to be updated.
+  if ( Config->Acpi.Quirks.RebaseRegions
+       || Config->Acpi.Patch.Count > 0 // OcAcpiPatchTables
+       || Config->Acpi.Delete.Count > 0 // OcAcpiDeleteTables
+       || Config->Acpi.Add.Count // OcAcpiAddTables
+       || Config->Acpi.Quirks.FadtEnableReset
+       || Config->Acpi.Quirks.ResetLogoStatus
+       || Config->Acpi.Quirks.ResetHwSig
+       || Config->Acpi.Quirks.RebaseRegions
+       || Config->Acpi.Quirks.NormalizeHeaders
+       || Config->Acpi.Quirks.SyncTableIds
+    ) {
+    // proceeed
+    if ( Config->Acpi.Quirks.RebaseRegions ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.RebaseRegions"));
+    if ( Config->Acpi.Quirks.FadtEnableReset ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.FadtEnableReset"));
+    if ( Config->Acpi.Quirks.ResetLogoStatus ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.ResetLogoStatus"));
+    if ( Config->Acpi.Quirks.ResetHwSig ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.ResetHwSig"));
+    if ( Config->Acpi.Quirks.NormalizeHeaders ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.NormalizeHeaders"));
+    if ( Config->Acpi.Quirks.SyncTableIds ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.SyncTableIds"));
+    if ( Config->Acpi.Patch.Count ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Patch.Count"));
+    if ( Config->Acpi.Delete.Count ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Delete.Count"));
+    if ( Config->Acpi.Add.Count ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Add.Count"));
+  }else{
+    DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : nothing to do\n"));
+    return; // nothing to do
+  }
+#endif
+
+
   Status = AcpiInitContext (&Context);
 
   if (EFI_ERROR (Status)) {
@@ -219,10 +249,13 @@ OcLoadAcpiSupport (
     AcpiLoadRegions (&Context);
   }
 
+  // OcAcpiPatchTables only do something if Config->Acpi.Patch.Count > 0
   OcAcpiPatchTables (Config, &Context);
 
+  // OcAcpiPatchTables only do something if Config->Acpi.Delete.Count > 0
   OcAcpiDeleteTables (Config, &Context);
 
+  // OcAcpiPatchTables only do something if Config->Acpi.Add.Count > 0
   OcAcpiAddTables (Config, Storage, &Context);
 
   if (Config->Acpi.Quirks.FadtEnableReset) {
