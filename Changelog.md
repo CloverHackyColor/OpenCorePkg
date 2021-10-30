@@ -1,5 +1,27 @@
 OpenCore Changelog
 ==================
+#### v0.7.5
+- Revised OpenLinuxBoot documentation
+- Supported Linux ostree boot layout
+- Fixed external drive icons for Boot Entry Protocol
+- Added GPU Resize BAR quirks to reduce BARs on per-OS basis
+- Fixed OpenLinuxBoot hang bug after correct detection of some distros
+- Added DMG signature check during download, thx @jspraul and @zhangyoufu
+- Updated builtin firmware versions for SMBIOS and the rest
+
+
+#### v0.7.4
+- Fixed Linux kernel sort order
+- Added Linux detection optional log detail
+- Fixed CPU core count detection for more legacy CPUs
+- Added ability to fully override autodetect Linux boot options
+- Added large BaseSystem support in `AdviseFeatures`
+- Updated builtin firmware versions for SMBIOS and the rest
+- Added tool to extract vendor secure boot certificate from GRUB shim file
+- Added `BridgeOSHardwareModel` NVRAM variable to fix T2 SB AP models on macOS 12
+- Changed `Default` Apple Secure Boot model to match SMBIOS for macOS 12
+- Fixed `opencore-version` not being added to NVRAM variables
+
 #### v0.7.3
 - Improved SSDT-PNLF compatibility with CFL+ graphics
 - Fixed OpenCanopy performance loss due to redrawing introduced in 0.6.9

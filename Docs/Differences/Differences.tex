@@ -1,7 +1,7 @@
 \documentclass[]{article}
 %DIF LATEXDIFF DIFFERENCE FILE
-%DIF DEL PreviousConfiguration.tex   Fri Sep  3 03:11:13 2021
-%DIF ADD ../Configuration.tex        Tue Sep  7 00:33:51 2021
+%DIF DEL PreviousConfiguration.tex   Mon Oct 11 00:01:52 2021
+%DIF ADD ../Configuration.tex        Tue Oct 12 17:14:12 2021
 
 \usepackage{lmodern}
 \usepackage{amssymb,amsmath}
@@ -154,7 +154,7 @@
 
        \vspace{0.2in}
 
-       Reference Manual (0.7\DIFdelbegin \DIFdel{.2}\DIFdelend \DIFaddbegin \DIFadd{.3}\DIFaddend )
+       Reference Manual (0.7\DIFdelbegin \DIFdel{.4}\DIFdelend \DIFaddbegin \DIFadd{.5}\DIFaddend )
 
        \vspace{0.2in}
 
@@ -656,21 +656,18 @@ the \hyperref[miscsecurityprops]{Security Properties} section of this document.
 The \texttt{OC\ config} file, as with any property list file, can be edited with
 any text editor, such as nano or vim. However, specialised software
 may provide a better experience. On macOS, the preferred GUI application is
-\href{https://developer.apple.com/xcode}{Xcode}. For a lightweight
-cross-platform and open-source alternative, the
-\href{https://github.com/corpnewt/ProperTree}{ProperTree} editor can be
-utilised.
+\href{https://developer.apple.com/xcode}{Xcode}. The
+\href{https://github.com/corpnewt/ProperTree}{ProperTree} editor
+is a lightweight, cross-platform and open-source alternative.
 
-It is strongly advised not to use any software that is aware of the internal
-configration structure as it constantly gets out of date and will cause
-incorrect configuration to be generated. If it is a must desprite the
-warning one should make sure to only use stable versions of OpenCore
-with explicit support for the particular version in the app. The choice
-of open-source implementations with transparent binary generation
-is encouraged (e.g. \href{https://github.com/ic005k/QtOpenCoreConfig}{OCAT}),
-since other tools may contain malware. Remember that a configuration
-made for a different hardware setup shall never be used on another hardware
-setup.
+It is strongly recommended to avoid configuration creation tools that are aware of the
+internal configuration structure as this may result in invalid configurations (since the
+structure gets constantly updated). If such tools are to be used despite this warning,
+ensure that only stable versions of OpenCore explicitly supported by such tools are used.
+In such cases, the use of open-source implementations with transparent binary generation
+(such as \href{https://github.com/ic005k/QtOpenCoreConfig}{OCAT}) is encouraged, given
+that other tools may contain malware. In addition, configurations created for a specific
+hardware setup should never be used on different hardware setups.
 
 For BIOS booting, a third-party UEFI environment provider is required and
 \texttt{OpenDuetPkg} is one such UEFI environment provider for legacy systems.
@@ -705,18 +702,15 @@ users should also install \href{https://www.nasm.us}{NASM} and
 The latest Xcode version is recommended for use despite the toolchain name.
 An example command sequence is as follows:
 
-\DIFmodbegin
-\begin{lstlisting}[caption=Compilation Commands, label=compile, style=ocbash,alsolanguage=DIFcode]
+\begin{lstlisting}[caption=Compilation Commands, label=compile, style=ocbash]
 git clone --depth=1 https://github.com/acidanthera/audk UDK
 cd UDK
 git submodule update --init --recommend-shallow
 git clone --depth=1 https://github.com/acidanthera/OpenCorePkg
-%DIF < source edksetup.sh
-%DIF > . ./edksetup.sh
+. ./edksetup.sh
 make -C BaseTools
 build -a X64 -b RELEASE -t XCODE5 -p OpenCorePkg/OpenCorePkg.dsc
 \end{lstlisting}
-\DIFmodend
 
 For IDE usage Xcode projects are available in the root of the repositories. Another
 approach could be using \href{https://microsoft.github.io/language-server-protocol}{Language Server Protocols}. For example, \href{https://www.sublimetext.com}{Sublime Text} with
@@ -1365,6 +1359,7 @@ To view their current state, use the \texttt{pmset -g} command in Terminal.
 \item
   \texttt{MmioWhitelist}\\
   \textbf{Type}: \texttt{plist\ array}\\
+  \textbf{Failsafe}: Empty\\
   \textbf{Description}: To be filled with \texttt{plist\ dict} values,
   describing addresses critical for particular firmware functioning when
   \texttt{DevirtualiseMmio} quirk is in use.
@@ -1791,7 +1786,47 @@ To view their current state, use the \texttt{pmset -g} command in Terminal.
   reasons that are as yet unclear.
 
 \item
-  \texttt{SetupVirtualMap}\\
+  \DIFaddbegin \texttt{\DIFadd{ResizeAppleGpuBars}}\\
+  \textbf{\DIFadd{Type}}\DIFadd{: }\texttt{\DIFadd{plist\ integer}}\\
+  \textbf{\DIFadd{Failsafe}}\DIFadd{: }\texttt{\DIFadd{-1}}\\
+  \textbf{\DIFadd{Description}}\DIFadd{: Reduce GPU PCI BAR sizes for compatibility with macOS.
+}
+
+  \DIFadd{This quirk reduces GPU PCI BAR sizes for Apple macOS up to the specified
+  value or lower if it is unsupported. The specified value follows PCI Resizable
+  BAR spec. Use }\texttt{\DIFadd{0}} \DIFadd{for 1 MB, }\texttt{\DIFadd{1}} \DIFadd{for 2 MB, }\texttt{\DIFadd{2}}
+  \DIFadd{for 4 MB, and so on up to }\texttt{\DIFadd{19}} \DIFadd{for 512 GB. Apple macOS supports
+  1 GB maximum, which is }\texttt{\DIFadd{10}}\DIFadd{. Use }\texttt{\DIFadd{-1}} \DIFadd{to disable this quirk.
+}
+
+  \DIFadd{Consider a GPU with 2 BARs:
+  }\begin{itemize}
+    \tightlist
+    \item \texttt{\DIFadd{BAR0}} \DIFadd{supports sizes from 256 MB to 8 GB. Its value is 4 GB.
+    }\item \texttt{\DIFadd{BAR1}} \DIFadd{supports sizes from 2 MB to 256 MB. Its value is 256 MB.
+  }\end{itemize}
+
+  \emph{\DIFadd{Example 1}}\DIFadd{: Setting }\texttt{\DIFadd{ResizeAppleGpuBars}} \DIFadd{to 1 GB will change
+  }\texttt{\DIFadd{BAR0}} \DIFadd{to 1 GB and leave }\texttt{\DIFadd{BAR1}} \DIFadd{unchanged.
+  }\\
+  \emph{\DIFadd{Example 2}}\DIFadd{: Setting }\texttt{\DIFadd{ResizeAppleGpuBars}} \DIFadd{to 1 MB will change
+  }\texttt{\DIFadd{BAR0}} \DIFadd{to 256 MB and }\texttt{\DIFadd{BAR0}} \DIFadd{to 2 MB.
+  }\\
+  \emph{\DIFadd{Example 3}}\DIFadd{: Setting }\texttt{\DIFadd{ResizeAppleGpuBars}} \DIFadd{to 16 GB will make no
+  changes.
+}
+
+  \emph{\DIFadd{Note 1}}\DIFadd{: See }\texttt{\DIFadd{ResizeGpuBars}} \DIFadd{quirk for general GPU PCI BAR
+  size configuration and more details about the technology.
+}
+
+  \emph{\DIFadd{Note 2}}\DIFadd{: Certain GPU drivers do not support non-standard BAR sizes,
+  causing sleep wake issues, for this reason for macOS it is recommended
+  to use minimal supported BAR sizes, i.e. specify }\texttt{\DIFadd{0}} \DIFadd{(1 MB).
+}
+
+\item
+  \DIFaddend \texttt{SetupVirtualMap}\\
   \textbf{Type}: \texttt{plist\ boolean}\\
   \textbf{Failsafe}: \texttt{false}\\
   \textbf{Description}: Setup virtual memory at \texttt{SetVirtualAddresses}.
@@ -1832,7 +1867,8 @@ To view their current state, use the \texttt{pmset -g} command in Terminal.
 
   This quirk attempts to update the memory map and memory attributes table to correct this.
 
-  \emph{Note}: The need for this quirk is indicated by early boot failures.
+  \emph{Note}: The need for this quirk is indicated by early boot failures (e.g. halts at
+  black screen), particularly in early boot of the Linux kernel.
   Only firmware released after 2017 is typically affected.
 
 \end{enumerate}
@@ -2579,9 +2615,9 @@ blocking.
   ACPI table and disabling VT-d in firmware preferences, which does not obstruct
   VT-d support in other systems in case they need this.
 
-  \emph{Note 2}: Misconfigured IOMMU in the firmware may result in broken devices 
-  such as ethernet or Wi-Fi adapters. For instance, an ethernet adapter may cycle in link-up 
-  link-down state infinitely and a Wi-Fi adapter may fail to discover networks. 
+  \emph{Note 2}: Misconfigured IOMMU in the firmware may result in broken devices
+  such as ethernet or Wi-Fi adapters. For instance, an ethernet adapter may cycle in link-up
+  link-down state infinitely and a Wi-Fi adapter may fail to discover networks.
   Gigabyte is one of the most common OEMs with these issues.
 
 \item
@@ -2648,9 +2684,13 @@ blocking.
   \textbf{Type}: \texttt{plist\ boolean}\\
   \textbf{Failsafe}: \texttt{false}\\
   \textbf{Requirement}: 10.10\\
-  \textbf{Description}: Increases 32-bit PCI bar size in IOPCIFamily from 1 to 4 GBs.
+  \textbf{Description}: \DIFdelbegin \DIFdel{Increases 32-bit PCI bar size in IOPCIFamily from 1 to 4 GBs}\DIFdelend \DIFaddbegin \DIFadd{Allows IOPCIFamily to boot with 2 GB PCI BARs}\DIFaddend .
 
-  \emph{Note}: This option should be avoided whenever possible. A need for this option
+  \DIFaddbegin \DIFadd{Normally macOS restricts PCI BARs to 1 GB. Enabling this option
+  (still) does not let macOS actually use PCI devices with larger BARs.
+}
+
+  \DIFaddend \emph{Note}: This option should be avoided whenever possible. A need for this option
   indicates misconfigured or defective firmware.
 
 \item
@@ -3077,6 +3117,7 @@ the default boot entry choice will remain changed until the next manual reconfig
 \item
   \texttt{BlessOverride}\\
   \textbf{Type}: \texttt{plist\ array}\\
+  \textbf{Failsafe}: Empty\\
   \textbf{Description}: Add custom scanning paths through the bless model.
 
   To be filled with \texttt{plist\ string} entries containing
@@ -3097,6 +3138,7 @@ the default boot entry choice will remain changed until the next manual reconfig
 \item
   \texttt{Entries}\\
   \textbf{Type}: \texttt{plist\ array}\\
+  \textbf{Failsafe}: Empty\\
   \textbf{Description}: Add boot entries to OpenCore picker.
 
   To be filled with \texttt{plist\ dict} values, describing each load entry.
@@ -3111,6 +3153,7 @@ the default boot entry choice will remain changed until the next manual reconfig
 \item
   \texttt{Tools}\label{misctools}\\
   \textbf{Type}: \texttt{plist\ array}\\
+  \textbf{Failsafe}: Empty\\
   \textbf{Description}: Add tool entries to the OpenCore picker.
 
   To be filled with \texttt{plist\ dict} values, describing each load entry.
@@ -3745,8 +3788,8 @@ nvram 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:boot-log |
   \item \texttt{GSTT} --- GoptStop
   \item \texttt{HDA} --- AudioDxe
   \item \texttt{KKT} --- KeyTester
-  \item \DIFaddbegin \texttt{\DIFadd{LNX}} \DIFadd{--- OpenLinuxBoot
-  }\item \DIFaddend \texttt{MMDD} --- MmapDump
+  \item \texttt{LNX} --- OpenLinuxBoot
+  \item \texttt{MMDD} --- MmapDump
   \item \texttt{OCPAVP} --- PavpProvision
   \item \texttt{OCRST} --- ResetSystem
   \item \texttt{OCUI} --- OpenCanopy
@@ -3908,12 +3951,11 @@ bless --folder "/Volumes/Macintosh HD/System/Library/CoreServices" \
   --bootefi --personalize
 \end{lstlisting}
 
-  On macOS \DIFaddbegin \DIFadd{11 and newer the dedicated }\texttt{\DIFadd{x86legacy}} \DIFadd{model always uses
-  }\texttt{\DIFadd{ApECID}}\DIFadd{. When this configuration setting is left as }\texttt{\DIFadd{0}}
-  \DIFadd{first 8 bytes of }\texttt{\DIFadd{system-id}} \DIFadd{variable are used instead.
-}
+  On macOS 11 and newer the dedicated \texttt{x86legacy} model always uses
+  \texttt{ApECID}. When this configuration setting is left as \texttt{0}
+  first 8 bytes of \texttt{system-id} variable are used instead.
 
-  \DIFadd{On macOS }\DIFaddend versions before macOS 11, which introduced a dedicated \texttt{x86legacy}
+  On macOS versions before macOS 11, which introduced a dedicated \texttt{x86legacy}
   model for models without the T2 chip, personalised Apple Secure Boot
   may not work as expected. When reinstalling the operating system, the macOS Installer
   from macOS 10.15 and older will often run out of free memory on the \texttt{/var/tmp}
@@ -4027,6 +4069,8 @@ u=$(nvram 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:boot-path | sed 's/.*GPT,\([^,]*\
 \begin{lstlisting}[label=nvramver, style=ocbash]
 nvram 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:opencore-version
 \end{lstlisting}
+  If the OpenCore version is not exposed the variable will contain
+  \texttt{UNK-000-0000-00-00} sequence.
 
   To obtain OEM information, use the following commands in macOS:
 \begin{lstlisting}[label=nvramoem, style=ocbash]
@@ -4128,10 +4172,11 @@ rm vault.pub
   can be found in the \href{https://habr.com/post/273497/}{Taming UEFI SecureBoot}
   paper (in Russian).
 
-  \emph{Note 2}: \texttt{vault.plist} and \texttt{vault.sig} are used regardless of
-  this option when \texttt{vault.plist} is present or a public key is embedded into
-  \texttt{OpenCore.efi}. Setting this option will only ensure configuration sanity,
-  and abort the boot process otherwise.
+  \emph{Note 2}:  Regardless of this option, \texttt{vault.plist} is always used when
+  present, and both \texttt{vault.plist} and \texttt{vault.sig} are used and required
+  when a public key is embedded into \texttt{OpenCore.efi}, and errors will abort the
+  boot process in either case. Setting this option allows OpenCore to warn the user if
+  the configuration is not as required to achieve an expected higher security level.
 
 \item
   \texttt{ScanPolicy}\\
@@ -4171,13 +4216,13 @@ rm vault.pub
     of EFI System Partition file system.
     \item \texttt{0x00000800} (bit \texttt{11}) --- \texttt{OC\_SCAN\_ALLOW\_FS\_NTFS}, allows scanning
     of NTFS (Msft Basic Data) file system.
-    \item \texttt{0x00001000} (bit \texttt{12}) --- \texttt{OC\_SCAN\_ALLOW\_FS\_\DIFdelbegin \DIFdel{EXT}\DIFdelend \DIFaddbegin \DIFadd{LINUX\_ROOT}\DIFaddend }, allows
-    scanning of \DIFdelbegin \DIFdel{EXT (Linux Root }\DIFdelend \DIFaddbegin \DIFadd{Linux Root file systems.
-    }\item \texttt{\DIFadd{0x00002000}} \DIFadd{(bit }\texttt{\DIFadd{13}}\DIFadd{) --- }\texttt{\DIFadd{OC\_SCAN\_ALLOW\_FS\_LINUX\_DATA}}\DIFadd{, allows
+    \item \texttt{0x00001000} (bit \texttt{12}) --- \texttt{OC\_SCAN\_ALLOW\_FS\_LINUX\_ROOT}, allows
+    scanning of Linux Root file systems.
+    \item \texttt{0x00002000} (bit \texttt{13}) --- \texttt{OC\_SCAN\_ALLOW\_FS\_LINUX\_DATA}, allows
     scanning of Linux Data file systems.
-    }\item \texttt{\DIFadd{0x00004000}} \DIFadd{(bit }\texttt{\DIFadd{14}}\DIFaddend ) \DIFdelbegin \DIFdel{file system}\DIFdelend \DIFaddbegin \DIFadd{--- }\texttt{\DIFadd{OC\_SCAN\_ALLOW\_FS\_XBOOTLDR}}\DIFadd{, allows
+    \item \texttt{0x00004000} (bit \texttt{14}) --- \texttt{OC\_SCAN\_ALLOW\_FS\_XBOOTLDR}, allows
     scanning the Extended Boot Loader Partition as defined by the
-    }\href{https://systemd.io/BOOT\_LOADER\_SPECIFICATION/}{\DIFadd{Boot Loader Specification}}\DIFaddend .
+    \href{https://systemd.io/BOOT\_LOADER\_SPECIFICATION/}{Boot Loader Specification}.
     \item \texttt{0x00010000} (bit \texttt{16}) --- \texttt{OC\_SCAN\_ALLOW\_DEVICE\_SATA}, allow
     scanning SATA devices.
     \item \texttt{0x00020000} (bit \texttt{17}) --- \texttt{OC\_SCAN\_ALLOW\_DEVICE\_SASEX}, allow
@@ -4234,7 +4279,7 @@ rm vault.pub
 
   \begin{itemize}
   \tightlist
-  \item \texttt{Default} --- Recent available model, currently set to \texttt{x86legacy}.
+  \item \texttt{Default} --- Matching model for current SMBIOS.
   \item \texttt{Disabled} --- No model, Secure Boot will be disabled.
   \item \texttt{j137} --- \texttt{iMacPro1,1 (December 2017). Minimum macOS 10.13.2 (17C2111)}
   \item \texttt{j680} --- \texttt{MacBookPro15,1 (July 2018). Minimum macOS 10.13.6 (17G2112)}
@@ -4256,12 +4301,15 @@ rm vault.pub
   \end{itemize}
 
   \emph{Warning}: Not all Apple Secure Boot models are supported on all hardware configurations.
-  Starting with macOS 12 \texttt{x86legacy} is the only Apple Secure Boot model compatible
-  with software update on hardware without T2 chips.
 
   Apple Secure Boot appeared in macOS 10.13 on models with T2 chips.
-  Since \texttt{PlatformInfo} and \texttt{SecureBootModel} are independent,
-  Apple Secure Boot can be used with any SMBIOS with and without T2.
+  Prior to macOS 12 \texttt{PlatformInfo} and \texttt{SecureBootModel} were independent,
+  allowing Apple Secure Boot can be used with any SMBIOS with and without T2.
+  Starting with macOS 12 \texttt{SecureBootModel} must match the SMBIOS Mac model.
+  \texttt{Default} model derives the model based on SMBIOS board identifier, either
+  set automatically via the \texttt{Generic} section or set manually via the \texttt{SMBIOS} section.
+  If there is no board identifier override the model will be derived heuristically from OEM SMBIOS.
+
   Setting \texttt{SecureBootModel} to any valid value but \texttt{Disabled}
   is equivalent to
   \href{https://support.apple.com/en-us/HT208330}{\texttt{Medium Security}}
@@ -4593,6 +4641,12 @@ improvements:
 
 \begin{itemize}
 \tightlist
+\item
+  \texttt{4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:BridgeOSHardwareModel}
+  \break
+  Bridge OS hardware model variable used to propagate to IODT bridge-model
+  by \texttt{EfiBoot}. Read by \texttt{hw.target sysctl}, used by
+  SoftwareUpdateCoreSupport.
 \item
   \texttt{7C436110-AB2A-4BBB-A880-FE41995C9F82:csr-active-config}
   \break
@@ -5144,6 +5198,9 @@ from \href{https://github.com/acidanthera/dmidecode/releases}{Acidanthera/dmidec
       a drive with an EFI partition that is the first partition on the disk.
     \item \texttt{FW\_FEATURE\_SUPPORTS\_APFS} (\texttt{0x00080000})
     - Without this bit, it is not possible to install macOS on an APFS disk.
+    \item \texttt{FW\_FEATURE\_SUPPORTS\_LARGE\_BASESYSTEM} (\texttt{0x800000000})
+    - Without this bit, it is not possible to install macOS versions with large
+      BaseSystem images, such as macOS 12.
   \end{itemize}
 
   \emph{Note}: On most newer firmwares these bits are already set, the option
@@ -5986,17 +6043,15 @@ Depending on the firmware, a different set of drivers may be required.
 Loading an incompatible driver may lead the system to unbootable state or
 even cause permanent firmware damage. Some of the known drivers are listed below:
 
-\DIFdelbegin %DIFDELCMD < \begin{tabular}{p{1.3in}p{5.55in}}
-%DIFDELCMD < %%%
-\DIFdelend \DIFaddbegin \begin{longtable}{p{1.3in}p{5.55in}}
-\DIFaddend \href{https://github.com/acidanthera/OpenCorePkg}{\texttt{AudioDxe}}\textbf{*}
+\begin{longtable}{p{1.3in}p{5.55in}}
+\href{https://github.com/acidanthera/OpenCorePkg}{\texttt{AudioDxe}}\textbf{*}
 & HDA audio support driver in UEFI firmware for most Intel and some other analog audio controllers.
   Staging driver, refer to \href{https://github.com/acidanthera/bugtracker/issues/740}{acidanthera/bugtracker\#740}
   for known issues in AudioDxe. \\
-\DIFaddbegin \href{https://github.com/acidanthera/OcBinaryData}{\texttt{\DIFadd{btrfs\_x64}}}
-& \DIFadd{Open source BTRFS file system driver, required for booting with }\hyperref[uefilinux]{OpenLinuxBoot}
-  \DIFadd{from a file system which is now quite commonly used with Linux. }\\
-\DIFaddend \href{https://github.com/acidanthera/OpenCorePkg}{\texttt{CrScreenshotDxe}}\textbf{*}
+\href{https://github.com/acidanthera/OcBinaryData}{\texttt{btrfs\_x64}}
+& Open source BTRFS file system driver, required for booting with \hyperref[uefilinux]{OpenLinuxBoot}
+  from a file system which is now quite commonly used with Linux. \\
+\href{https://github.com/acidanthera/OpenCorePkg}{\texttt{CrScreenshotDxe}}\textbf{*}
 & Screenshot making driver saving images to the root of OpenCore partition (ESP) or
   any available writeable filesystem upon pressing \texttt{F10}.
   This is a modified version of \href{https://github.com/LongSoft/CrScreenshotDxe}{\texttt{CrScreenshotDxe}}
@@ -6005,10 +6060,10 @@ even cause permanent firmware damage. Some of the known drivers are listed below
 & Proprietary ExFAT file system driver for Bootcamp support commonly found in Apple
   firmware. For Sandy Bridge and earlier CPUs, the \texttt{ExFatDxeLegacy} driver should be
   used due to the lack of \texttt{RDRAND} instruction support. \\
-\DIFaddbegin \href{https://github.com/acidanthera/OcBinaryData}{\texttt{\DIFadd{ext4\_x64}}}
-& \DIFadd{Open source EXT4 file system driver, required for booting with }\hyperref[uefilinux]{OpenLinuxBoot}
-  \DIFadd{from the file system most commonly used with Linux. }\\
-\DIFaddend \href{https://github.com/acidanthera/OcBinaryData}{\texttt{HfsPlus}}
+\href{https://github.com/acidanthera/OcBinaryData}{\texttt{ext4\_x64}}
+& Open source EXT4 file system driver, required for booting with \hyperref[uefilinux]{OpenLinuxBoot}
+  from the file system most commonly used with Linux. \\
+\href{https://github.com/acidanthera/OcBinaryData}{\texttt{HfsPlus}}
 & Recommended. Proprietary HFS file system driver with bless support commonly found in Apple
   firmware. For Sandy Bridge and earlier CPUs, the \texttt{HfsPlusLegacy} driver should be
   used due to the lack of \texttt{RDRAND} instruction support. \\
@@ -6030,11 +6085,11 @@ even cause permanent firmware damage. Some of the known drivers are listed below
 & \hyperref[ueficanopy]{OpenCore plugin} implementing graphical interface. \\
 \href{https://github.com/acidanthera/OpenCorePkg}{\texttt{OpenRuntime}}\textbf{*}
 & \hyperref[uefiruntime]{OpenCore plugin} implementing \texttt{OC\_FIRMWARE\_RUNTIME} protocol. \\
-\DIFaddbegin \href{https://github.com/acidanthera/OpenCorePkg}{\texttt{\DIFadd{OpenLinuxBoot}}}\textbf{\DIFadd{*}}
-& \hyperref[uefilinux]{OpenCore plugin} \DIFadd{implementing }\texttt{\DIFadd{OC\_BOOT\_ENTRY\_PROTOCOL}}
-  \DIFadd{to allow direct detection and booting of Linux distributiuons from OpenCore, without
-  chainloading via GRUB. }\\
-\DIFaddend \href{https://github.com/acidanthera/OpenCorePkg}{\texttt{OpenUsbKbDxe}}\textbf{*}
+\href{https://github.com/acidanthera/OpenCorePkg}{\texttt{OpenLinuxBoot}}\textbf{*}
+& \hyperref[uefilinux]{OpenCore plugin} implementing \texttt{OC\_BOOT\_ENTRY\_PROTOCOL}
+  to allow direct detection and booting of Linux distributiuons from OpenCore, without
+  chainloading via GRUB. \\
+\href{https://github.com/acidanthera/OpenCorePkg}{\texttt{OpenUsbKbDxe}}\textbf{*}
 & USB keyboard driver adding support for \texttt{AppleKeyMapAggregator} protocols
   on top of a custom USB keyboard driver implementation. This is an alternative to
   builtin \texttt{KeySupport}, which may work better or worse depending on the firmware. \\
@@ -6064,10 +6119,7 @@ even cause permanent firmware damage. Some of the known drivers are listed below
 & XHCI USB controller support driver from \texttt{MdeModulePkg}. This driver is
   included in most types of firmware starting with the Sandy Bridge generation. For earlier firmware
   or legacy systems, it may be used to support external USB 3.0 PCI cards.
-\DIFdelbegin %DIFDELCMD < \end{tabular}
-%DIFDELCMD < %%%
-\DIFdelend \DIFaddbegin \end{longtable}
-\DIFaddend 
+\end{longtable}
 
 Driver marked with \textbf{*} are bundled with OpenCore.
 To compile the drivers from UDK (EDK II) the same command used for
@@ -6243,189 +6295,329 @@ functioning. Feature highlights:
   mapping (e.g. \texttt{EnableWriteUnprotector}).
 \end{itemize}
 
-\DIFaddbegin \subsection{\DIFadd{OpenLinuxBoot}}\label{uefilinux}
+\subsection{OpenLinuxBoot}\label{uefilinux}
 
-\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{is an OpenCore plugin implementing }\texttt{\DIFadd{OC\_BOOT\_ENTRY\_PROTOCOL}}\DIFadd{.
-It detects and boots Linux distros which are installed according to the
-}\href{https://systemd.io/BOOT_LOADER_SPECIFICATION/}{\DIFadd{Boot Loader Specification}}
-\DIFadd{or to the closely related (but not identical, see next paragraph)
-}\href{https://fedoraproject.org/wiki/Changes/BootLoaderSpecByDefault}{\DIFadd{systemd BootLoaderSpecByDefault}}\DIFadd{.
-In effect this means Linux distributions where the available boot options are found in
-}\texttt{\DIFadd{\{ESP\}/loader/entries/*.conf}} \DIFadd{files (for instance }\texttt{\DIFadd{/boot/efi/loader/entries/*.conf}}\DIFadd{)
-or in }\texttt{\DIFadd{\{boot\}/loader/entries/*.conf}} \DIFadd{files (for instance }\texttt{\DIFadd{/boot/loader/entries/*.conf}}\DIFadd{).
-The former layout -- pure Boot Loader Specification, using kernel files on the EFI System Partition or
-Extended Boot Loader Partition  -- is specific to systemd-boot, the latter
-layout with kernel files typically on the partition which will be mounted as }\texttt{\DIFadd{/boot}}
-\DIFadd{applies to most Fedora-related distros including Fedora itself, RHEL and variants.
+\DIFdelbegin \texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdelend \DIFaddbegin \DIFadd{OpenLinuxBoot }\DIFaddend is an OpenCore plugin implementing \texttt{OC\_BOOT\_ENTRY\_PROTOCOL}.
+It \DIFdelbegin \DIFdel{detects and boots Linux distros which are installed according to the
+}\href{https://systemd.io/BOOT_LOADER_SPECIFICATION/}{\DIFdel{Boot Loader Specification}}
+%DIFAUXCMD
+\DIFdel{or to the closely related (but not identical, see next paragraph) }\href{https://fedoraproject.org/wiki/Changes/BootLoaderSpecByDefault}{\DIFdel{systemd BootLoaderSpecByDefault}}%DIFAUXCMD
+\DIFdel{.
+In effect this means Linux distributions where the available boot options are found in }\DIFdelend \DIFaddbegin \DIFadd{aims to automatically detect and boot most Linux distros without additional configuration.
 }
 
-\DIFadd{BootLoaderSpecByDefault includes the possibility of expanding GRUB variables
-in its }\texttt{\DIFadd{*.conf}} \DIFadd{files -- and this is used in practice in certain distros such as CentOS.
-In order to correctly handle this, }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{extracts all variables from
-}\texttt{\DIFadd{\{boot\}/grub2/grubenv}} \DIFadd{and any unconditionally set variables from }\texttt{\DIFadd{\{boot\}/grub2/grub.cfg}}\DIFadd{.
-This has proved sufficient in practice to extract the required variables seen so far in distros which use this
-GRUB-specific feature.
-}
-
-\DIFadd{For distributions which do not use either of the above schemes, }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{will autodetect and
-boot }\texttt{\DIFadd{\{boot\}/vmlinuz*}} \DIFadd{kernel files directly, after linking these automatically -- based on the
-kernel version in the filename -- to their associated }\texttt{\DIFadd{\{boot\}/init*}} \DIFadd{ramdisk files, and after
-searching in }\texttt{\DIFadd{/etc/default/grub}} \DIFadd{for kernel boot options and }\texttt{\DIFadd{/etc/os-release}} \DIFadd{for the
-distro name.
-This layout applies to most Debian-related distros, including Debian itself, Ubuntu and variants.
-}
-
-\DIFadd{The method of starting the kernel relies on it being compiled with EFISTUB, however this applies
-to almost all modern distros, particularly those which use systemd. Most modern distros
-use systemd as their system manager (even though at the same time most do }\emph{\DIFadd{not}} \DIFadd{use systemd-boot as
-their bootloader).
-}
-
-\DIFadd{The latest kernel version of a given install is always shown in the boot menu. Additional versions,
-recovery versions, etc. are added as auxiliary boot entries, so depending on OpenCore's
-}\texttt{\DIFadd{HideAuxiliary}} \DIFadd{setting may not be shown until the space key is pressed.
-}
-
-\emph{\DIFadd{Note 1}}\DIFadd{: }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{requires filesystem drivers that may not be available in
-firmware such as EXT4 and BTRFS drivers. These drivers can be obtained from external sources.
-Drivers tested in basic scenarios can be downloaded from }\href{https://github.com/acidanthera/OcBinaryData}{\DIFadd{OcBinaryData}}\DIFadd{.
-Be aware that these drivers are neither tested for reliability in all scenarious, nor underwent any
-tamper-resistance testing, therefore have may carry potential security or data-loss risks.
-}
-
-\DIFadd{Most Linux distributions keep their boot files on the EXT4 file system even when the distribution's
-main filesystem is something else such as BTRFS, therefore a suitable UEFI EXT4 file system
-driver such as }\href{https://github.com/acidanthera/OcBinaryData}{\texttt{\DIFadd{ext4\_x64}}} \DIFadd{is normally required.
-A BTRFS driver such as }\href{https://github.com/acidanthera/OcBinaryData}{\texttt{\DIFadd{btrfs\_x64}}}
-\DIFadd{will be required in a somewhat less standard setup where the boot files are on a BTRFS partition,
-e.g. as by default in openSUSE.
-}
-
-\DIFadd{Pure Boot Loader Spec (e.g. as implemented by systemd-boot) keeps all kernel and ramdisk images directly
-on the EFI System Partition (or an Extended Boot Loader Partition), therefore it requires no additional
-filesystem driver - but it is not widely used except in Arch Linux.
-}
-
-\emph{\DIFadd{Note 2}}\DIFadd{: systemd-boot users (probably almost exclusively Arch Linux users) should be aware that }\texttt{\DIFadd{OpenLinuxBoot}}
-\DIFadd{does not support the systemd-boot--specific }\href{https://systemd.io/BOOT\_LOADER\_INTERFACE/}{\DIFadd{Boot Loader Interface}}\DIFadd{;
-therefore use }\texttt{\DIFadd{efibootmgr}} \DIFadd{rather than }\texttt{\DIFadd{bootctl}} \DIFadd{for any low-level Linux command line interaction with
-the boot menu.
-}
-
-\DIFadd{The default parameter values should work well, but if you need to parameterise this driver the following
-options may be specified in }\texttt{\DIFadd{UEFI/Drivers/Arguments}}\DIFadd{:
+\DIFadd{Usage is as follows:
 }
 
 \begin{itemize}
-  \tightlist
-	\item \texttt{\DIFadd{flags}} \DIFadd{- Default: all flags except }\texttt{\DIFadd{LINUX\_BOOT\_ADD\_DEBUG\_INFO}} \DIFadd{are set. }\medskip
+\tightlist
+  \item \DIFadd{Add }\texttt{\DIFadd{OpenLinuxBoot.efi}} \DIFadd{and also typically (see below) }\texttt{\DIFadd{ext4\_x64.efi}} \DIFadd{to the }\texttt{\DIFadd{config.plist}}
+  \texttt{\DIFadd{Drivers}} \DIFadd{section.
+  }\item \DIFadd{Make sure }\texttt{\DIFadd{RequestBootVarRouting}} \DIFadd{and }\texttt{\DIFadd{LauncherOption}} \DIFadd{are enabled in }\DIFaddend \texttt{\DIFdelbegin \DIFdel{\{ESP\}/loader/entries/*}\DIFdelend \DIFaddbegin \DIFadd{config}\DIFaddend .\DIFdelbegin \DIFdel{conf}\DIFdelend \DIFaddbegin \DIFadd{plist}\DIFaddend }\DIFdelbegin \DIFdel{files (for instance }\texttt{\DIFdel{/boot/efi/loader/entries/*.conf}}%DIFAUXCMD
+\DIFdel{)
+or in }\texttt{\DIFdel{\{boot\}/loader/entries/*.conf}} %DIFAUXCMD
+\DIFdel{files (for instance }\texttt{\DIFdel{/boot/loader/entries/*.conf}}%DIFAUXCMD
+\DIFdel{).
+The former layout -- pure Boot Loader Specification, using kernel files on the EFI System Partition or
+Extended Boot Loader Partition  -- is specific to systemd-boot, the latter
+layout with kernel files typically on the partition which will be mounted as }\DIFdelend \DIFaddbegin \DIFadd{;
+  it is also recommended to enable }\DIFaddend \texttt{\DIFdelbegin \DIFdel{/boot}\DIFdelend \DIFaddbegin \DIFadd{HideAuxiliary}\DIFaddend } \DIFdelbegin \DIFdel{applies to most Fedora-related distros including Fedora itself, RHEL and variants.
+}%DIFDELCMD < 
 
-	\DIFadd{Available flags are: }\medskip
+%DIFDELCMD < %%%
+\DIFdel{BootLoaderSpecByDefault includes the possibility of expanding GRUB variables
+in its }\texttt{\DIFdel{*.conf}} %DIFAUXCMD
+\DIFdel{files }\DIFdelend \DIFaddbegin \DIFadd{in order to hide older Linux kernels except when required
+  (they are added as auxiliary entries and so may then be shown by pressing the }\texttt{\DIFadd{Spacebar}} \DIFadd{key in the OpenCore boot menu).
+  }\item \DIFadd{Install Linux as normal if this has not been done earlier }\DIFaddend -- \DIFdelbegin \DIFdel{and this is used in practice in certain distros such as CentOS.
+  In order to correctly handle this , }\texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdel{extracts all variables from
+}\texttt{\DIFdel{\{boot\}/grub2/grubenv}} %DIFAUXCMD
+\DIFdel{and any unconditionally set variables from }\texttt{\DIFdel{\{boot\}/grub2/grub.cfg}}%DIFAUXCMD
+\DIFdel{.
+This has proved sufficient in practice to extract the required variables seen so far in distros which use this GRUB-specific feature.
+  }\DIFdelend \DIFaddbegin \DIFadd{OpenLinuxBoot is not involved in this stage.
+  }\item \DIFadd{Reboot into OpenCore: the installed Linux distribution should just appear and boot directly from OpenCore
+  when selected, which it does without chainloading via GRUB.
+}\end{itemize}
+\DIFaddend 
+
+\DIFdelbegin \DIFdel{For distributions which do not use either of the above schemes, }\texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdel{will autodetect and boot }\texttt{\DIFdel{\{boot\}/vmlinuz*}} %DIFAUXCMD
+\DIFdel{kernel files directly , after linking these automatically -- based on the kernel version in the filename -- to their associated }\texttt{\DIFdel{\{boot\}/init*}} %DIFAUXCMD
+\DIFdel{ramdisk files, and after
+searching in }\texttt{\DIFdel{/etc/default/grub}} %DIFAUXCMD
+\DIFdel{for kernel boot options and }\texttt{\DIFdel{/etc/os-release}} %DIFAUXCMD
+\DIFdel{for the
+distro name.
+This layout applies to most Debian-related distros, including Debian itself, Ubuntu and variants. }\DIFdelend \DIFaddbegin \DIFadd{If OpenCore has already been manually set up to boot Linux, e.g. via }\texttt{\DIFadd{BlessOverride}} \DIFadd{or via }\texttt{\DIFadd{Entries}} \DIFadd{then
+then these settings may be removed so that the Linux distribution is not displayed twice in the boot menu.
+}\DIFaddend 
+
+\DIFdelbegin \DIFdel{The method of starting the kernel relies on it being compiled with EFISTUB, however this applies
+to
+almost all modern distros, particularly those which usesystemd. Most modern distros
+use systemd as their system manager (even though at the same time most do }\emph{\DIFdel{not}} %DIFAUXCMD
+\DIFdelend \DIFaddbegin \DIFadd{It is recommended to install Linux with its default bootloader, even though this will not be actively used
+when booting via OpenLinuxBoot. This is because OpenLinuxBoot has to detect the correct kernel options to
+}\DIFaddend use\DIFdelbegin \DIFdel{systemd-boot as
+their bootloader). }%DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\DIFdel{The latest kernel version of a given install is always shown in the boot menu. Additional versions,
+recovery versions, etc. are added as auxiliary boot entries, so depending on OpenCore's
+}\texttt{\DIFdel{HideAuxiliary}} %DIFAUXCMD
+\DIFdel{setting may not be shown until the space key is pressed}\DIFdelend \DIFaddbegin \DIFadd{, and does so by looking in files left by the default bootloader}\DIFaddend . \DIFaddbegin \DIFadd{If no bootloader was installed (or
+these options cannot be found) booting is still possible, but the correct boot options must be manually
+specified before OpenLinuxBoot will attempt to start the distro.
+}\DIFaddend 
+
+\DIFdelbegin \emph{\DIFdel{Note 1}}%DIFAUXCMD
+\DIFdel{: }\texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdelend \DIFaddbegin \DIFadd{OpenLinuxBoot typically }\DIFaddend requires filesystem drivers that \DIFdelbegin \DIFdel{may not be }\DIFdelend \DIFaddbegin \DIFadd{are not }\DIFaddend available in
+firmware\DIFaddbegin \DIFadd{, }\DIFaddend such as EXT4 and BTRFS drivers. These drivers can be obtained from external sources.
+Drivers tested in basic scenarios can be downloaded from \href{https://github.com/acidanthera/OcBinaryData}{OcBinaryData}.
+Be aware that these drivers are \DIFdelbegin \DIFdel{neither }\DIFdelend \DIFaddbegin \DIFadd{not }\DIFaddend tested for reliability in all scenarious, nor \DIFdelbegin \DIFdel{underwent any
+}\DIFdelend \DIFaddbegin \DIFadd{did they undergo
+}\DIFaddend tamper-resistance testing, therefore \DIFdelbegin \DIFdel{have }\DIFdelend \DIFaddbegin \DIFadd{they }\DIFaddend may carry potential security or data-loss risks.
+
+Most Linux \DIFdelbegin \DIFdel{distributions keep their boot files on an EXT4 partition even when the distribution's
+root filesystem is something else, such as BTRFS, therefore only an EXT4
+driver such as }\DIFdelend \DIFaddbegin \DIFadd{distros require the }\DIFaddend \href{https://github.com/acidanthera/OcBinaryData}{\texttt{ext4\_x64}} \DIFdelbegin \DIFdel{is normally required.
+A BTRFS driversuch as }\DIFdelend \DIFaddbegin \DIFadd{driver,
+a few may require the }\DIFaddend \href{https://github.com/acidanthera/OcBinaryData}{\texttt{btrfs\_x64}} \DIFdelbegin \DIFdel{will be required in the currently somewhat less standard situation where the boot files are on a BTRFS
+partition,
+e.g. as is currently done by default in openSUSE.
+}%DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\DIFdel{Pure Boot Loader Spec (e.g. as implemented by systemd-boot) keeps all kernel and ramdisk images directly
+on the EFI System Partition (or an Extended Boot Loader Partition), therefore it requires no additional filesystem driver- but it is not widely used except in Arch Linux.
+}%DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\emph{\DIFdel{Note 2}}%DIFAUXCMD
+\DIFdel{: }\texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdel{does not attempt to read and interpret the layout of Linux
+installation media (which can be highly variable). Installation media should be booted directly either from
+the machine's own EFI boot menu or from the OpenCore boot menu. In some cases, e.g. Apple T2 hardware,
+then -- depending on OpenCore's security settings -- OpenCore may be able to start some Linux installers
+which the machine's own bootloader will refuse to boot. }%DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\emph{\DIFdel{Note 3}}%DIFAUXCMD
+\DIFdelend \DIFaddbegin \DIFadd{driver, and a few
+may require no additional file system driver}\DIFaddend : \DIFdelbegin \DIFdel{systemd-boot users (probably almost exclusively Arch Linux users) should be aware that }\texttt{\DIFdel{OpenLinuxBoot}}
+%DIFAUXCMD
+\DIFdel{does not support the systemd-boot--specific }\href{https://systemd.io/BOOT\_LOADER\_INTERFACE/}{\DIFdel{Boot Loader Interface}}%DIFAUXCMD
+\DIFdel{;
+therefore use }\texttt{\DIFdel{efibootmgr}} %DIFAUXCMD
+\DIFdel{rather than }\texttt{\DIFdel{bootctl}} %DIFAUXCMD
+\DIFdel{for any low-level Linux command line interaction with
+the boot menu}\DIFdelend \DIFaddbegin \DIFadd{it depends on the filesystem of the boot partition of the installed
+distro, and on what filesystems are already supported by the system's firmware. LVM is not currently
+supported - this is because it is not believed that there is currently a stand-alone UEFI LVM filesystem driver}\DIFaddend .
+
+\DIFdelbegin \emph{\DIFdel{Note 4}}%DIFAUXCMD
+\DIFdel{: }\DIFdelend Be aware of the \texttt{SyncRuntimePermissions} quirk, which may need to be set to avoid early boot
+failure (\DIFdelbegin \DIFdel{i.e. halts with }\DIFdelend \DIFaddbegin \DIFadd{typically halting with a }\DIFaddend black screen) of the Linux kernel\DIFaddbegin \DIFadd{, }\DIFaddend due to a firmware bug of some
+firmware released after 2017. \DIFaddbegin \DIFadd{When present and not mitigated by this quirk, this affects booting
+via OpenCore with or without OpenLinuxBoot.
+}\DIFaddend 
+
+\DIFaddbegin \DIFadd{After installing OpenLinuxBoot, it is recommended to compare the Linux boot options (shown with }\texttt{\DIFadd{cat /proc/cmdline}}\DIFadd{)
+seen when booting via OpenLinuxBoot and via the distro's original bootloader. If the default bootloader
+is GRUB, expect the options generated by OpenLinuxBoot not to
+contain a }\texttt{\DIFadd{BOOT\_IMAGE=...}} \DIFadd{value where the GRUB options do, and to contain an
+}\texttt{\DIFadd{initrd=...}} \DIFadd{value while the GRUB options do not.
+All remaining options should match (option order does not matter) -- perhaps excluding less important graphics
+handover options (such as in the Ubuntu example given in }\texttt{\DIFadd{autoopts}} \DIFadd{below). If they do not, it is recommended
+to manually add the missing options, e.g. with }\texttt{\DIFadd{partuuidopts:\{partuuid\}+=\{opts\}}} \DIFadd{to target a specific
+distro (or just with }\texttt{\DIFadd{autoopts+=\{opts\}}}\DIFadd{, which applies to all installed distros, if only one distro is in use).
+}
+
+\DIFadd{If using OpenLinuxBoot with Secure Boot, users may wish to use the }\texttt{\DIFadd{shim-to-cert.tool}} \DIFadd{included in OpenCore
+utilities, which can be used to extract the required public key to validate a distro's kernels directly, rather
+than via shim. For non-GRUB distros, the required public key must be found by user research.
+}
+
+\subsubsection{\DIFadd{Configuration}}
+
+\DIFaddend The default parameter values should work well \DIFaddbegin \DIFadd{with no changes under most circumstances}\DIFaddend , but if \DIFdelbegin \DIFdel{you need to parameterise this driver }\DIFdelend \DIFaddbegin \DIFadd{required }\DIFaddend the following
+options \DIFaddbegin \DIFadd{for the driver }\DIFaddend may be specified in \texttt{UEFI/Drivers/Arguments}:
+
+\begin{itemize}
+  \tightlist
+	\item \texttt{flags} - Default: all flags except \texttt{LINUX\_BOOT\_ADD\_DEBUG\_INFO} \DIFaddbegin \DIFadd{and
+  }\texttt{\DIFadd{LINUX\_BOOT\_LOG\_VERBOSE}} \DIFaddend are set. \medskip
+
+	Available flags are: \medskip
 
   \begin{itemize}
   \tightlist
-    \item \texttt{\DIFadd{0x00000001}} \DIFadd{(bit }\texttt{\DIFadd{0}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_SCAN\_ESP}}\DIFadd{,
+    \item \texttt{0x00000001} (bit \texttt{0}) --- \texttt{LINUX\_BOOT\_SCAN\_ESP},
     Allows scanning for entries on EFI System Partition.
-    }\item \texttt{\DIFadd{0x00000002}} \DIFadd{(bit }\texttt{\DIFadd{1}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_SCAN\_XBOOTLDR}}\DIFadd{,
+    \item \texttt{0x00000002} (bit \texttt{1}) --- \texttt{LINUX\_BOOT\_SCAN\_XBOOTLDR},
     Allows scanning for entries on Extended Boot Loader Partition.
-	  }\item \texttt{\DIFadd{0x00000004}} \DIFadd{(bit }\texttt{\DIFadd{2}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_SCAN\_LINUX\_ROOT}}\DIFadd{,
+	  \item \texttt{0x00000004} (bit \texttt{2}) --- \texttt{LINUX\_BOOT\_SCAN\_LINUX\_ROOT},
 	  Allows scanning for entries on Linux Root filesystems.
-	  }\item \texttt{\DIFadd{0x00000008}} \DIFadd{(bit }\texttt{\DIFadd{3}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_SCAN\_LINUX\_DATA}}\DIFadd{,
+	  \item \texttt{0x00000008} (bit \texttt{3}) --- \texttt{LINUX\_BOOT\_SCAN\_LINUX\_DATA},
 	  Allows scanning for entries on Linux Data filesystems.
-	  }\item \texttt{\DIFadd{0x00000080}} \DIFadd{(bit }\texttt{\DIFadd{7}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_SCAN\_OTHER}}\DIFadd{,
-	  Allows scanning for entries on file systems not matched by any of the above. }\medskip
+	  \item \texttt{0x00000080} (bit \texttt{7}) --- \texttt{LINUX\_BOOT\_SCAN\_OTHER},
+	  Allows scanning for entries on file systems not matched by any of the above. \medskip
 
-	  \DIFadd{The following notes apply to all of the above options: }\medskip
+	  The following notes apply to all of the above options: \medskip
 
-	  \emph{\DIFadd{Note 1}}\DIFadd{: Apple filesystems APFS and HFS are never scanned.
-    }\medskip
+	  \emph{Note 1}: Apple filesystems APFS and HFS are never scanned.
+    \medskip
 
-	  \emph{\DIFadd{Note 2}}\DIFadd{: Regardless of the above flags, a file system must first be
-	  allowed by }\texttt{\DIFadd{Misc/Security/ScanPolicy}} \DIFadd{before it can be seen by
-    }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{or any other }\texttt{\DIFadd{OC\_BOOT\_ENTRY\_PROTOCOL}} \DIFadd{driver.
-    }\medskip
+	  \emph{Note 2}: Regardless of the above flags, a file system must first be
+	  allowed by \texttt{Misc/Security/ScanPolicy} before it can be seen by
+    \DIFdelbegin \texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdelend \DIFaddbegin \DIFadd{OpenLinuxBoot }\DIFaddend or any other \texttt{OC\_BOOT\_ENTRY\_PROTOCOL} driver.
+    \medskip
 
-	  \emph{\DIFadd{Note 3}}\DIFadd{: It is recommended to enable scanning }\texttt{\DIFadd{LINUX\_ROOT}} \DIFadd{and }\texttt{\DIFadd{LINUX\_DATA}}
-    \DIFadd{in both }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{flags and }\texttt{\DIFadd{Misc/Security/ScanPolicy}} \DIFadd{in order to be sure
-    to detect all valid Linux installs.
-    }\medskip
+	  \emph{Note 3}: It is recommended to enable scanning \texttt{LINUX\_ROOT} and \texttt{LINUX\_DATA}
+    in both \DIFdelbegin \texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdelend \DIFaddbegin \DIFadd{OpenLinuxBoot }\DIFaddend flags and \texttt{Misc/Security/ScanPolicy} in order to be sure to detect
+    all valid Linux installs\DIFaddbegin \DIFadd{, since Linux boot filesystems are very often marked as }\texttt{\DIFadd{LINUX\_DATA}}\DIFaddend .
+    \medskip
 
-	  \item \texttt{\DIFadd{0x00000100}} \DIFadd{(bit }\texttt{\DIFadd{8}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_ALLOW\_AUTODETECT}}\DIFadd{,
-	  If set allows autodetecting and linking }\texttt{\DIFadd{vmlinuz*}} \DIFadd{and }\texttt{\DIFadd{init*}} \DIFadd{ramdisk files
-	  when }\texttt{\DIFadd{loader/entries}} \DIFadd{files are not found.
-	  }\item \texttt{\DIFadd{0x00000200}} \DIFadd{(bit }\texttt{\DIFadd{9}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_USE\_LATEST}}\DIFadd{,
-	  When a Linux entry generated by }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{is selected as the default boot entry
-    in OpenCore, automatically switch to the latest kernel when a new version is installed. }\medskip
+	  \item \texttt{0x00000100} (bit \texttt{8}) --- \texttt{LINUX\_BOOT\_ALLOW\_AUTODETECT},
+	  If set allows autodetecting and linking \texttt{vmlinuz*} and \texttt{init*} ramdisk files
+	  when \texttt{loader/entries} files are not found.
+	  \item \texttt{0x00000200} (bit \texttt{9}) --- \texttt{LINUX\_BOOT\_USE\_LATEST},
+	  When a Linux entry generated by \DIFdelbegin \texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdelend \DIFaddbegin \DIFadd{OpenLinuxBoot }\DIFaddend is selected as the default boot entry
+    in OpenCore, automatically switch to the latest kernel when a new version is installed. \medskip
 
-	  \DIFadd{When this option is set, an internal menu entry id is shared between kernel versions from the same install
+	  When this option is set, an internal menu entry id is shared between kernel versions from the same install
     of Linux. Linux boot options are always sorted highest kernel version first, so this means that
-    the latest kernel version of the same install always shows as the default, with this option set. }\medskip
+    the latest kernel version of the same install always shows as the default, with this option set. \medskip
 
-	  \emph{\DIFadd{Note}}\DIFadd{: This option is recommended on all systems. }\medskip
+	  \emph{Note}: This option is recommended on all systems. \medskip
 
-	  \item \texttt{\DIFadd{0x00000400}} \DIFadd{(bit }\texttt{\DIFadd{10}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_ADD\_RO}}\DIFadd{,
+	  \item \texttt{0x00000400} (bit \texttt{10}) --- \texttt{LINUX\_BOOT\_ADD\_RO},
 	  This option applies to autodetected Linux only (i.e. to Debian-style distrubutions, not to BLSpec and
-    Fedora-style distributions with }\texttt{\DIFadd{/loader/entries/*.conf}} \DIFadd{files).
+    Fedora-style distributions with \texttt{/loader/entries/*.conf} files).
     Some distrubtions run a filesystem check on loading which requires the root
-    filesystem to initially be mounted read-only via the }\texttt{\DIFadd{ro}} \DIFadd{kernel option. Set this bit to add this
+    filesystem to initially be mounted read-only via the \texttt{ro} kernel option. Set this bit to add this
     option on autodetected distros; should be harmless but very slightly slow down boot time (due to requried
     remount as read-write) on distros which do not require it. To specify this option for specific
-    distros only, use }\texttt{\DIFadd{partuuidopts:\{partuuid\}+=ro}} \DIFadd{instead of this flag.
-	  }\item \texttt{\DIFadd{0x00008000}} \DIFadd{(bit }\texttt{\DIFadd{15}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_ADD\_DEBUG\_INFO}}\DIFadd{,
+    distros only, use \texttt{partuuidopts:\{partuuid\}+=ro} instead of this flag.
+    \DIFaddbegin 
+
+	  \DIFaddend \item \DIFaddbegin \texttt{\DIFadd{0x00002000}} \DIFadd{(bit }\texttt{\DIFadd{13}}\DIFadd{) --- }\texttt{\DIFadd{LINUX\_BOOT\_ALLOW\_CONF\_AUTO\_ROOT}}\DIFadd{,
+	  In some instances of }\texttt{\DIFadd{BootLoaderSpecByDefault}} \DIFadd{in combination with }\texttt{\DIFadd{ostree}}\DIFadd{, the
+    }\texttt{\DIFadd{/loader/entries/*.conf}} \DIFadd{files do not specify a required }\texttt{\DIFadd{root=...}} \DIFadd{kernel
+    option -- it is added by GRUB. If this bit is set and this situation is detected, then
+    automatically add this option. (Required for example by Endless OS.)
+	  }\item \DIFaddend \texttt{0x00004000} (bit \texttt{14}) --- \texttt{LINUX\_BOOT\_LOG\_VERBOSE},
+	  Add additional debug log info about files encountered and autodetect options added while scanning for
+    Linux boot entries.
+	  \item \texttt{0x00008000} (bit \texttt{15}) --- \texttt{LINUX\_BOOT\_ADD\_DEBUG\_INFO},
 	  Adds a human readable file system type, followed by the first eight characters of the
 	  partition's unique partition uuid, to each generated entry name. Can help with debugging
 	  the origin of entries generated by the driver when there are multiple Linux installs on
 	  one system.
-  }\end{itemize} \medskip
+  \end{itemize} \medskip
 
-	\DIFadd{Flag values can be specified in hexadecimal beginning with }\texttt{\DIFadd{0x}} \DIFadd{or in decimal,
-  e.g. }\texttt{\DIFadd{flags=0x80}} \DIFadd{or }\texttt{\DIFadd{flags=128}}\DIFadd{. }\medskip
+	Flag values can be specified in hexadecimal beginning with \texttt{0x} or in decimal,
+  e.g. \texttt{flags=0x80} or \texttt{flags=128}. \medskip
 
-	\item \texttt{\DIFadd{partuuidopts:\{partuuid\}[+]="\{options\}"}} \DIFadd{- Default: not set. }\medskip
+	\item \texttt{partuuidopts:\{partuuid\}[+]="\{options\}"} - Default: not set. \medskip
 
-  \DIFadd{Allows specifying kernel options for a given partition only. If specified with }\texttt{\DIFadd{+=}} \DIFadd{then
-  these are used in addition to autodetected options, if specified with }\texttt{\DIFadd{=}} \DIFadd{they are used instead.
+  Allows specifying kernel options for a given partition only. If specified with \texttt{+=} then
+  these are used in addition to autodetected options, if specified with \texttt{=} they are used instead.
   Used for autodetected Linux only. Values specified here are never used for entries created from
-  }\texttt{\DIFadd{/loader/entries/*.conf}} \DIFadd{files.
-  }\medskip
+  \texttt{/loader/entries/*.conf} files.
+  \medskip
 
-  \emph{\DIFadd{Note}}\DIFadd{: The }\texttt{\DIFadd{partuuid}} \DIFadd{value to be specified here is typically the same as the }\texttt{\DIFadd{PARTUUID}}
-  \DIFadd{seen in }\texttt{\DIFadd{root=PARTUUID=...}} \DIFadd{in the Linux kernel boot options (view using
-  }\texttt{\DIFadd{cat /proc/cmdline}}\DIFadd{) for autodetected Debian-style distros, but is NOT the same for
-  Fedora-style distros booted from }\texttt{\DIFadd{/loader/entries/*.conf}} \DIFadd{files. }\medskip
+  \emph{Note}: The \texttt{partuuid} value to be specified here is typically the same as the \texttt{PARTUUID}
+  seen in \texttt{root=PARTUUID=...} in the Linux kernel boot options (view using
+  \texttt{cat /proc/cmdline}) for autodetected Debian-style distros, but is \DIFdelbegin \DIFdel{NOT }\DIFdelend \DIFaddbegin \DIFadd{not }\DIFaddend the same for
+  Fedora-style distros booted from \texttt{/loader/entries/*.conf} files. \medskip
 
-	\DIFadd{Typically you should not need this option in the latter case, but in case you do, to find out the unique
-  partition uuid to use, look for }\texttt{\DIFadd{LNX:}} \DIFadd{entries in the OpenCore debug	log file. Alternatively, and
-  for more advanced scenarios, you may wish to examine how your drives are mounted using the
-  Linux }\texttt{\DIFadd{mount}} \DIFadd{command, and then find out the partuuid of relevant mounted drives by examining the
-  output of }\texttt{\DIFadd{ls -l /dev/disk/by-partuuid}}\DIFadd{. }\medskip
+	Typically \DIFdelbegin \DIFdel{you should not need this option }\DIFdelend \DIFaddbegin \DIFadd{this option should not be needed }\DIFaddend in the latter case, but in case \DIFdelbegin \DIFdel{you do}\DIFdelend \DIFaddbegin \DIFadd{it is}\DIFaddend , to find out the unique
+  partition uuid to use \DIFdelbegin \DIFdel{, }\DIFdelend look for \texttt{LNX:} entries in the OpenCore debug log file. Alternatively, and
+  for more advanced scenarios, \DIFdelbegin \DIFdel{you may wish }\DIFdelend \DIFaddbegin \DIFadd{it is possible }\DIFaddend to examine how \DIFdelbegin \DIFdel{your drives }\DIFdelend \DIFaddbegin \DIFadd{the distro's partitions }\DIFaddend are mounted using the
+  Linux \texttt{mount} command, and then find out the partuuid of relevant mounted \DIFdelbegin \DIFdel{drives }\DIFdelend \DIFaddbegin \DIFadd{partitions }\DIFaddend by examining the
+  output of \texttt{ls -l /dev/disk/by-partuuid}. \medskip
 
-	\item \texttt{\DIFadd{autoopts}[\DIFadd{+}]\DIFadd{="\{options\}"}} \DIFadd{- Default: None specified. The kernel options to use
+	\item \texttt{autoopts[+]="\{options\}"} - Default: None specified. The kernel options to use
   for autodetected Linux only. The value here is never used for entries created from
-  }\texttt{\DIFadd{/loader/entries/*.conf}} \DIFadd{files. }\texttt{\DIFadd{partuuidopts}} \DIFadd{may be more suitable where there are multiple
-  distros, but }\texttt{\DIFadd{autoopts}} \DIFadd{with no PARTUUID required is more convenient for just one distro.
-  If specified with }\texttt{\DIFadd{+=}} \DIFadd{then these are used in addition to autodetected options, if specified
-  with }\texttt{\DIFadd{=}} \DIFadd{they are used instead. As example usage, it is possible to use }\texttt{\DIFadd{+=}} \DIFadd{format to add
-  a }\texttt{\DIFadd{vt.handoff}} \DIFadd{options, such as }\texttt{\DIFadd{autopts+="vt.handoff=7"}} \DIFadd{or }\texttt{\DIFadd{autopts+="vt.handoff=3"}}
-  \DIFadd{(check }\texttt{\DIFadd{cat /proc/cmdline}} \DIFadd{when booted via your existing bootloader) on Ubuntu and related distros,
-  in order to add the }\texttt{\DIFadd{vt.handoff}} \DIFadd{option to the auto-detected GRUB defaults, and avoid a flash of text
+  \texttt{/loader/entries/*.conf} files. \texttt{partuuidopts} may be more suitable where there are multiple
+  distros, but \texttt{autoopts} with no PARTUUID required is more convenient for just one distro.
+  If specified with \texttt{+=} then these are used in addition to autodetected options, if specified
+  with \texttt{=} they are used instead. As example usage, it is possible to use \texttt{+=} format to add
+  a \texttt{vt.handoff} options, such as \texttt{autopts+="vt.handoff=7"} or \texttt{autopts+="vt.handoff=3"}
+  (check \texttt{cat /proc/cmdline} when booted via \DIFdelbegin \DIFdel{your existing }\DIFdelend \DIFaddbegin \DIFadd{the distro's default }\DIFaddend bootloader) on Ubuntu and related distros,
+  in order to add the \texttt{vt.handoff} option to the auto-detected GRUB defaults, and avoid a flash of text
   showing before the distro splash screen.
-  }\medskip
+  \medskip
+\DIFaddbegin \end{itemize}
+\DIFaddend 
 
-  \DIFadd{Users may wish to compare their Linux boot options (shown with }\texttt{\DIFadd{cat /proc/cmdline}}\DIFadd{) seen when booting via
-  }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{and via their distro's original bootloader, which is normally GRUB (but might also be e.g.
-  systemd-boot or EXTLINUX). Expect the options generated by }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{not to
-  contain a }\texttt{\DIFadd{BOOT\_IMAGE=...}} \DIFadd{value where GRUB options do, and to contain an
-  }\texttt{\DIFadd{initrd=...}} \DIFadd{value where the GRUB options do not, since GRUB hands over ramdisks in a different way.
-  All remaining parameters should match, however -- perhaps excluding less important graphics handover options,
-  such as in the Ubuntu example given in }\texttt{\DIFadd{autoopts}}\DIFadd{.
-  }\texttt{\DIFadd{OpenLinuxBoot}} \DIFadd{will not start a distro unless it can find some configured options to use, therefore in
-  the hopefully unlikely case where no auto-detectable options are available, the user will need to specify the correct options
-  with }\texttt{\DIFadd{partuuidopts}} \DIFadd{or }\texttt{\DIFadd{autoopts}} \DIFadd{before the distro will boot. Examine the OpenCore debug log
-  for }\texttt{\DIFadd{LNX:}} \DIFadd{entries containing further information about what was found.
-}\end{itemize}
+\DIFdelbegin \DIFdel{Users may wish to compare their Linux boot options (shown with }\texttt{\DIFdel{cat /proc/cmdline}}%DIFAUXCMD
+\DIFdel{) seen when booting via
+  }\texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdel{and via their distro's original bootloader, which is normally GRUB (but might also be e.g.
+  systemd-boot or EXTLINUX). Expect the options generated by }\texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdel{not to contain a }\texttt{\DIFdel{BOOT\_IMAGE=...}} %DIFAUXCMD
+\DIFdel{value where GRUB options do, and to contain an
+  }\texttt{\DIFdel{initrd=...}} %DIFAUXCMD
+\DIFdel{value where the GRUB options do not , since GRUB hands over ramdisks in a different way. All remaining parameters should match, however }\DIFdelend \DIFaddbegin \subsubsection{\DIFadd{Additional information}}
 
-\DIFaddend \subsection{Properties}\label{uefiprops}
+\DIFadd{OpenLinuxBoot can detect the }\texttt{\DIFadd{loader/entries/*.conf}} \DIFadd{files created according to the 
+}\href{https://systemd.io/BOOT_LOADER_SPECIFICATION/}{\DIFadd{Boot Loader Specification}} \DIFadd{or the closely related
+}\href{https://fedoraproject.org/wiki/Changes/BootLoaderSpecByDefault}{\DIFadd{systemd BootLoaderSpecByDefault}}\DIFadd{. The
+former is specific to systemd-boot and is used by Arch Linux, the latter applies to most Fedora-related distros
+including Fedora itself, RHEL and variants.
+}
+
+\DIFadd{Where the above files are not present, OpenLinuxBoot can autodetect and
+boot }\texttt{\DIFadd{\{boot\}/vmlinuz*}} \DIFadd{kernel files directly. It links these automatically }\DIFaddend -- \DIFdelbegin \DIFdel{perhaps excluding less important graphics handover options,
+  such as in the Ubuntu example given in }\DIFdelend \DIFaddbegin \DIFadd{based on the
+kernel version in the filename -- to their associated }\texttt{\DIFadd{\{boot\}/init*}} \DIFadd{ramdisk files.
+This applies to most Debian-related distros, including Debian itself, Ubuntu and variants.
+}
+
+\DIFadd{When autodetecting, OpenLinuxBoot looks in }\DIFaddend \texttt{\DIFdelbegin \DIFdel{autoopts}%DIFDELCMD < \MBLOCKRIGHTBRACE%%%
+\DIFdel{.
+}\texttt{\DIFdel{OpenLinuxBoot}} %DIFAUXCMD
+\DIFdel{will not start a distro unless it can find some configured options to use, therefore in the hopefully unlikely case where no auto-detectable options are available, }\DIFdelend \DIFaddbegin \DIFadd{/etc/default/grub}} \DIFadd{for kernel boot options and
+}\texttt{\DIFadd{/etc/os-release}} \DIFadd{for the distro name.
+}
+
+\DIFadd{BootLoaderSpecByDefault (but not pure Boot Loader Specification) can expand GRUB variables
+in the }\texttt{\DIFadd{*.conf}} \DIFadd{files -- and this is used in practice in certain distros such as CentOS.
+In order to handle this correctly, when this situation is detected OpenLinuxBoot extracts all variables from
+}\texttt{\DIFadd{\{boot\}/grub2/grubenv}} \DIFadd{and also any unconditionally set variables from
+}\texttt{\DIFadd{\{boot\}/grub2/grub.cfg}}\DIFadd{, and then expands these where required in }\texttt{\DIFadd{*.conf}} \DIFadd{file entries.
+}
+
+\DIFadd{The only currently supported method of starting Linux kernels relies on their being compiled with EFISTUB.
+This applies to almost all modern distros, particularly those which use systemd. Note that most modern
+distros use systemd as their system manager, even though most do not use systemd-boot as
+their bootloader.
+}
+
+\DIFadd{systemd-boot users (probably almost exclusively Arch Linux users) should be aware that OpenLinuxBoot
+does not support the systemd-boot--specific }\href{https://systemd.io/BOOT\_LOADER\_INTERFACE/}{\DIFadd{Boot Loader Interface}}\DIFadd{;
+therefore }\texttt{\DIFadd{efibootmgr}} \DIFadd{rather than }\texttt{\DIFadd{bootctl}} \DIFadd{must be used for any low-level Linux command line interaction
+with }\DIFaddend the \DIFdelbegin \DIFdel{user will need to specify the correct options
+  with }\texttt{\DIFdel{partuuidopts}} %DIFAUXCMD
+\DIFdel{or }\texttt{\DIFdel{autoopts}} %DIFAUXCMD
+\DIFdel{before the distro will boot . Examine the OpenCore debug log
+  for }\texttt{\DIFdel{LNX:}} %DIFAUXCMD
+\DIFdel{entries containing further information about what was found.
+}%DIFDELCMD < \end{itemize}
+%DIFDELCMD < %%%
+\DIFdelend \DIFaddbegin \DIFadd{boot menu.
+}\DIFaddend 
+
+\subsection{Properties}\label{uefiprops}
 
 \begin{enumerate}
 \item
@@ -6495,17 +6687,14 @@ options may be specified in }\texttt{\DIFadd{UEFI/Drivers/Arguments}}\DIFadd{:
 
 \item
   \texttt{Drivers}\\
-  \textbf{Type}: \texttt{plist\ \DIFdelbegin \DIFdel{array}\DIFdelend \DIFaddbegin \DIFadd{dict}\DIFaddend }\\
-  \textbf{Failsafe}: None\\
-  \textbf{Description}: Load selected drivers from \texttt{OC/Drivers}
-  directory \DIFaddbegin \DIFadd{using the settings specified in the 
-  }\hyperref[uefidriversprops]{Drivers Properties} \DIFadd{section below}\DIFaddend .
+  \textbf{Type}: \texttt{plist\ array}\\
+  \textbf{Failsafe}: Empty\\
+  \textbf{Description}: Load selected drivers from \texttt{OC/Drivers} directory.
 
-\DIFdelbegin \DIFdel{To be filled with string filenames meant to be loaded as UEFI drivers.
-}%DIFDELCMD < 
+  To be filled with \texttt{plist\ dict} values, describing each driver.
+  Refer to the \hyperref[uefidriversprops]{Drivers Properties} section below.
 
-%DIFDELCMD < %%%
-\DIFdelend \item
+\item
   \texttt{Input}\\
   \textbf{Type}: \texttt{plist\ dict}\\
   \textbf{Failsafe}: None\\
@@ -6538,6 +6727,7 @@ options may be specified in }\texttt{\DIFadd{UEFI/Drivers/Arguments}}\DIFadd{:
 \item
   \texttt{ReservedMemory}\\
   \textbf{Type}: \texttt{plist\ array}\\
+  \textbf{Failsafe}: Empty\\
   \textbf{Description}: To be filled with \texttt{plist\ dict} values,
   describing memory areas exclusive to specific firmware and hardware functioning,
   which should not be used by the operating system. Examples of such memory regions
@@ -6951,37 +7141,41 @@ options may be specified in }\texttt{\DIFadd{UEFI/Drivers/Arguments}}\DIFadd{:
 
 \end{enumerate}
 
-\DIFaddbegin \subsection{\DIFadd{Drivers Properties}}\label{uefidriversprops}
+\subsection{Drivers Properties}\label{uefidriversprops}
 
 \begin{enumerate}
 
 \item
-  \texttt{\DIFadd{Path}}\\
-  \textbf{\DIFadd{Type}}\DIFadd{: }\texttt{\DIFadd{plist\ string}}\\
-  \textbf{\DIFadd{Failsafe}}\DIFadd{: Empty}\\
-  \textbf{\DIFadd{Description}}\DIFadd{: Path of file to be loaded as a UEFI driver
-  from }\texttt{\DIFadd{OC/Drivers}} \DIFadd{directory.
-}
+  \texttt{Comment}\\
+  \textbf{Type}: \texttt{plist\ string}\\
+  \textbf{Failsafe}: Empty\\
+  \textbf{Description}: Arbitrary ASCII string used to provide human readable
+  reference for the entry. Whether this value is used is implementation defined.
 
 \item
-  \texttt{\DIFadd{Enabled}}\\
-  \textbf{\DIFadd{Type}}\DIFadd{: }\texttt{\DIFadd{plist\ boolean}}\\
-  \textbf{\DIFadd{Failsafe}}\DIFadd{: }\texttt{\DIFadd{false}}\\
-  \textbf{\DIFadd{Description}}\DIFadd{: If }\texttt{\DIFadd{false}} \DIFadd{this driver entry will be ignored.
-}
+  \texttt{Path}\\
+  \textbf{Type}: \texttt{plist\ string}\\
+  \textbf{Failsafe}: Empty\\
+  \textbf{Description}: Path of file to be loaded as a UEFI driver
+  from \texttt{OC/Drivers} directory.
 
 \item
-  \texttt{\DIFadd{Arguments}}\\
-  \textbf{\DIFadd{Type}}\DIFadd{: }\texttt{\DIFadd{plist\ string}}\\
-  \textbf{\DIFadd{Failsafe}}\DIFadd{: Empty}\\
-  \textbf{\DIFadd{Description}}\DIFadd{: Some OC plugins accept optional additional arguments
+  \texttt{Enabled}\\
+  \textbf{Type}: \texttt{plist\ boolean}\\
+  \textbf{Failsafe}: \texttt{false}\\
+  \textbf{Description}: If \texttt{false} this driver entry will be ignored.
+
+\item
+  \texttt{Arguments}\\
+  \textbf{Type}: \texttt{plist\ string}\\
+  \textbf{Failsafe}: Empty\\
+  \textbf{Description}: Some OC plugins accept optional additional arguments
   which may be specified as a string here.
-}
 
 \end{enumerate}
 
 
-\DIFaddend \subsection{Input Properties}\label{uefiinputprops}
+\subsection{Input Properties}\label{uefiinputprops}
 
 \begin{enumerate}
 
@@ -7598,17 +7792,15 @@ options may be specified in }\texttt{\DIFadd{UEFI/Drivers/Arguments}}\DIFadd{:
   on some APTIO IV firmware (ASUS Z87-Pro) particularly when using FileVault 2.
   It appears that for some reason, they execute code in parallel to \texttt{EXIT\_BOOT\_SERVICES},
   which results in the SATA controller being inaccessible from macOS. A better approach is required
-  and Acidanthera is open to suggestions. Expect 3 to 5 seconds to be adequate when this quirk is needed\DIFaddbegin \DIFadd{.
-}
+  and Acidanthera is open to suggestions. Expect 3 to 5 seconds to be adequate when this quirk is needed.
 
 \item
-  \texttt{\DIFadd{ForceOcWriteFlash}}\\
-  \textbf{\DIFadd{Type}}\DIFadd{: }\texttt{\DIFadd{plist\ boolean}}\\
-  \textbf{\DIFadd{Failsafe}}\DIFadd{: }\texttt{\DIFadd{false}}\\
-  \textbf{\DIFadd{Description}}\DIFadd{: Enables writing to flash memory for all OpenCore system variables.
-}
+  \texttt{ForceOcWriteFlash}\\
+  \textbf{Type}: \texttt{plist\ boolean}\\
+  \textbf{Failsafe}: \texttt{false}\\
+  \textbf{Description}: Enables writing to flash memory for all OpenCore system variables.
 
-  \emph{\DIFadd{Note}}\DIFadd{: This value should be disabled on most types of firmware but is
+  \emph{Note}: This value should be disabled on most types of firmware but is
   left configurable to account for firmware that may have issues with volatile
   variable storage overflows or similar. Boot issues across multiple OSes can be
   observed on e.g. Lenovo Thinkpad T430 and T530 without this quirk. Apple
@@ -7616,7 +7808,7 @@ options may be specified in }\texttt{\DIFadd{UEFI/Drivers/Arguments}}\DIFadd{:
   security reasons. Furthermore, some OpenCore variables are exempt for
   different reasons, such as the boot log due to an available user option, and
   the TSC frequency due to timing issues. When toggling this option, a NVRAM
-  reset may be required to ensure full functionality}\DIFaddend .
+  reset may be required to ensure full functionality.
 
 \item
   \texttt{ForgeUefiSupport}\\
@@ -7682,6 +7874,69 @@ options may be specified in }\texttt{\DIFadd{UEFI/Drivers/Arguments}}\DIFadd{:
   \item Potentially incompatible boot entries, such as macOS entries, are not deleted
   or corrupted in any way.
   \end{itemize}
+\DIFaddbegin 
+
+\item
+  \texttt{\DIFadd{ResizeGpuBars}}\\
+  \textbf{\DIFadd{Type}}\DIFadd{: }\texttt{\DIFadd{plist\ integer}}\\
+  \textbf{\DIFadd{Failsafe}}\DIFadd{: }\texttt{\DIFadd{-1}}\\
+  \textbf{\DIFadd{Description}}\DIFadd{: Configure GPU PCI BAR sizes.
+}
+
+  \DIFadd{This quirk sets GPU PCI BAR sizes as specified or chooses
+  the largest available below the }\texttt{\DIFadd{ResizeGpuBars}} \DIFadd{value.
+  The specified value follows PCI Resizable BAR spec.
+  Use }\texttt{\DIFadd{0}} \DIFadd{for 1 MB, }\texttt{\DIFadd{1}} \DIFadd{for 2 MB, }\texttt{\DIFadd{2}}
+  \DIFadd{for 4 MB, and so on up to }\texttt{\DIFadd{19}} \DIFadd{for 512 GB.
+}
+
+  \DIFadd{Resizable BAR technology allows to ease PCI device programming by mapping
+  a configurable memory region, BAR, into CPU address space (e.g. VRAM to RAM)
+  as opposed to a fixed memory region. This technology is necessary, because
+  one cannot map the largest memory region by default, for the reasons of backwards
+  compatibility with older hardware not supporting 64-bit BARs. Consequentially
+  devices of the last decade use BARs up to 256 MB by default (4 remaining bits are used
+  by other data) but generally allow resizing them to both smaller and larger
+  powers of two (e.g. from 1 MB up to VRAM size).
+}
+
+  \DIFadd{Operating systems targeting x86 platforms generally do not control PCI address space,
+  letting UEFI firmware decide on the BAR addresses and sizes. This illicit practice
+  resulted in Resizable BAR technology being unused up until 2020 despite being
+  standardised in 2008 and becoming widely available in the hardware soon after.
+}
+
+  \DIFadd{Modern UEFI firmware allow the use of Resizable BAR technology but generally
+  restrict the configurable options to failsafe default (}\texttt{\DIFadd{OFF}}\DIFadd{)
+  and maximum available (}\texttt{\DIFadd{ON}}\DIFadd{). This quirk allows to fine-tune this
+  value for testing and development purposes.
+}
+
+  \DIFadd{Consider a GPU with 2 BARs:
+  }\begin{itemize}
+    \tightlist
+    \item \texttt{\DIFadd{BAR0}} \DIFadd{supports sizes from 256 MB to 8 GB. Its value is 4 GB.
+    }\item \texttt{\DIFadd{BAR1}} \DIFadd{supports sizes from 2 MB to 256 MB. Its value is 256 MB.
+  }\end{itemize}
+
+  \emph{\DIFadd{Example 1}}\DIFadd{: Setting }\texttt{\DIFadd{ResizeGpuBars}} \DIFadd{to 1 GB will change
+  }\texttt{\DIFadd{BAR0}} \DIFadd{to 1 GB and leave }\texttt{\DIFadd{BAR1}} \DIFadd{unchanged.
+  }\\
+  \emph{\DIFadd{Example 2}}\DIFadd{: Setting }\texttt{\DIFadd{ResizeGpuBars}} \DIFadd{to 1 MB will change
+  }\texttt{\DIFadd{BAR0}} \DIFadd{to 256 MB and }\texttt{\DIFadd{BAR0}} \DIFadd{to 2 MB.
+  }\\
+  \emph{\DIFadd{Example 3}}\DIFadd{: Setting }\texttt{\DIFadd{ResizeGpuBars}} \DIFadd{to 16 GB will change
+  }\texttt{\DIFadd{BAR0}} \DIFadd{to 8 GB and leave }\texttt{\DIFadd{BAR1}} \DIFadd{unchanged.
+}
+
+  \emph{\DIFadd{Note 1}}\DIFadd{: This quirk shall not be used to workaround macOS limitation
+  to address BARs over 1 GB. }\texttt{\DIFadd{ResizeAppleGpuBars}} \DIFadd{should be used instead.
+}
+
+  \emph{\DIFadd{Note 2}}\DIFadd{: While this quirk can increase GPU PCI BAR sizes, this will not
+  work on most firmware as is, because the quirk does not relocate BARs in memory,
+  and they will likely overlap. Contributions to improve this feature are welcome.
+}\DIFaddend 
 
 \item
   \texttt{TscSyncTimeout}\\

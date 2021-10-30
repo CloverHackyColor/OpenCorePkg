@@ -208,9 +208,18 @@ OcLoadAcpiSupport (
   OC_ACPI_CONTEXT   Context;
 
 #ifdef CLOVER_BUILD
-  if ( Config->Acpi.Quirks.RebaseRegions || Config->Acpi.Quirks.FadtEnableReset || Config->Acpi.Quirks.ResetLogoStatus ||
-       Config->Acpi.Quirks.ResetHwSig || Config->Acpi.Quirks.NormalizeHeaders || Config->Acpi.Quirks.SyncTableIds
-       || Config->Acpi.Patch.Count > 0 || Config->Acpi.Delete.Count > 0 || Config->Acpi.Add.Count ) {
+  // At each upgrade, check that this condition match. In case something is added in the body of this function, the condition needs to be updated.
+  if ( Config->Acpi.Quirks.RebaseRegions
+       || Config->Acpi.Patch.Count > 0 // OcAcpiPatchTables
+       || Config->Acpi.Delete.Count > 0 // OcAcpiDeleteTables
+       || Config->Acpi.Add.Count // OcAcpiAddTables
+       || Config->Acpi.Quirks.FadtEnableReset
+       || Config->Acpi.Quirks.ResetLogoStatus
+       || Config->Acpi.Quirks.ResetHwSig
+       || Config->Acpi.Quirks.RebaseRegions
+       || Config->Acpi.Quirks.NormalizeHeaders
+       || Config->Acpi.Quirks.SyncTableIds
+    ) {
     // proceeed
     if ( Config->Acpi.Quirks.RebaseRegions ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.RebaseRegions"));
     if ( Config->Acpi.Quirks.FadtEnableReset ) DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport : Config->Acpi.Quirks.FadtEnableReset"));
@@ -239,10 +248,13 @@ OcLoadAcpiSupport (
     AcpiLoadRegions (&Context);
   }
 
+  // OcAcpiPatchTables only do something if Config->Acpi.Patch.Count > 0
   OcAcpiPatchTables (Config, &Context);
 
+  // OcAcpiPatchTables only do something if Config->Acpi.Delete.Count > 0
   OcAcpiDeleteTables (Config, &Context);
 
+  // OcAcpiPatchTables only do something if Config->Acpi.Add.Count > 0
   OcAcpiAddTables (Config, Storage, &Context);
 
   if (Config->Acpi.Quirks.FadtEnableReset) {

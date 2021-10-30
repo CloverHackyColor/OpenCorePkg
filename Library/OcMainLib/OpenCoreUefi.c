@@ -89,18 +89,20 @@ OcLoadDrivers (
   OUT EFI_HANDLE          **DriversToConnect  OPTIONAL
   )
 {
-  EFI_STATUS            Status;
-  VOID                  *Driver;
-  UINT32                DriverSize;
-  UINT32                Index;
-  CHAR16                DriverPath[OC_STORAGE_SAFE_PATH_MAX];
-  EFI_HANDLE            ImageHandle;
-  EFI_HANDLE            *DriversToConnectIterator;
-  VOID                  *DriverBinding;
-  BOOLEAN               SkipDriver;
-  OC_UEFI_DRIVER_ENTRY  *DriverEntry;
-  CHAR8                 *DriverFileName;
-  CONST CHAR8           *DriverArguments;
+  EFI_STATUS                  Status;
+  VOID                        *Driver;
+  UINT32                      DriverSize;
+  UINT32                      Index;
+  CHAR16                      DriverPath[OC_STORAGE_SAFE_PATH_MAX];
+  EFI_HANDLE                  ImageHandle;
+  EFI_LOADED_IMAGE_PROTOCOL   *LoadedImage;
+  EFI_HANDLE                  *DriversToConnectIterator;
+  VOID                        *DriverBinding;
+  BOOLEAN                     SkipDriver;
+  OC_UEFI_DRIVER_ENTRY        *DriverEntry;
+  CONST CHAR8                 *DriverComment;
+  CHAR8                       *DriverFileName;
+  CONST CHAR8                 *DriverArguments;
 
   DriversToConnectIterator = NULL;
   if (DriversToConnect != NULL) {
@@ -111,6 +113,7 @@ OcLoadDrivers (
 
   for (Index = 0; Index < Config->Uefi.Drivers.Count; ++Index) {
     DriverEntry     = Config->Uefi.Drivers.Values[Index];
+    DriverComment   = OC_BLOB_GET (&DriverEntry->Comment);
     DriverFileName  = OC_BLOB_GET (&DriverEntry->Path);
     DriverArguments = OC_BLOB_GET (&DriverEntry->Arguments);
 
@@ -118,9 +121,10 @@ OcLoadDrivers (
 
     DEBUG ((
       DEBUG_INFO,
-      "OC: Driver %a at %u is %a\n",
+      "OC: Driver %a at %u (%a) is %a\n",
       DriverFileName,
       Index,
+      DriverComment,
       SkipDriver ? "skipped!" : "being loaded..."
       ));
 
@@ -186,17 +190,35 @@ OcLoadDrivers (
     }
 
     if (DriverArguments != NULL && DriverArguments[0] != '\0') {
-      OcAppendArgumentsToLoadedImage (ImageHandle, &DriverArguments, 1, TRUE);
-    } else {
-      //
-      // These are not zeroed by boot services image loader, which means new drivers
-      // expecting load options loaded with old OC may crash horribly, instead
-      // of just seeing no options. Annoyingly the value in LoadOptions is non-randome
-      // and lowish, therefore setting an upper limit on option size, to attempt to
-      // reject unitialized values, does not help.
-      //
-      ((EFI_LOADED_IMAGE_PROTOCOL *)ImageHandle)->LoadOptionsSize  = 0;
-      ((EFI_LOADED_IMAGE_PROTOCOL *)ImageHandle)->LoadOptions      = NULL;
+      Status = gBS->HandleProtocol (
+        ImageHandle,
+        &gEfiLoadedImageProtocolGuid,
+        (VOID **) &LoadedImage
+        );
+      if (EFI_ERROR (Status)) {
+        DEBUG ((
+          DEBUG_ERROR,
+          "OC: Failed to locate loaded image for driver %a at %u - %r!\n",
+          DriverFileName,
+          Index,
+          Status
+          ));
+        gBS->UnloadImage (ImageHandle);
+        FreePool (Driver);
+        continue;
+      }
+      if (!OcAppendArgumentsToLoadedImage (LoadedImage, &DriverArguments, 1, TRUE)) {
+        DEBUG ((
+          DEBUG_ERROR,
+          "OC: Unable to apply arguments to driver %a at %u - %r!\n",
+          DriverFileName,
+          Index,
+          Status
+          ));
+        gBS->UnloadImage (ImageHandle);
+        FreePool (Driver);
+        continue;
+      }
     }
 
     Status = gBS->StartImage (
@@ -432,13 +454,17 @@ OcLoadAppleSecureBoot (
   UINT8                       SecureBootPolicy;
 
   SecureBootModel = OC_BLOB_GET (&Config->Misc.Security.SecureBootModel);
+  if (AsciiStrCmp (SecureBootModel, OC_SB_MODEL_DEFAULT) == 0 || SecureBootModel[0] == '\0') {
+    SecureBootModel = OcGetDefaultSecureBootModel (Config);
+  }
+
   RealSecureBootModel = OcAppleImg4GetHardwareModel (SecureBootModel);
 
   if (AsciiStrCmp (SecureBootModel, OC_SB_MODEL_DISABLED) == 0) {
     SecureBootPolicy = AppleImg4SbModeDisabled;
   } else if (Config->Misc.Security.ApECID != 0
     && (RealSecureBootModel == NULL
-      || AsciiStrCmp (RealSecureBootModel, "x86legacy") != 0)) {
+      || AsciiStrCmp (RealSecureBootModel, OC_SB_MODEL_LEGACY) != 0)) {
     //
     // Note, for x86legacy it is always medium policy.
     //
@@ -476,7 +502,7 @@ OcLoadAppleSecureBoot (
     // This is what Apple does at least.
     // I believe no ECID is invalid for macOS 12.
     //
-    if (AsciiStrCmp (RealSecureBootModel, "x86legacy") == 0
+    if (AsciiStrCmp (RealSecureBootModel, OC_SB_MODEL_LEGACY) == 0
       && Config->Misc.Security.ApECID == 0) {
       DEBUG ((DEBUG_INFO, "OC: Discovered x86legacy with zero ECID, using system-id\n"));
       OcGetLegacySecureBootECID (Config, &Config->Misc.Security.ApECID);
@@ -615,6 +641,7 @@ OcLoadBooterUefiSupport (
   AbcSettings.ProvideMaxSlide        = Config->Booter.Quirks.ProvideMaxSlide;
   AbcSettings.ProtectUefiServices    = Config->Booter.Quirks.ProtectUefiServices;
   AbcSettings.RebuildAppleMemoryMap  = Config->Booter.Quirks.RebuildAppleMemoryMap;
+  AbcSettings.ResizeAppleGpuBars     = Config->Booter.Quirks.ResizeAppleGpuBars;
   AbcSettings.SetupVirtualMap        = Config->Booter.Quirks.SetupVirtualMap;
   AbcSettings.SignalAppleOS          = Config->Booter.Quirks.SignalAppleOS;
   AbcSettings.SyncRuntimePermissions = Config->Booter.Quirks.SyncRuntimePermissions;
@@ -857,6 +884,12 @@ OcLoadUefiSupport (
   if (Config->Uefi.Quirks.EnableVectorAcceleration) {
     AvxEnabled = TryEnableAvx ();
     DEBUG ((DEBUG_INFO, "OC: AVX enabled - %u\n", AvxEnabled));
+  }
+
+  if (Config->Uefi.Quirks.ResizeGpuBars >= 0
+    && Config->Uefi.Quirks.ResizeGpuBars < PciBarTotal) {
+    DEBUG ((DEBUG_INFO, "OC: Increasing GPU BARs to %d\n", Config->Uefi.Quirks.ResizeGpuBars));
+    ResizeGpuBars (Config->Uefi.Quirks.ResizeGpuBars, TRUE);
   }
 
   OcMiscUefiQuirksLoaded (Config);

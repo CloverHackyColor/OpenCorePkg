@@ -1,7 +1,7 @@
 BIOSVendor: "Apple Inc."
-BIOSVersion: "1715.0.57.0.0"
-BIOSLegacyVersion: "IM201.88Z.F000.B00.2107050239"
-BIOSReleaseDate: "07/05/2021"
+BIOSVersion: "1715.40.15.0.0"
+BIOSLegacyVersion: "IM201.88Z.F000.B00.2110032038"
+BIOSReleaseDate: "10/03/2021"
 SystemManufacturer: "Apple Inc."
 SystemProductName: "iMac20,1"
 SystemVersion: "1.0"
@@ -32,9 +32,9 @@ FirmwareFeatures: 0xFD8FF576
 # FIXME:
 FirmwareFeaturesMask: 0xFFDFFF7F
 # FIXME:
-ExtendedFirmwareFeatures: 0x00000000FD8FF576
+ExtendedFirmwareFeatures: 0x00000008FD8FF576
 # FIXME:
-ExtendedFirmwareFeaturesMask: 0x00000000FFDFFF7F
+ExtendedFirmwareFeaturesMask: 0x00000008FFDFFF7F
 MemoryFormFactor: 0x9
 # FIXME: Correct this one
 ProcessorType:
@@ -54,17 +54,17 @@ SmcPlatform:
   - 0x00
 OEMStrings: |-
   Apple ROM Version
-    BIOS ID:      IM201.88Z.F000.B00.2107050239
+    BIOS ID:      IM201.88Z.F000.B00.2110032038
     Model:        IM201
-    EFI Version:  1715.0.57.0.0
-    Built by:     root@bb-g8-pdb105
-    Date:         Mon Jul  5 02:39:34 2021
-    Revision:     1715.0.57 (B&I)
+    EFI Version:  1715.40.15.0.0
+    Built by:     root@bb-g9-pdb19
+    Date:         Sun Oct  3 20:38:20 2021
+    Revision:     1715.40.15 (B&I)
     ROM Version:  F000_B00
     Build Type:   Official Build, RELEASE
-    Compiler:     clang-1300.0.25.1
-    UUID:         FDEE38CD-A06D-3FD7-9E84-268FE1903A0F
-    UUID:         A119D850-AD52-3AFE-88B9-60E3E3193C2A
+    Compiler:     clang-1300.0.29.1
+    UUID:         AE228DDB-6348-33A7-9676-34589F59DDA4
+    UUID:         18D36883-460E-3808-B747-E572E2BFA3DD
 Specifications:
   CPUCodename:
     - "Comet Lake"

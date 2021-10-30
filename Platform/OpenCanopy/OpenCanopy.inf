@@ -35,6 +35,7 @@
   BmfLib.h
   Images.c
   Blending.c
+  Blending.h
   OpenCanopy.c
   OpenCanopy.h
   GuiApp.c
@@ -45,7 +46,9 @@
   OcBootstrap.c
   Output/OutputStGop.c
   Views/Common.c
+  Views/Common.h
   Views/BootPicker.c
+  Views/BootPicker.h
   Views/Password.c
 
 [Packages]

@@ -593,6 +593,8 @@ InternalAddBootEntryFromCustomEntry (
     return EFI_OUT_OF_RESOURCES;
   }
 
+  BootEntry->IsExternal = FileSystem->External;
+
   if (CustomEntry->Id != NULL) {
     BootEntry->Id = AsciiStrCopyToUnicode (CustomEntry->Id, 0);
     if (BootEntry->Id == NULL) {
@@ -722,9 +724,9 @@ InternalAddBootEntryFromCustomEntry (
   if (IsBootEntryProtocol) {
     PartitionEntry = OcGetGptPartitionEntry (FileSystem->Handle);
     if (PartitionEntry == NULL) {
-      BootEntry->UniquePartitionGUID = gEfiPartTypeUnusedGuid;
+      CopyGuid (&BootEntry->UniquePartitionGUID, &gEfiPartTypeUnusedGuid);
     } else {
-      BootEntry->UniquePartitionGUID = PartitionEntry->UniquePartitionGUID;
+      CopyGuid (&BootEntry->UniquePartitionGUID, &PartitionEntry->UniquePartitionGUID);
     }
   }
 
@@ -1408,9 +1410,9 @@ AddBootEntryFromBootOption (
                 if (!EFI_ERROR (Status)) {
                   if (EntryProtocolPartuuid != NULL) {
                     if (PartitionEntry == NULL) {
-                      *EntryProtocolPartuuid = gEfiPartTypeUnusedGuid;
+                      CopyGuid (EntryProtocolPartuuid, &gEfiPartTypeUnusedGuid);
                     } else {
-                      *EntryProtocolPartuuid = PartitionEntry->UniquePartitionGUID;
+                      CopyGuid (EntryProtocolPartuuid, &PartitionEntry->UniquePartitionGUID);
                     }
                   }
 

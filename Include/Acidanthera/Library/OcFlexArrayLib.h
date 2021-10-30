@@ -6,6 +6,10 @@
 #ifndef OC_FLEX_ARRAY_LIB_H
 #define OC_FLEX_ARRAY_LIB_H
 
+#if !defined(OC_TRACE_FLEX)
+#define OC_TRACE_FLEX DEBUG_VERBOSE
+#endif
+
 #include <Uefi.h>
 #include <Library/OcStringLib.h>
 #include <Protocol/ApplePlatformInfoDatabase.h>
@@ -68,6 +72,18 @@ OcFlexArrayInit (
 VOID *
 OcFlexArrayAddItem (
   IN OUT       OC_FLEX_ARRAY       *FlexArray
+  );
+
+/**
+  Discard last item on flex array, optionally calling item free method.
+
+  @param[in,out]  FlexArray     Flex array to modify.
+  @param[in]      FreeItem      Whether to call item free method.
+**/
+VOID
+OcFlexArrayDiscardItem (
+  IN OUT       OC_FLEX_ARRAY       *FlexArray,
+  IN     CONST BOOLEAN             FreeItem
   );
 
 /**
@@ -258,6 +274,6 @@ struct OC_STRING_BUFFER_ {
   CHAR8                           *String;
   UINTN                           StringLength;
   UINTN                           BufferSize;
-  };
+};
 
 #endif // OC_FLEX_ARRAY_LIB_H

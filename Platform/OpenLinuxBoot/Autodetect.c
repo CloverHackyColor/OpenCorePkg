@@ -8,6 +8,7 @@
 #include "LinuxBootInternal.h"
 
 #include <Uefi.h>
+#include <Guid/Gpt.h>
 #include <Library/BaseLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
@@ -40,11 +41,19 @@ OC_FLEX_ARRAY
 
 STATIC
 CHAR8
+*mEtcOsReleaseFileContents;
+
+STATIC
+CHAR8
 *mPrettyName;
 
 STATIC
 OC_FLEX_ARRAY
 *mEtcDefaultGrubOptions;
+
+STATIC
+CHAR8
+*mEtcDefaultGrubFileContents;
 
 STATIC
 EFI_STATUS
@@ -83,6 +92,9 @@ ProcessVmlinuzFile (
   } else {
     return EFI_NOT_FOUND;
   }
+
+  DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+    "LNX: Found %s...\n", FileInfo->FileName ));
 
   if (VmlinuzFile == NULL) {
     return EFI_OUT_OF_RESOURCES;
@@ -129,7 +141,7 @@ CreateRootPartuuid (
   UINTN           Length;
   UINTN           NumPrinted;
 
-  Length = L_STR_LEN ("root=PARTUUID=") + OC_EFI_GUID_STR_LEN;
+  Length = L_STR_LEN ("root=PARTUUID=") + GUID_STRING_LENGTH;
 
   *Dest = AllocatePool (Length + 1);
   if (*Dest == NULL) {
@@ -139,6 +151,9 @@ CreateRootPartuuid (
   NumPrinted = AsciiSPrint (*Dest, Length + 1, "%a%g", "root=PARTUUID=", gPartuuid);
   ASSERT (NumPrinted == Length);
 
+  //
+  // Value is case-sensitive and must be lower case.
+  //
   OcAsciiToLower (&(*Dest)[L_STR_LEN ("root=PARTUUID=")]);
 
   return EFI_SUCCESS;
@@ -151,10 +166,8 @@ AutodetectTitle (
   )
 {
   UINTN             Index;
-  CHAR8             *AsciiStrValue;
   BOOLEAN           Found;
 
-  mPrettyName = NULL;
   if (mEtcOsReleaseOptions != NULL) {
     //
     // If neither are present, default title gets set later to "Linux".
@@ -164,17 +177,17 @@ AutodetectTitle (
       if (OcParsedVarsGetAsciiStr (
         mEtcOsReleaseOptions,
         Index == 0 ? "PRETTY_NAME" : "NAME",
-        &AsciiStrValue
+        &mPrettyName
         ) &&
-        AsciiStrValue != NULL) {
-        mPrettyName = AsciiStrValue;
+        mPrettyName != NULL) {
         Found = TRUE;
         break;
       }
     }
 
     if (Found) {
-      DEBUG ((DEBUG_INFO, "LNX: Found distro %a\n", mPrettyName));
+      DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+        "LNX: Found distro %a\n", mPrettyName));
     } else {
       DEBUG ((DEBUG_WARN, "LNX: Neither %a nor %a found in %s\n", "PRETTY_NAME", "NAME", OS_RELEASE_FILE));
     }
@@ -188,23 +201,28 @@ LoadEtcFiles (
   )
 {
   EFI_STATUS        Status;
-  CHAR8             *Contents;
 
   Status = EFI_SUCCESS;
 
-  mEtcOsReleaseOptions = NULL;
+  mEtcOsReleaseOptions        = NULL;
+  mEtcDefaultGrubOptions      = NULL;
+  mEtcOsReleaseFileContents   = NULL;
+  mEtcDefaultGrubFileContents = NULL;
+  mPrettyName                 = NULL;
 
   //
   // Load distro name from /etc/os-release.
   //
-  Contents = OcReadFileFromDirectory (RootDirectory, OS_RELEASE_FILE, NULL, 0);
-  if (Contents == NULL) {
+  mEtcOsReleaseFileContents = OcReadFileFromDirectory (RootDirectory, OS_RELEASE_FILE, NULL, 0);
+  if (mEtcOsReleaseFileContents == NULL) {
     DEBUG ((DEBUG_WARN, "LNX: %s not found\n", OS_RELEASE_FILE));
   } else {
-    DEBUG ((DEBUG_INFO, "LNX: Reading %s\n", OS_RELEASE_FILE));
-    Status = OcParseVars (Contents, &mEtcOsReleaseOptions, FALSE);
+    DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+      "LNX: Reading %s\n", OS_RELEASE_FILE));
+    Status = OcParseVars (mEtcOsReleaseFileContents, &mEtcOsReleaseOptions, FALSE);
     if (EFI_ERROR (Status)) {
-      FreePool (Contents);
+      FreePool (mEtcOsReleaseFileContents);
+      mEtcOsReleaseFileContents = NULL;
       DEBUG ((DEBUG_WARN, "LNX: Cannot parse %s - %r\n", OS_RELEASE_FILE, Status));
       return Status;
     }
@@ -219,14 +237,16 @@ LoadEtcFiles (
   //
   // Load kernel options from /etc/default/grub.
   //
-  Contents   = OcReadFileFromDirectory (RootDirectory, GRUB_DEFAULT_FILE, NULL, 0);
-  if (Contents == NULL) {
+  mEtcDefaultGrubFileContents   = OcReadFileFromDirectory (RootDirectory, GRUB_DEFAULT_FILE, NULL, 0);
+  if (mEtcDefaultGrubFileContents == NULL) {
     DEBUG ((DEBUG_WARN, "LNX: %s not found (bootloader is not GRUB?)\n", GRUB_DEFAULT_FILE));
   } else {
-    DEBUG ((DEBUG_INFO, "LNX: Reading %s\n", GRUB_DEFAULT_FILE));
-    Status = OcParseVars (Contents, &mEtcDefaultGrubOptions, FALSE);
+    DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+      "LNX: Reading %s\n", GRUB_DEFAULT_FILE));
+    Status = OcParseVars (mEtcDefaultGrubFileContents, &mEtcDefaultGrubOptions, FALSE);
     if (EFI_ERROR (Status)) {
-      FreePool (Contents);
+      FreePool (mEtcDefaultGrubFileContents);
+      mEtcDefaultGrubFileContents = NULL;
       DEBUG ((DEBUG_WARN, "LNX: Cannot parse %s - %r\n", GRUB_DEFAULT_FILE, Status));
       return Status;
     }
@@ -241,8 +261,20 @@ FreeEtcFiles (
   VOID
   )
 {
+  //
+  // If non-null, refers to string inside mEtcOsReleaseFileContents
+  //
+  mPrettyName = NULL;
+
   OcFlexArrayFree (&mEtcOsReleaseOptions);
+  if (mEtcOsReleaseFileContents != NULL) {
+    FreePool (mEtcOsReleaseFileContents);
+  }
+
   OcFlexArrayFree (&mEtcDefaultGrubOptions);
+  if (mEtcDefaultGrubFileContents != NULL) {
+    FreePool (mEtcDefaultGrubFileContents);
+  }
 }
 
 STATIC
@@ -302,6 +334,24 @@ AddOption (
   return InsertOption (Options->Count, Options, Value, IsUnicode);
 }
 
+EFI_STATUS
+InsertRootOption (
+  IN           OC_FLEX_ARRAY      *Options
+  )
+{
+  CHAR8             **NewOption;
+
+  DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+    "LNX: Creating \"root=PARTUUID=%g\"\n", gPartuuid));
+
+  NewOption = OcFlexArrayInsertItem (Options, 0);
+  if (NewOption == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  return CreateRootPartuuid (NewOption);
+}
+
 //
 // TODO: Options for rescue versions. Would it be better e.g. just to add "ro" and nothing else?
 // However on some installs (e.g. where modules to load are specified in the kernel opts) this
@@ -318,25 +368,27 @@ AutodetectBootOptions (
   EFI_STATUS        Status;
   UINTN             Index;
   UINTN             InsertIndex;
+  UINTN             OptionCount;
   OC_PARSED_VAR     *Option;
   EFI_GUID          Guid;
   CHAR8             *AsciiStrValue;
-  BOOLEAN           Found;
+  CHAR8             *GrubVarName;
+  BOOLEAN           FoundOptions;
+  BOOLEAN           PlusOpts;
 
-  if ((gLinuxBootFlags & LINUX_BOOT_ADD_RO) != 0) {
-    DEBUG ((OC_TRACE_KERNEL_OPTS, "LNX: Adding \"ro\"\n"));
-    Status = AddOption (Options, "ro", FALSE);
+  OptionCount = 0;
+  if (gParsedLoadOptions != NULL) {
+    OptionCount = gParsedLoadOptions->Count;
   }
 
-  Found       = FALSE;
-  InsertIndex = Options->Count;
+  FoundOptions = FALSE;
 
   //
   // Look for user-specified options for this partuuid.
   // Remember that although args are ASCII in the OC config file, they are
   // Unicode by the time they get passed as UEFI LoadOptions.
   //
-  for (Index = 0; Index < gParsedLoadOptions->Count; Index++) {
+  for (Index = 0; Index < OptionCount; Index++) {
     Option = OcFlexArrayItemAt (gParsedLoadOptions, Index);
     //
     // partuuidopts:{partuuid}[+]="...": user options for specified partuuid.
@@ -354,62 +406,26 @@ AutodetectBootOptions (
       }
       
       if (CompareMem (&gPartuuid, &Guid, sizeof (EFI_GUID)) != 0) {
-        DEBUG ((OC_TRACE_KERNEL_OPTS, "LNX: No match %g != %g\n", &gPartuuid, &Guid));
+        DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+          "LNX: No match partuuidopts:%g != %g\n", &Guid, &gPartuuid));
       } else {
-        DEBUG ((OC_TRACE_KERNEL_OPTS, "LNX: Using partuuidopts=\"%s\"\n", Option->Unicode.Value));
+        PlusOpts = OcUnicodeEndsWith (Option->Unicode.Name, L"+", FALSE);
+
+        DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+          "LNX: Using partuuidopts%a=\"%s\"\n",
+          PlusOpts ? "+" : "",
+          Option->Unicode.Value));
 
         Status = AddOption (Options, Option->Unicode.Value, TRUE);
         if (EFI_ERROR (Status)) {
           return Status;
         }
 
-        //
-        // partuuidopts:{partuuid}+="...": use user options in addition to detected options.
-        //
-        if (!OcUnicodeEndsWith (Option->Unicode.Name, L"+", FALSE)) {
+        if (!PlusOpts) {
           return EFI_SUCCESS;
         }
 
-        Found = TRUE;
-      }
-    }
-  }
-
-  //
-  // Use options from GRUB default location.
-  //
-  if (mEtcDefaultGrubOptions != NULL) {
-    //
-    // If both are present both should be added, standard grub scripts add them
-    // in this order.
-    // Rescue should only use GRUB_CMDLINE_LINUX so this is correct as
-    // far as it goes; however note that rescue options are unfortunately not
-    // normally stored here, but are generated in the depths of grub scripts.
-    //
-    for (Index = 0; Index < (IsRescue ? 1u : 2u); Index++) {
-      if (OcParsedVarsGetAsciiStr (
-        mEtcDefaultGrubOptions,
-        Index == 0 ? "GRUB_CMDLINE_LINUX" : "GRUB_CMDLINE_LINUX_DEFAULT",
-        &AsciiStrValue
-        ) &&
-        AsciiStrValue != NULL) {
-
-        //
-        // Insert these after "ro" but before "partuuidopts+".
-        //
-        if (AsciiStrValue[0] != '\0') {
-          Status = InsertOption (InsertIndex, Options, AsciiStrValue, FALSE);
-          if (EFI_ERROR (Status)) {
-            return Status;
-          }
-          InsertIndex++;
-        }
-
-        //
-        // Empty string value is good enough for found: we are operating
-        // from GRUB cfg files rather than pure guesswork.
-        //
-        Found = TRUE;
+        FoundOptions = TRUE;
       }
     }
   }
@@ -417,13 +433,19 @@ AutodetectBootOptions (
   //
   // Use global defaults, if user has defined any.
   //
-  for (Index = 0; Index < gParsedLoadOptions->Count; Index++) {
+  for (Index = 0; Index < OptionCount; Index++) {
     Option = OcFlexArrayItemAt (gParsedLoadOptions, Index);
-    if (!Found && StrCmp (Option->Unicode.Name, L"autoopts") == 0) {
+    //
+    // Don't use autoopts if partition specific partuuidopts already found.
+    //
+    if (!FoundOptions && StrCmp (Option->Unicode.Name, L"autoopts") == 0) {
       if (Option->Unicode.Value == NULL) {
         DEBUG ((DEBUG_WARN, "LNX: Missing value for %s\n", Option->Unicode.Name));
         continue;
       }
+
+      DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+        "LNX: Using %s=\"%s\"\n", Option->Unicode.Name, Option->Unicode.Value));
 
       Status = AddOption (Options, Option->Unicode.Value, TRUE);
       return Status;
@@ -433,25 +455,110 @@ AutodetectBootOptions (
         continue;
       }
 
+      DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+        "LNX: Using %s=\"%s\"\n", Option->Unicode.Name, Option->Unicode.Value));
+
       Status = AddOption (Options, Option->Unicode.Value, TRUE);
       if (EFI_ERROR (Status)) {
         return Status;
       }
 
-      Found = TRUE;
+      FoundOptions = TRUE;
     }
   }
 
   //
-  // It might be valid to have no options except "ro", but at least empty
-  // string "GRUB_CMDLINE_LINUX" needs to be present in that case or we stop.
+  // Code only reaches here and below if has been nothing or only += options above.
+  // Use options from GRUB default location.
   //
-  if (!Found) {
+  if (mEtcDefaultGrubOptions != NULL) {
+    //
+    // Insert these after "ro" but before any user specified opts.
+    //
+    InsertIndex = 0;
+
+    //
+    // If both are present both should be added, standard grub scripts add them
+    // in this order.
+    // Rescue should only use GRUB_CMDLINE_LINUX so this is correct as
+    // far as it goes; however note that rescue options are unfortunately not
+    // normally stored here, but are generated in the depths of grub scripts.
+    //
+    for (Index = 0; Index < (IsRescue ? 1u : 2u); Index++) {
+      if (Index == 0) {
+        GrubVarName = "GRUB_CMDLINE_LINUX";
+      } else {
+        GrubVarName = "GRUB_CMDLINE_LINUX_DEFAULT";
+      }
+      if (OcParsedVarsGetAsciiStr (
+        mEtcDefaultGrubOptions,
+        GrubVarName,
+        &AsciiStrValue
+        ) &&
+        AsciiStrValue != NULL) {
+
+        DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+          "LNX: Using %a=\"%a\"\n", GrubVarName, AsciiStrValue));
+
+        if (AsciiStrValue[0] != '\0') {
+          Status = InsertOption (InsertIndex, Options, AsciiStrValue, FALSE);
+          if (EFI_ERROR (Status)) {
+            return Status;
+          }
+          //
+          // Must not increment insert index if empty option.
+          //
+          InsertIndex++;
+        }
+
+        //
+        // Empty string value is good enough for found: we are operating
+        // from GRUB cfg files rather than pure guesswork.
+        //
+        FoundOptions = TRUE;
+      }
+    }
+  }
+
+  //
+  // It might be valid to have no options for some kernels or distros, but at least
+  // empty (not missing) user specified options or GRUB_CMDLINE_LINUX[_DEFAULT] needs
+  // to be present in that case or we stop.
+  //
+  if (!FoundOptions) {
     DEBUG ((DEBUG_WARN, "LNX: No grub default or user defined options - aborting\n"));
     return EFI_INVALID_PARAMETER;
   }
 
-  return EFI_SUCCESS;
+  //
+  // Standard attached drives on OVMF appear as MBR, so it can be convenient when
+  // debugging to allow entries with incorrect (i.e. specifies no/every drive)
+  // root=... on NOOPT debugging build.
+  //
+//#if !defined(OC_TARGET_NOOPT)
+  if (CompareGuid (&gPartuuid, &gEfiPartTypeUnusedGuid)) {
+    Status = EFI_UNSUPPORTED;
+    DEBUG ((DEBUG_WARN, "LNX: Cannot autodetect root on MBR partition - %r\n", Status));
+    return Status;
+  }
+//#endif
+
+  //
+  // Insert "root=PARTUUID=..." option, followed by "ro" if requested, only if we get to here.
+  //
+  Status = InsertRootOption (Options);
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+  InsertIndex = 1;
+
+  if ((gLinuxBootFlags & LINUX_BOOT_ADD_RO) != 0) {
+    DEBUG (((gLinuxBootFlags & LINUX_BOOT_LOG_VERBOSE) == 0 ? DEBUG_VERBOSE : DEBUG_INFO,
+      "LNX: Adding \"ro\"\n"));
+    Status = InsertOption (InsertIndex, Options, "ro", FALSE);
+  }
+
+  return Status;
 }
 
 STATIC
@@ -465,7 +572,6 @@ GenerateEntriesForVmlinuzFiles (
   UINTN                           InitrdIndex;
   UINTN                           ShortestMatch;
   UINTN                           DirectoryPathLength;
-  NAMED_LOADER_ENTRY              *NamedEntry;
   LOADER_ENTRY                    *Entry;
   VMLINUZ_FILE                    *VmlinuzFile;
   VMLINUZ_FILE                    *InitrdFile;
@@ -481,8 +587,7 @@ GenerateEntriesForVmlinuzFiles (
 
     IsRescue = FALSE;
     if (OcUnicodeStartsWith (VmlinuzFile->Version, L"0", FALSE)
-      || StrStr (VmlinuzFile->Version, L"rescue") != NULL
-      || StrStr (VmlinuzFile->Version, L"recovery") != NULL) {
+      || StrStr (VmlinuzFile->Version, L"rescue") != NULL) {
       //
       // We might have to scan /boot/grb/grub.cfg as grub os-prober does if
       // we want to find rescue version options, or we need to find a way
@@ -524,36 +629,21 @@ GenerateEntriesForVmlinuzFiles (
     }
 
     //
-    // Version.
+    // Id and version from filename.
     //
-    Entry->Version = AllocateCopyPool (
-      VmlinuzFile->StrLen - (VmlinuzFile->Version - VmlinuzFile->FileName) + 1,
-      &Entry->Linux[VmlinuzFile->Version - VmlinuzFile->FileName + DirectoryPathLength + 1]
-      );
-    if (Entry->Version == NULL) {
-      return EFI_OUT_OF_RESOURCES;
-    }
-
-    //
-    // FileName & Id.
-    //
-    NamedEntry = InternalCreateNamedLoaderEntry (Entry, VmlinuzFile->FileName);
-    if (NamedEntry == NULL) {
-      InternalFreeLoaderEntry (&Entry);
-      return EFI_OUT_OF_RESOURCES;
-    } else {
-      //
-      // Named entry filename - do not free twice.
-      //
-      VmlinuzFile->FileName = NULL;
+    Status = InternalIdVersionFromFileName (Entry, VmlinuzFile->FileName);
+    if (EFI_ERROR (Status)) {
+      return Status;
     }
 
     //
     // Use title from os-release file.
     //
-    Entry->Title = AllocateCopyPool (AsciiStrSize (mPrettyName), mPrettyName);
-    if (Entry->Title == NULL) {
-      return EFI_OUT_OF_RESOURCES;
+    if (mPrettyName != NULL) {
+      Entry->Title = AllocateCopyPool (AsciiStrSize (mPrettyName), mPrettyName);
+      if (Entry->Title == NULL) {
+        return EFI_OUT_OF_RESOURCES;
+      }
     }
 
     //
@@ -561,9 +651,10 @@ GenerateEntriesForVmlinuzFiles (
     //
     if (InitrdMatch == NULL) {
       //
-      // No need for WARN, where initrd was required user will see clear (and safe) warning from Linux kernel.
+      // Note that where initrd was required user will see clear (and safe, i.e. will
+      // not just boot incorrectly) warning from Linux kernel as well.
       //
-      DEBUG ((DEBUG_INFO, "LNX: No matching initrd/initramfs file found for %a\n", Entry->Linux));
+      DEBUG ((DEBUG_WARN, "LNX: No matching initrd/initramfs file found for %a\n", Entry->Linux));
     } else {
       Option = OcFlexArrayAddItem (Entry->Initrds);
       if (Option == NULL) {
@@ -576,20 +667,7 @@ GenerateEntriesForVmlinuzFiles (
     }
 
     //
-    // root=PARTUUID=... option.
-    //
-    Option = OcFlexArrayAddItem (Entry->Options);
-    if (Option == NULL) {
-      return EFI_OUT_OF_RESOURCES;
-    }
-    
-    Status = CreateRootPartuuid (Option);
-    if (EFI_ERROR (Status)) {
-      return Status;
-    }
-
-    //
-    // Remaining options.
+    // Add all options.
     //
     Status = AutodetectBootOptions (IsRescue, Entry->Options);
     if (EFI_ERROR (Status)) {
@@ -630,7 +708,10 @@ InternalAutodetectLinux (
 
   Status = OcSafeFileOpen (RootDirectory, &RootFsFile, ROOT_FS_FILE, EFI_FILE_MODE_READ, 0);
   if (!EFI_ERROR (Status)) {
-    Status = OcEnsureDirectory (RootFsFile, FALSE);
+    Status = OcEnsureDirectoryFile (RootFsFile, FALSE);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_WARN, "LNX: %s found but not a %a - %r\n", ROOT_FS_FILE, "file", Status));
+    }
     RootFsFile->Close (RootFsFile);
   }
   if (EFI_ERROR (Status)) {
@@ -659,8 +740,8 @@ InternalAutodetectLinux (
   }
 
   if (!EFI_ERROR (Status)) {
-    gNamedLoaderEntries = OcFlexArrayInit (sizeof (NAMED_LOADER_ENTRY), (OC_FLEX_ARRAY_FREE_ITEM) InternalFreeNamedLoaderEntry);
-    if (gNamedLoaderEntries == NULL) {
+    gLoaderEntries = OcFlexArrayInit (sizeof (LOADER_ENTRY), (OC_FLEX_ARRAY_FREE_ITEM) InternalFreeLoaderEntry);
+    if (gLoaderEntries == NULL) {
       Status = EFI_OUT_OF_RESOURCES;
     } else {
       Status = LoadEtcFiles (RootDirectory);
@@ -671,14 +752,14 @@ InternalAutodetectLinux (
     }
 
     if (!EFI_ERROR (Status)) {
-      Status = InternalConvertNamedLoaderEntriesToBootEntries (
+      Status = InternalConvertLoaderEntriesToBootEntries (
         RootDirectory,
         Entries,
         NumEntries
       );
     }
 
-    OcFlexArrayFree (&gNamedLoaderEntries);
+    OcFlexArrayFree (&gLoaderEntries);
   }
 
   if (mVmlinuzFiles != NULL) {
@@ -704,9 +785,10 @@ AutodetectLinux (
 
   Status = InternalAutodetectLinux (RootDirectory, Entries, NumEntries);
   
-  if (EFI_ERROR (Status) && Status != EFI_NOT_FOUND) {
-    DEBUG ((DEBUG_WARN, "LNX: AutodetectLinux - %r\n", Status));
-  }
+  DEBUG ((
+    (EFI_ERROR (Status) && Status != EFI_NOT_FOUND) ? DEBUG_WARN : DEBUG_INFO,
+    "LNX: AutodetectLinux - %r\n",
+    Status));
 
   return Status;
 }

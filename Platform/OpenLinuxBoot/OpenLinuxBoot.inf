@@ -24,7 +24,7 @@
 
 [LibraryClasses]
   OcBootManagementLib
-  OcDebugLogLib
+  DebugLib
   OcFileLib
   OcFlexArrayLib
   SortLib
@@ -42,3 +42,5 @@
   GrubVars.c
   LoaderEntry.c
   OpenLinuxBoot.c
+  VersionCompare.c
+  LinuxBootInternal.h

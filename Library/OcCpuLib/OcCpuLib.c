@@ -580,6 +580,13 @@ ScanIntelProcessor (
     //
     Cpu->CoreCount   = 0;
     Cpu->ThreadCount = 0;
+  } else if (Cpu->CpuGeneration == OcCpuGenerationPrePenryn
+    && Cpu->MaxId < CPUID_CACHE_PARAMS) {
+    //
+    // Legacy Pentium 4, e.g. 541.
+    // REF: https://github.com/acidanthera/bugtracker/issues/1783
+    //
+    Cpu->CoreCount   = 1;
   } else {
     Msr = AsmReadMsr64 (MSR_CORE_THREAD_COUNT);
     Cpu->CoreCount   = (UINT16)BitFieldRead64 (Msr, 16, 31);
@@ -860,7 +867,7 @@ OcCpuScanProcessor (
 
   DEBUG ((
     DEBUG_INFO,
-    "OCCPU: Signature %0X Stepping %0X Model %0X Family %0X Type %0X ExtModel %0X ExtFamily %0X uCode %0X\n",
+    "OCCPU: Signature %0X Stepping %0X Model %0X Family %0X Type %0X ExtModel %0X ExtFamily %0X uCode %0X CPUID MAX (%0X/%0X)\n",
     Cpu->Signature,
     Cpu->Stepping,
     Cpu->Model,
@@ -868,7 +875,9 @@ OcCpuScanProcessor (
     Cpu->Type,
     Cpu->ExtModel,
     Cpu->ExtFamily,
-    Cpu->MicrocodeRevision
+    Cpu->MicrocodeRevision,
+    Cpu->MaxId,
+    Cpu->MaxExtId
     ));
 
   Cpu->CPUFrequencyFromVMT = InternalCalculateVMTFrequency (

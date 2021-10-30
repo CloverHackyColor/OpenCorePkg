@@ -34,6 +34,7 @@
 
 [Sources]
   ControlMsrE2.c
+  ControlMsrE2.h
   VerifyMsrE2.c
   ControlMsrE2UI.c
   ControlMsrE2Hii.c
