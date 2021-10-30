@@ -438,7 +438,7 @@ OcReinstallProtocols (
   }
 
   if (OcAppleEg2InfoInstallProtocol (Config->Uefi.ProtocolOverrides.AppleEg2Info) == NULL) {
-    DEBUG ((DEBUG_INFO, "OC: Failed to install fb info protocol\n"));
+    DEBUG ((DEBUG_INFO, "OC: Failed to install eg2 info protocol\n"));
   }
 }
 
