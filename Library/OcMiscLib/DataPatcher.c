@@ -172,7 +172,7 @@ ApplyPatch (
 {
   UINT32  ReplaceCount;
   UINT32  DataOff;
-  BOOLEAN Found;
+  //BOOLEAN Found;
 
   if (DataSize < PatternSize) {
     return 0;
@@ -182,7 +182,7 @@ ApplyPatch (
   DataOff = 0;
 
   while (TRUE) {
-    Found = InternalFindPattern (
+    BOOLEAN Found = InternalFindPattern (
       Pattern,
       PatternMask,
       PatternSize,
