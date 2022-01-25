@@ -150,11 +150,8 @@ AsciiUint64ToLowerHex (
   )
 {
   CONST UINT32  MaxShifts = (sizeof (UINT64) * 8) - 4;
-  UINT32        Index;
-  BOOLEAN       Printed;
-  UINT8         Curr;
 
-  if (BufferSize < 4) {
+  if (!Buffer || BufferSize < 4) {
     return FALSE;
   }
 
@@ -162,9 +159,10 @@ AsciiUint64ToLowerHex (
   *Buffer++   = 'x';
 
   if (Value > 0) {
+	BOOLEAN  Printed = FALSE;
     BufferSize -= 2;
-    for (Printed = FALSE, Index = MaxShifts; Index <= MaxShifts; Index -= 4) {
-      Curr     = (UINT8) (RShiftU64 (Value, Index) & 0xFU);
+    for (UINT32 Index = MaxShifts; Index <= MaxShifts; Index -= 4) {
+      UINT8 Curr = (UINT8) (RShiftU64 (Value, Index) & 0xFU);
       Printed |= Curr > 0;
       if (Printed) {
         *Buffer++ = "0123456789abcdef"[Curr];
@@ -323,10 +321,10 @@ OcAsciiStriStr (
   CONST CHAR8 *FirstMatch;
   CONST CHAR8 *SearchStringTmp;
 
-  ASSERT (AsciiStrSize (String) != 0);
-  ASSERT (AsciiStrSize (SearchString) != 0);
+//  ASSERT (AsciiStrSize (String) != 0);
+//  ASSERT (AsciiStrSize (SearchString) != 0);
 
-  if (*SearchString == '\0') {
+  if (!String || !SearchString || *SearchString == '\0') {
     return (CHAR8 *) String;
   }
 
@@ -361,7 +359,8 @@ OcAsciiStrChr (
   IN            CHAR8              Char
   )
 {
-  ASSERT (AsciiStrSize (String) != 0);
+//  ASSERT (AsciiStrSize (String) != 0);
+  if (!String) return NULL;
 
   while (*String != '\0') {
     //

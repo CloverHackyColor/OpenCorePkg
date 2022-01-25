@@ -86,14 +86,14 @@ DecodeImageData (
   )
 {
   EFI_STATUS      Status;
-  UINTN           Index;
+//  UINTN           Index;
   UINTN           PixelCount;
   UINTN           ByteCount;
   VOID            *RealImageData;
   EFI_UGA_PIXEL   *PixelWalker;
   UINT32          Width;
   UINT32          Height;
-  UINT8           TmpChannel;
+//  UINT8           TmpChannel;
 
   STATIC_ASSERT (sizeof (EFI_UGA_PIXEL) == sizeof (UINT32), "Unsupported pixel size");
   STATIC_ASSERT (OFFSET_OF (EFI_UGA_PIXEL, Blue)     == 0,  "Unsupported pixel format");
@@ -145,8 +145,8 @@ DecodeImageData (
 
   PixelWalker = *RawImageData;
 
-  for (Index = 0; Index < PixelCount; ++Index) {
-    TmpChannel            = PixelWalker->Blue;
+  for (UINTN Index = 0; Index < PixelCount; ++Index) {
+	UINT8 TmpChannel            = PixelWalker->Blue;
     PixelWalker->Blue     = PixelWalker->Red;
     PixelWalker->Red      = TmpChannel;
     PixelWalker->Reserved = 0xFF - PixelWalker->Reserved;
