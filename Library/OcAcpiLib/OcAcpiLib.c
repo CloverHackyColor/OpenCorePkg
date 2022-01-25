@@ -631,8 +631,8 @@ AcpiNormalizeTableHeaders (
 
   Modified = FALSE;
 
-  Walker = (CHAR8 *) &Table->Signature;
-  for (Index = 0; Index < sizeof (Table->Signature); ++Index) {
+  Walker = (CHAR8 *) &Table->SignatureCommon.Signature;
+  for (Index = 0; Index < sizeof (Table->SignatureCommon.Signature); ++Index) {
     if (!IsAsciiPrint (Walker[Index])) {
       Walker[Index] = '?';
       Modified = TRUE;

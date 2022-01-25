@@ -21,8 +21,15 @@ Abstract:
 
 --*/
 
+
+
 #ifndef _CPUIO_H_
 #define _CPUIO_H_
+
+#include <Uefi/UefiBaseType.h>
+
+
+
 
 #define EFI_CPU_IO_PROTOCOL_GUID \
   { \
@@ -59,14 +66,15 @@ typedef enum {
 //
 typedef
 EFI_STATUS
-EFIAPI
-(EFIAPI *EFI_CPU_IO_PROTOCOL_IO_MEM) (
+
+( *EFI_CPU_IO_PROTOCOL_IO_MEM) (
   IN EFI_CPU_IO_PROTOCOL                * This,
   IN  EFI_CPU_IO_PROTOCOL_WIDTH         Width,
   IN  UINT64                            Address,
   IN  UINTN                             Count,
   IN  OUT VOID                          *Buffer
   );
+
 
 //
 // *******************************************************
