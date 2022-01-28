@@ -597,7 +597,7 @@ OcAppleEventInstallProtocol (
           (UINT32) AppleEvent->Revision,
           (UINT32) APPLE_EVENT_PROTOCOL_REVISION_MINIMUM
           ));
-        Reinstall = TRUE;
+//        Reinstall = TRUE; //no effect, just a comment
       } else {
         DEBUG ((
           DEBUG_INFO,

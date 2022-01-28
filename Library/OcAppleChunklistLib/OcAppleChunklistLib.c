@@ -104,8 +104,8 @@ OcAppleChunklistVerifySignature (
 {
   BOOLEAN Result;
 
-  ASSERT (Context != NULL);
-  ASSERT (Context->Signature != NULL);
+  //ASSERT (Context != NULL);
+  //ASSERT (Context->Signature != NULL);
 
   Result = RsaVerifySigHashFromKey (
              PublicKey,
@@ -115,11 +115,11 @@ OcAppleChunklistVerifySignature (
              sizeof (Context->Hash),
              OcSigHashTypeSha256
              );
-  DEBUG_CODE (
-    if (Result) {
-      Context->Signature = NULL;
-    }
-    );
+  //DEBUG_CODE (
+  //  if (Result) {
+  //    Context->Signature = NULL;
+  //  }
+   // );
 
   return Result;
 }
@@ -140,13 +140,13 @@ OcAppleChunklistVerifyData (
   UINT32                      ChunkDataSize;
   VOID                        *ChunkData;
 
-  ASSERT (Context != NULL);
-  ASSERT (Context->Chunks != NULL);
-  ASSERT (ExtentTable != NULL);
+  //ASSERT (Context != NULL);
+  //ASSERT (Context->Chunks != NULL);
+  //ASSERT (ExtentTable != NULL);
 
-  DEBUG_CODE (
-    ASSERT (Context->Signature == NULL);
-    );
+  //DEBUG_CODE (
+  //  ASSERT (Context->Signature == NULL);
+  //  );
 
   ChunkDataSize = 0;
   for (Index = 0; Index < Context->ChunkCount; ++Index) {

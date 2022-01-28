@@ -39,13 +39,13 @@ FindPattern (
 //  ASSERT (DataOff >= 0);
 
   if (PatternSize == 0 || DataSize == 0 || *DataOff >= DataSize || DataSize - *DataOff < PatternSize) {
-    return -1;
+    return FALSE;
   }
 
   UINTN result = FindMemMask(Data + *DataOff, DataSize, Pattern, PatternSize, PatternMask, PatternSize);
   if (result != MAX_UINTN) {
     if ( result < MAX_INT32 - *DataOff ) {
-      *DataOff = result;
+      *DataOff = (UINT32)result;
       return TRUE;
     }
   }
@@ -172,7 +172,7 @@ ApplyPatch (
 {
   UINT32  ReplaceCount;
   UINT32  DataOff;
-  BOOLEAN Found;
+  //BOOLEAN Found;
 
   if (DataSize < PatternSize) {
     return 0;
@@ -182,7 +182,7 @@ ApplyPatch (
   DataOff = 0;
 
   while (TRUE) {
-    Found = InternalFindPattern (
+    BOOLEAN Found = InternalFindPattern (
       Pattern,
       PatternMask,
       PatternSize,
