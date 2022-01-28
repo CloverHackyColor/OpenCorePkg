@@ -1094,6 +1094,7 @@ PatchProvideCurrentCpuInfo (
   UINT32            msrCoreThreadCount;
 
   ASSERT (Patcher != NULL);
+  if (!Patcher) return EFI_INVALID_PARAMETER;
 
   Start = ((UINT8 *) MachoGetMachHeader (&Patcher->MachContext));
 
