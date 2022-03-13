@@ -355,7 +355,7 @@ OcKernelLoadAndReserveKext (
       Comment
       ));
     Kext->Enabled = IsForced;
-    return;
+//    return;
   }
 
   //
@@ -484,12 +484,12 @@ OcKernelLoadKextsAndReserve (
   //
   for (Index = 0; Index < Config->Kernel.Force.Count; Index++) {
     Kext = Config->Kernel.Force.Values[Index];
-
+    EFI_FILE_PROTOCOL   *SysRoot = (EFI_FILE_PROTOCOL*)Kext->ImageData;
     OcKernelLoadAndReserveKext (
       Kext,
       Index,
       TRUE,
-      RootFile,
+      SysRoot, /*RootFile,*/
       Storage,
       Config,
       CacheType,
