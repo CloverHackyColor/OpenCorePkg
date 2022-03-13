@@ -589,8 +589,9 @@ MACH_X (InternalMachoExpandImage) (
 
       for (Index = 0; Index < DstSegment->NumSections; ++Index) {
         SectionOffset = DstSegment->Sections[Index].RelocationsOffset;
-#ifndef CLOVER_BUILD
+
         if (SectionOffset != 0) {
+#ifndef CLOVER_BUILD
           DEBUG ((
             DEBUG_VERBOSE,
             "OCMCO: Src section %u relocs offset 0x%X count %u delta 0x%X\n",
