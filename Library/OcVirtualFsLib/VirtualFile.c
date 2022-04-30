@@ -308,10 +308,8 @@ VirtualFileGetInfo (
 {
   EFI_STATUS         Status;
   VIRTUAL_FILE_DATA  *Data;
-  UINTN              InfoSize;
-  UINTN              NameSize;
   EFI_FILE_INFO      *FileInfo;
-  BOOLEAN            Fits;
+
 
   if (This == NULL
     || InformationType == NULL
@@ -328,12 +326,11 @@ VirtualFileGetInfo (
         "Header changed, flexible array member is now supported"
         );
 
-      NameSize    = StrSize (Data->FileName);
-      InfoSize    = SIZE_OF_EFI_FILE_INFO + NameSize;
-      Fits        = *BufferSize >= InfoSize;
-      *BufferSize = InfoSize;
+      UINTN NameSize    = StrSize (Data->FileName);
+      UINTN InfoSize    = SIZE_OF_EFI_FILE_INFO + NameSize;
 
-      if (!Fits) {
+      if (*BufferSize < InfoSize) {
+    	*BufferSize = InfoSize;
         return EFI_BUFFER_TOO_SMALL;
       }
 

@@ -354,9 +354,9 @@ OcKernelApplyPatches (
     if (Config->Kernel.Quirks.LegacyCommpage) {
       OcKernelApplyQuirk (KernelQuirkLegacyCommpage, CacheType, DarwinVersion, NULL, &KernelPatcher);     
     }
-
+// it is dangerous
     if (Config->Kernel.Quirks.ProvideCurrentCpuInfo) {
-      PatchProvideCurrentCpuInfo (&KernelPatcher, CpuInfo, DarwinVersion);  
+      PatchProvideCurrentCpuInfo (&KernelPatcher, CpuInfo, DarwinVersion);
     }
   }
 }

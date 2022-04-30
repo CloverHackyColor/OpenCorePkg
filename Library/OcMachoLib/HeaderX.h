@@ -354,7 +354,7 @@ MACH_X (InternalMachoExpandImage) (
     if (Segment->FileSize > Segment->Size) {
       return 0;
     }
-
+#ifndef CLOVER_BUILD
     DEBUG ((
       DEBUG_VERBOSE,
       "OCMCO: Src segment offset 0x%X size 0x%X delta 0x%X\n",
@@ -362,7 +362,7 @@ MACH_X (InternalMachoExpandImage) (
       Segment->FileSize,
       CurrentDelta
       ));
-
+#endif
     //
     // Align delta by x86 page size, this is what our lib expects.
     //
@@ -439,7 +439,7 @@ MACH_X (InternalMachoExpandImage) (
       DstSegment = Segment;
     }
     SegmentOffset = DstSegment->FileOffset + CurrentDelta;
-
+#ifndef CLOVER_BUILD
     DEBUG ((
       DEBUG_VERBOSE,
       "OCMCO: Dst segment offset 0x%X size 0x%X delta 0x%X\n",
@@ -447,7 +447,7 @@ MACH_X (InternalMachoExpandImage) (
       DstSegment->Size,
       CurrentDelta
       ));
-
+#endif
     if (!IsObject && DstSegment->VirtualAddress - (SegmentOffset - Context->ContainerOffset) != FirstSegment->VirtualAddress) {
       return 0;
     }
@@ -525,7 +525,7 @@ MACH_X (InternalMachoExpandImage) (
     CopyFileOffset = DstSegment->FileOffset;
     for (Index = 0; Index < DstSegment->NumSections; ++Index) {
       SectionOffset = DstSegment->Sections[Index].Offset;
-
+#ifndef CLOVER_BUILD
       DEBUG ((
         DEBUG_VERBOSE,
         "OCMCO: Src section %u offset 0x%X size 0x%X delta 0x%X\n",
@@ -534,7 +534,7 @@ MACH_X (InternalMachoExpandImage) (
         DstSegment->Sections[Index].Size,
         CurrentDelta
         ));
-
+#endif
       //
       // Allocate space for zero offset sections.
       // For all other sections, copy as-is.
@@ -547,7 +547,7 @@ MACH_X (InternalMachoExpandImage) (
         SectionOffset  += CurrentDelta;
         CopyFileOffset  = SectionOffset + DstSegment->Sections[Index].Size;
       }
-
+#ifndef CLOVER_BUILD
       DEBUG ((
         DEBUG_VERBOSE,
         "OCMCO: Dst section %u offset 0x%X size 0x%X delta 0x%X\n",
@@ -556,7 +556,7 @@ MACH_X (InternalMachoExpandImage) (
         DstSegment->Sections[Index].Size,
         CurrentDelta
         ));
-
+#endif
       if (!CalculateSizeOnly) {
         DstSegment->Sections[Index].Offset = SectionOffset;
       }
@@ -591,6 +591,7 @@ MACH_X (InternalMachoExpandImage) (
         SectionOffset = DstSegment->Sections[Index].RelocationsOffset;
 
         if (SectionOffset != 0) {
+#ifndef CLOVER_BUILD
           DEBUG ((
             DEBUG_VERBOSE,
             "OCMCO: Src section %u relocs offset 0x%X count %u delta 0x%X\n",
@@ -599,7 +600,7 @@ MACH_X (InternalMachoExpandImage) (
             DstSegment->Sections[Index].NumRelocations,
             CurrentDelta
             ));
-
+#endif
           CopyFileOffset  = SectionOffset;
           RelocationsSize = DstSegment->Sections[Index].NumRelocations * sizeof (MACH_RELOCATION_INFO);
           AlignedOffset   = ALIGN_VALUE (SectionOffset + CurrentDelta, sizeof (MACH_RELOCATION_INFO));
@@ -610,7 +611,7 @@ MACH_X (InternalMachoExpandImage) (
             return 0;
           }
           SectionOffset += CurrentDelta;
-
+#ifndef CLOVER_BUILD
           DEBUG ((
             DEBUG_VERBOSE,
             "OCMCO: Dst section %u relocs offset 0x%X count %u delta 0x%X\n",
@@ -619,7 +620,7 @@ MACH_X (InternalMachoExpandImage) (
             DstSegment->Sections[Index].NumRelocations,
             CurrentDelta
             ));
-
+#endif
           if (!CalculateSizeOnly) {
             DstSegment->Sections[Index].RelocationsOffset = SectionOffset;
             CopyMem (&Destination[CopyFileOffset + CurrentDelta], &Source[CopyFileOffset], RelocationsSize);
@@ -641,7 +642,7 @@ MACH_X (InternalMachoExpandImage) (
     if (Symtab != NULL) {
       SymbolsOffset = Symtab->SymbolsOffset;
       StringsOffset = Symtab->StringsOffset;
-
+#ifndef CLOVER_BUILD
       DEBUG ((
         DEBUG_VERBOSE,
         "OCMCO: Src symtab 0x%X (%u symbols), strings 0x%X (size 0x%X) delta 0x%X\n",
@@ -651,7 +652,7 @@ MACH_X (InternalMachoExpandImage) (
         Symtab->StringsSize,
         CurrentDelta
         ));
-
+#endif
       if (!CalculateSizeOnly) {
         Symtab = (MACH_SYMTAB_COMMAND *) ((UINT8 *) Symtab - Source + Destination);
       }
@@ -693,7 +694,7 @@ MACH_X (InternalMachoExpandImage) (
           CopyMem (&Destination[CopyFileOffset + CurrentDelta], &Source[CopyFileOffset], Symtab->StringsSize);
         }
       }
-
+#ifndef CLOVER_BUILD
       DEBUG ((
         DEBUG_VERBOSE,
         "OCMCO: Dst symtab 0x%X (%u symbols), strings 0x%X (size 0x%X) delta 0x%X\n",
@@ -703,6 +704,7 @@ MACH_X (InternalMachoExpandImage) (
         Symtab->StringsSize,
         CurrentDelta
         ));
+#endif
     }
   }
 

@@ -982,7 +982,8 @@ mProvideCurrentCpuInfoZeroMsrThreadCoreCountPatch = {
 };
 
 STATIC
-UINT8* PatchMovVar (
+UINT8*
+PatchMovVar (
   IN OUT  UINT8             *Location,
   IN      UINT8             *Start,
   IN      MACH_SECTION_ANY  *DataSection,
@@ -1051,6 +1052,242 @@ UINT8* PatchMovVar (
   return Location;
 }
 
+// 10.14:
+// 44 89 E8                 mov        eax, r13d
+// C1 E8 1A                 shr        eax, 0x1a
+// FF C0                    inc        eax
+// 89 05 68 60 98 00        mov        dword [dword_ffffff8000e4b1c8], eax
+
+// 10.15
+// 44 89 EA                 mov        edx, r13d
+// C1 EA 1A                 shr        edx, 26
+// FF C2                    inc        edx
+// 89 15 2F 55 A2 00        mov        dword [dword_FFFFFF8000E551D8], edx
+
+// 11.0.1
+// 44 89 EA                 mov        edx, r13d
+// C1 EA 1A                 shr        edx, 0x1a
+// FF C2                    inc        edx
+// 89 15 9F 9C A8 00        mov        dword [dword_ffffff8000e4b1d8], edx
+
+// 12.0.1
+// 44 89 EA                 mov        edx, r13d
+// C1 EA 1A                 shr        edx, 0x1a
+// 83 C2 01                 add        edx, 0x1
+// 89 15 DD F9 AA 00        mov        dword [dword_ffffff8000e6e1d8], edx
+
+STATIC
+CONST UINT8
+mProvideCurrentCpuInfoTopologyCoreCountFind[] = {
+  0xB9, 0x35, 0x00, 0x00, 0x00, 0x0F, 0x32
+};
+
+STATIC
+UINT8
+mProvideCurrentCpuInfoTopologyCoreCountReplace[] = {
+  0xB8, 0x00, 0x00, 0x00, 0x00, 0x31, 0xD2
+};
+
+STATIC
+PATCHER_GENERIC_PATCH
+mProvideCurrentCpuInfoTopologyCoreCountPatch = {
+  .Comment     = DEBUG_POINTER ("Set core count to thread count"),
+  .Base        = "_cpuid_set_info",
+  .Find        = mProvideCurrentCpuInfoTopologyCoreCountFind,
+  .Mask        = NULL,
+  .Replace     = mProvideCurrentCpuInfoTopologyCoreCountReplace,
+  .ReplaceMask = NULL,
+  .Size        = sizeof (mProvideCurrentCpuInfoTopologyCoreCountReplace),
+  .Count       = 2,
+  .Skip        = 0,
+  .Limit       = 0
+};
+
+STATIC
+CONST UINT8
+mProvideCurrentCpuInfoTopologyCorePerPackageV1Find[] = {
+  // mov  eax, r13d
+  // shr  eax, 0x1a    <--- start
+  // inc  eax
+  // mov  dword[], eax
+  0xC1, 0xE8, 0x1A, 0xFF, 0xC0, 0x89
+};
+
+STATIC
+CONST UINT8
+mProvideCurrentCpuInfoTopologyCorePerPackageV1Replace[] = {
+  // mov  eax, r13d
+  // mov  eax, 0x80    <--- start
+  // mov  dword[], eax
+  0xB8, 0x80, 0x00, 0x00, 0x00, 0x89
+};
+
+STATIC
+PATCHER_GENERIC_PATCH
+mProvideCurrentCpuInfoTopologyCorePerPackageV1Patch = {
+  .Comment     = DEBUG_POINTER ("Set core per package count to 128 V1"),
+  .Base        = NULL,
+  .Find        = mProvideCurrentCpuInfoTopologyCorePerPackageV1Find,
+  .Mask        = NULL,
+  .Replace     = mProvideCurrentCpuInfoTopologyCorePerPackageV1Replace,
+  .ReplaceMask = NULL,
+  .Size        = sizeof (mProvideCurrentCpuInfoTopologyCorePerPackageV1Replace),
+  .Count       = 1,
+  .Skip        = 0,
+  .Limit       = 0
+};
+
+STATIC
+CONST UINT8
+mProvideCurrentCpuInfoTopologyCorePerPackageV1_5Find[] = {
+  // mov  edx, r13d
+  // shr  edx, 0x1a    <--- start
+  // inc  edx
+  // mov  dword[], edx
+  0xC1, 0xEA, 0x1A, 0xFF, 0xC2, 0x89
+};
+
+STATIC
+CONST UINT8
+mProvideCurrentCpuInfoTopologyCorePerPackageV1_5Replace[] = {
+  // mov  edx, r13d
+  // mov  edx, 0x80    <--- start
+  // mov  dword[], edx
+  0xBA, 0x80, 0x00, 0x00, 0x00, 0x89
+};
+
+STATIC
+PATCHER_GENERIC_PATCH
+mProvideCurrentCpuInfoTopologyCorePerPackageV1_5Patch = {
+  .Comment     = DEBUG_POINTER ("Set core per package count to 128 V1_5"),
+  .Base        = NULL,
+  .Find        = mProvideCurrentCpuInfoTopologyCorePerPackageV1_5Find,
+  .Mask        = NULL,
+  .Replace     = mProvideCurrentCpuInfoTopologyCorePerPackageV1_5Replace,
+  .ReplaceMask = NULL,
+  .Size        = sizeof (mProvideCurrentCpuInfoTopologyCorePerPackageV1_5Replace),
+  .Count       = 1,
+  .Skip        = 0,
+  .Limit       = 0
+};
+
+STATIC
+CONST UINT8
+mProvideCurrentCpuInfoTopologyCorePerPackageV2Find[] = {
+  // mov  eax/edx, r13d
+  // shr  eax/edx, 0x1a    <--- start
+  // add  eax/edx, 1
+  // mov  dword[], eax/edx
+  0xC1, 0xE8 /* 0xEA */, 0x1A, 0x83, 0xC0 /* 0xC2 */, 0x01, 0x89
+};
+
+STATIC
+CONST UINT8
+mProvideCurrentCpuInfoTopologyCorePerPackageV2Mask[] = {
+  0xFF, 0xFD, 0xFF, 0xFF, 0xFD, 0xFF, 0xFF
+};
+
+STATIC
+CONST UINT8
+mProvideCurrentCpuInfoTopologyCorePerPackageV2Replace[] = {
+  // mov  eax/edx, r13d
+  // shr  eax/edx, 0x1a    <--- start
+  // nop
+  // mov  al/dl, 128
+  // mov  dword[], eax/edx
+  0xC1, 0xE8 /* 0xEA */, 0x1A, 0x90, 0xB0 /* 0xB2 */, 0x80, 0x89
+};
+
+STATIC
+PATCHER_GENERIC_PATCH
+mProvideCurrentCpuInfoTopologyCorePerPackageV2Patch = {
+  .Comment     = DEBUG_POINTER ("Set core per package count to 128 V2"),
+  .Base        = NULL,
+  .Find        = mProvideCurrentCpuInfoTopologyCorePerPackageV2Find,
+  .Mask        = mProvideCurrentCpuInfoTopologyCorePerPackageV2Mask,
+  .Replace     = mProvideCurrentCpuInfoTopologyCorePerPackageV2Replace,
+  .ReplaceMask = mProvideCurrentCpuInfoTopologyCorePerPackageV2Mask,
+  .Size        = sizeof (mProvideCurrentCpuInfoTopologyCorePerPackageV2Replace),
+  .Count       = 1,
+  .Skip        = 0,
+  .Limit       = 0
+};
+
+STATIC
+EFI_STATUS
+PatchProvideCurrentCpuInfoMSR35h (
+  IN OUT PATCHER_CONTEXT  *Patcher,
+  IN     OC_CPU_INFO      *CpuInfo,
+  IN     UINT32           KernelVersion
+  )
+{
+  EFI_STATUS  Status;
+  UINT32      CoreThreadCount;
+  BOOLEAN     IsAmpCpu;
+
+  //
+  // TODO: We can support older, just there is no real need.
+  // Anyone can test/contribute as needed.
+  //
+  if (KernelVersion < KERNEL_VERSION_MOJAVE_MIN) {
+    DEBUG ((DEBUG_INFO, "OCAK: Ignoring CPU INFO for AMP below macOS 10.14\n"));
+    return EFI_SUCCESS;
+  }
+
+  IsAmpCpu = (CpuInfo->ThreadCount % CpuInfo->CoreCount) != 0;
+
+  //
+  // Provide real values for normal CPUs.
+  // Provide Thread=Thread for AMP (ADL) CPUs.
+  //
+  if (IsAmpCpu) {
+  CoreThreadCount =
+    (((UINT32) CpuInfo->ThreadCount) << 16U) | ((UINT32) CpuInfo->ThreadCount);
+  } else {
+    CoreThreadCount =
+      (((UINT32) CpuInfo->CoreCount) << 16U) | ((UINT32) CpuInfo->ThreadCount);
+  }
+
+  CopyMem (
+    &mProvideCurrentCpuInfoTopologyCoreCountReplace[1],
+    &CoreThreadCount,
+    sizeof (UINT32)
+    );
+
+  Status = PatcherApplyGenericPatch (
+    Patcher,
+    &mProvideCurrentCpuInfoTopologyCoreCountPatch
+    );
+
+  DEBUG ((DEBUG_INFO, "OCAK: Patching MSR 35h to %08x - %r\n", CoreThreadCount, Status));
+
+  if (EFI_ERROR (Status) || !IsAmpCpu) {
+    return Status;
+  }
+
+  if (KernelVersion >= KERNEL_VERSION_MONTEREY_MIN) {
+    Status = PatcherApplyGenericPatch (
+      Patcher,
+      &mProvideCurrentCpuInfoTopologyCorePerPackageV2Patch
+      );
+  } else {
+    Status = PatcherApplyGenericPatch (
+      Patcher,
+      &mProvideCurrentCpuInfoTopologyCorePerPackageV1Patch
+      );
+    if (EFI_ERROR (Status)) {
+      Status = PatcherApplyGenericPatch (
+        Patcher,
+        &mProvideCurrentCpuInfoTopologyCorePerPackageV1_5Patch
+        );
+    }
+  }
+
+  DEBUG ((DEBUG_INFO, "OCAK: Patching core per package count - %r\n", Status));
+
+  return Status;
+}
+
 EFI_STATUS
 PatchProvideCurrentCpuInfo (
   IN OUT PATCHER_CONTEXT  *Patcher,
@@ -1067,7 +1304,6 @@ PatchProvideCurrentCpuInfo (
   INT32             Delta;
   UINT64            LocationAddr;
   UINT64            VarAddr64;
-  //UINT32            VarAddr32;
 
   UINT8             *TscInitFunc;
   UINT8             *TmrCvtFunc;
@@ -1095,6 +1331,9 @@ PatchProvideCurrentCpuInfo (
 
   ASSERT (Patcher != NULL);
 
+  Status = EFI_SUCCESS;
+  Status |= PatchProvideCurrentCpuInfoMSR35h (Patcher, CpuInfo, KernelVersion);
+
   Start = ((UINT8 *) MachoGetMachHeader (&Patcher->MachContext));
 
   //
@@ -1110,7 +1349,6 @@ PatchProvideCurrentCpuInfo (
   //
   // Pull required symbols.
   //
-  Status = EFI_SUCCESS;
   Status |= PatcherGetSymbolAddress (Patcher, "_tsc_init",        (UINT8 **) &TscInitFunc);
   Status |= PatcherGetSymbolAddress (Patcher, "_tmrCvt",          (UINT8 **) &TmrCvtFunc);
 
