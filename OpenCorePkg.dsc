@@ -141,7 +141,7 @@
   UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
   UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
   UefiUsbLib|MdePkg/Library/UefiUsbLib/UefiUsbLib.inf
-  VariablePolicyHelperLib|MdeModulePkg/Library/VariablePolicyHelperLib/VariablePolicyHelperLib.inf
+#  VariablePolicyHelperLib|MdeModulePkg/Library/VariablePolicyHelperLib/VariablePolicyHelperLib.inf
   ResetSystemLib|OpenCorePkg/Library/OcResetSystemLib/OcResetSystemLib.inf
 
   !include NetworkPkg/NetworkLibs.dsc.inc
@@ -264,7 +264,7 @@
   OpenCorePkg/Library/OcVirtualFsLib/OcVirtualFsLib.inf
   OpenCorePkg/Library/OcWaveLib/OcWaveLib.inf
   OpenCorePkg/Library/OcXmlLib/OcXmlLib.inf
-  OpenCorePkg/Legacy/BootPlatform/BiosVideo/BiosVideo.inf
+#  OpenCorePkg/Legacy/BootPlatform/BiosVideo/BiosVideo.inf
   OpenCorePkg/Platform/CrScreenshotDxe/CrScreenshotDxe.inf
   OpenCorePkg/Platform/OpenCanopy/OpenCanopy.inf
   OpenCorePkg/Platform/OpenLinuxBoot/OpenLinuxBoot.inf
@@ -306,7 +306,7 @@
       NULL|ShellPkg/Library/UefiShellDebug1CommandsLib/UefiShellDebug1CommandsLib.inf
       NULL|ShellPkg/Library/UefiShellNetwork1CommandsLib/UefiShellNetwork1CommandsLib.inf
       NULL|ShellPkg/Library/UefiShellNetwork2CommandsLib/UefiShellNetwork2CommandsLib.inf
-      NULL|ShellPkg/Library/UefiShellAcpiViewCommandLib/UefiShellAcpiViewCommandLib.inf
+#      NULL|ShellPkg/Library/UefiShellAcpiViewCommandLib/UefiShellAcpiViewCommandLib.inf
   }
 
 [LibraryClasses]
@@ -366,7 +366,7 @@
 
   # Force page alignment for all files allowing for page protection.
   GCC:*_*_*_DLINK_FLAGS = -z common-page-size=0x1000
-  XCODE:*_*_*_DLINK_FLAGS = -seg1addr 0x1000 -segalign 0x1000
+  XCODE:*_*_*_DLINK_FLAGS = -Wl,-seg1addr,0x1000,-segalign,0x1000
   XCODE:*_*_*_MTOC_FLAGS = -align 0x1000
   CLANGPDB:*_*_*_DLINK_FLAGS = /ALIGN:4096 /FILEALIGN:512
   CLANGGCC:*_*_*_DLINK_FLAGS = -z common-page-size=0x1000
