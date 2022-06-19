@@ -153,7 +153,9 @@ InternalCalculateTSCFromApplePlatformInfo (
 **/
 UINT64
 InternalCalculateARTFrequencyIntel (
+#ifndef CLOVER_BUILD
   OUT UINT64   *CPUFrequency,
+#endif
   OUT UINT64   *TscAdjustPtr OPTIONAL,
   IN  BOOLEAN  Recalculate
   );

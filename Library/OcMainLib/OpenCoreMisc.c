@@ -85,6 +85,7 @@ OcStoreLoadPath (
     ));
 }
 
+#ifndef CLOVER_BUILD
 STATIC
 EFI_STATUS
 ProduceDebugReport (
@@ -283,6 +284,7 @@ OcToolLoadEntry (
 
   return EFI_SUCCESS;
 }
+#endif
 
 STATIC
 VOID
@@ -790,6 +792,7 @@ OcMiscLateInit (
   return EFI_SUCCESS;
 }
 
+#ifndef CLOVER_BUILD
 VOID
 OcMiscLoadSystemReport (
   IN  OC_GLOBAL_CONFIG  *Config,
@@ -1043,6 +1046,7 @@ OcMiscBoot (
     DEBUG ((DEBUG_ERROR, "OC: Failed to show boot menu!\n"));
   }
 }
+#endif
 
 VOID
 OcMiscUefiQuirksLoaded (

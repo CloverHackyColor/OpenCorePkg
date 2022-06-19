@@ -128,7 +128,9 @@ OcMain (
   )
 {
   EFI_STATUS            Status;
+#ifndef CLOVER_BUILD
   OC_PRIVILEGE_CONTEXT  *Privilege;
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: OcMiscEarlyInit...\n"));
   Status = OcMiscEarlyInit (
@@ -140,8 +142,11 @@ OcMain (
   if (EFI_ERROR (Status)) {
     return;
   }
-
+#ifndef CLOVER_BUILD
+  //TODO: it's double Clover calculation so it is better to make copy
+  // mOpenCoreCpuInfo <- gCPUStructure
   OcCpuScanProcessor (&mOpenCoreCpuInfo);
+#endif
 
   DEBUG ((DEBUG_INFO, "OC: OcLoadNvramSupport...\n"));
   OcLoadNvramSupport (Storage, &mOpenCoreConfiguration);
@@ -156,10 +161,13 @@ OcMain (
     );
   DEBUG ((DEBUG_INFO, "OC: OcLoadUefiSupport...\n"));
   OcLoadUefiSupport (Storage, &mOpenCoreConfiguration, &mOpenCoreCpuInfo, mOpenCoreBooterHash);
+#ifndef CLOVER_BUILD
   DEBUG_CODE_BEGIN ();
   DEBUG ((DEBUG_INFO, "OC: OcMiscLoadSystemReport...\n"));
   OcMiscLoadSystemReport (&mOpenCoreConfiguration, mStorageHandle);
   DEBUG_CODE_END ();
+#endif
+  // KEEP OcLoadAcpiSupport, even for Clover Build. This will do nothing except if USE_OC_SECTION_Acpi is defined in main.cpp (hybrid mode)
   DEBUG ((DEBUG_INFO, "OC: OcLoadAcpiSupport...\n"));
   OcLoadAcpiSupport (&mOpenCoreStorage, &mOpenCoreConfiguration);
   DEBUG ((DEBUG_INFO, "OC: OcLoadPlatformSupport...\n"));
@@ -177,13 +185,18 @@ OcMain (
     mOpenCorePrivilege.Salt         = OC_BLOB_GET (&mOpenCoreConfiguration.Misc.Security.PasswordSalt);
     mOpenCorePrivilege.SaltSize     = mOpenCoreConfiguration.Misc.Security.PasswordSalt.Size;
 
+    #ifndef CLOVER_BUILD
     Privilege = &mOpenCorePrivilege;
+    #endif
   } else {
+    #ifndef CLOVER_BUILD
     Privilege = NULL;
+    #endif
   }
 
   DEBUG ((DEBUG_INFO, "OC: All green, starting boot management...\n"));
 
+#ifndef CLOVER_BUILD
   OcMiscBoot (
     &mOpenCoreStorage,
     &mOpenCoreConfiguration,
@@ -192,6 +205,7 @@ OcMain (
     mOpenCoreConfiguration.Uefi.Quirks.RequestBootVarRouting,
     mStorageHandle
     );
+#endif
 }
 
 STATIC

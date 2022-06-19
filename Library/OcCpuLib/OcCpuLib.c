@@ -31,7 +31,7 @@
 #include <Register/Intel/Msr/NehalemMsr.h>
 
 #include "OcCpuInternals.h"
-
+#ifndef CLOVER_BUILD
 STATIC
 EFI_STATUS
 ScanMpServices (
@@ -271,6 +271,7 @@ ScanThreadCount (
 
   return Status;
 }
+#endif
 
 STATIC
 VOID
@@ -325,6 +326,7 @@ SetMaxBusRatioAndMaxBusRatioDiv (
   }
 }
 
+#ifndef CLOVER_BUILD
 STATIC
 VOID
 ScanIntelFSBFrequency (
@@ -378,6 +380,7 @@ ScanIntelFSBFrequency (
     MaxBusRatioDiv != 0 ? ".5" : ""
     ));
 }
+#endif
 
 UINT64
 InternalConvertAppleFSBToTSCFrequency (
@@ -399,6 +402,7 @@ InternalConvertAppleFSBToTSCFrequency (
   return FSBFrequency * MaxBusRatio;
 }
 
+#ifndef CLOVER_BUILD
 STATIC
 VOID
 ScanIntelProcessorApple (
@@ -979,6 +983,7 @@ OcCpuScanProcessor (
     Cpu->ThreadCount
     ));
 }
+#endif
 
 VOID
 OcCpuGetMsrReport (
