@@ -491,7 +491,22 @@ OcKernelLoadKextsAndReserve (
   //
   for (Index = 0; Index < Config->Kernel.Force.Count; Index++) {
     Kext = Config->Kernel.Force.Values[Index];
-
+#ifdef CLOVER_BUILD
+    EFI_FILE_PROTOCOL   *SysRoot = (EFI_FILE_PROTOCOL*)Kext->ImageData;
+    OcKernelLoadAndReserveKext (
+      Kext,
+      Index,
+      TRUE,
+      SysRoot, /*RootFile,*/
+      Storage,
+      Config,
+      CacheType,
+      Is32Bit,
+      ReservedExeSize,
+      ReservedInfoSize,
+      NumReservedKexts
+      );
+#else
     OcKernelLoadAndReserveKext (
       Kext,
       Index,
@@ -505,6 +520,7 @@ OcKernelLoadKextsAndReserve (
       ReservedInfoSize,
       NumReservedKexts
       );
+#endif
   }
 
   //
