@@ -1019,7 +1019,7 @@ InternalScanPrelinkedKext (
         continue;
       }
 
-      DEBUG ((DEBUG_VERBOSE, "OCAK: Checking dependency %a for kext %a\n", DependencyId, Kext->Identifier));
+//      DEBUG ((DEBUG_VERBOSE, "OCAK: Checking dependency %a for kext %a\n", DependencyId, Kext->Identifier));
 
       //
       // In 11.0 KPIs just like plist-only kexts are not present in memory and their
@@ -1029,7 +1029,7 @@ InternalScanPrelinkedKext (
       if (  Context->IsKernelCollection
          && (AsciiStrnCmp (DependencyId, "com.apple.kpi.", L_STR_LEN ("com.apple.kpi.")) == 0))
       {
-        DEBUG ((DEBUG_VERBOSE, "OCAK: Ignoring KPI %a for kext %a in KC/state mode\n", DependencyId, Kext->Identifier));
+//        DEBUG ((DEBUG_VERBOSE, "OCAK: Ignoring KPI %a for kext %a in KC/state mode\n", DependencyId, Kext->Identifier));
         continue;
       }
 
@@ -1039,7 +1039,7 @@ InternalScanPrelinkedKext (
       //
       DependencyKext = InternalCachedPrelinkedKext (Context, DependencyId);
       if (DependencyKext == NULL) {
-        DEBUG ((DEBUG_INFO, "OCAK: Dependency %a was not found for kext %a\n", DependencyId, Kext->Identifier));
+//        DEBUG ((DEBUG_INFO, "OCAK: Dependency %a was not found for kext %a\n", DependencyId, Kext->Identifier));
 
         DependencyKext = InternalGetQuirkDependencyKext (DependencyId, Context);
         if (DependencyKext == NULL) {

@@ -369,13 +369,13 @@ MACH_X (
       return 0;
     }
 
-    DEBUG ((
-      DEBUG_VERBOSE,
-      "OCMCO: Src segment offset 0x%X size 0x%X delta 0x%X\n",
-      Segment->FileOffset,
-      Segment->FileSize,
-      CurrentDelta
-      ));
+//    DEBUG ((
+//      DEBUG_VERBOSE,
+//      "OCMCO: Src segment offset 0x%X size 0x%X delta 0x%X\n",
+//      Segment->FileOffset,
+//      Segment->FileSize,
+//      CurrentDelta
+//      ));
 
     //
     // Align delta by x86 page size, this is what our lib expects.
@@ -457,13 +457,13 @@ MACH_X (
 
     SegmentOffset = DstSegment->FileOffset + CurrentDelta;
 
-    DEBUG ((
-      DEBUG_VERBOSE,
-      "OCMCO: Dst segment offset 0x%X size 0x%X delta 0x%X\n",
-      SegmentOffset,
-      DstSegment->Size,
-      CurrentDelta
-      ));
+//    DEBUG ((
+//      DEBUG_VERBOSE,
+//      "OCMCO: Dst segment offset 0x%X size 0x%X delta 0x%X\n",
+//      SegmentOffset,
+//      DstSegment->Size,
+//      CurrentDelta
+//      ));
 
     if (!IsObject && (DstSegment->VirtualAddress - (SegmentOffset - Context->ContainerOffset) != FirstSegment->VirtualAddress)) {
       return 0;
@@ -550,14 +550,14 @@ MACH_X (
     for (Index = 0; Index < DstSegment->NumSections; ++Index) {
       SectionOffset = DstSegment->Sections[Index].Offset;
 
-      DEBUG ((
-        DEBUG_VERBOSE,
-        "OCMCO: Src section %u offset 0x%X size 0x%X delta 0x%X\n",
-        Index,
-        SectionOffset,
-        DstSegment->Sections[Index].Size,
-        CurrentDelta
-        ));
+ //     DEBUG ((
+ //       DEBUG_VERBOSE,
+ //       "OCMCO: Src section %u offset 0x%X size 0x%X delta 0x%X\n",
+ //       Index,
+ //       SectionOffset,
+ //       DstSegment->Sections[Index].Size,
+ //       CurrentDelta
+ //       ));
 
       //
       // Allocate space for zero offset sections.
@@ -572,14 +572,14 @@ MACH_X (
         CopyFileOffset = SectionOffset + DstSegment->Sections[Index].Size;
       }
 
-      DEBUG ((
-        DEBUG_VERBOSE,
-        "OCMCO: Dst section %u offset 0x%X size 0x%X delta 0x%X\n",
-        Index,
-        SectionOffset,
-        DstSegment->Sections[Index].Size,
-        CurrentDelta
-        ));
+//      DEBUG ((
+//        DEBUG_VERBOSE,
+//        "OCMCO: Dst section %u offset 0x%X size 0x%X delta 0x%X\n",
+//        Index,
+//        SectionOffset,
+//        DstSegment->Sections[Index].Size,
+//        CurrentDelta
+//        ));
 
       if (!CalculateSizeOnly) {
         DstSegment->Sections[Index].Offset = SectionOffset;
@@ -615,14 +615,14 @@ MACH_X (
         SectionOffset = DstSegment->Sections[Index].RelocationsOffset;
 
         if (SectionOffset != 0) {
-          DEBUG ((
-            DEBUG_VERBOSE,
-            "OCMCO: Src section %u relocs offset 0x%X count %u delta 0x%X\n",
-            Index,
-            SectionOffset,
-            DstSegment->Sections[Index].NumRelocations,
-            CurrentDelta
-            ));
+//          DEBUG ((
+//            DEBUG_VERBOSE,
+//            "OCMCO: Src section %u relocs offset 0x%X count %u delta 0x%X\n",
+//            Index,
+//            SectionOffset,
+//            DstSegment->Sections[Index].NumRelocations,
+//            CurrentDelta
+//            ));
 
           CopyFileOffset  = SectionOffset;
           RelocationsSize = DstSegment->Sections[Index].NumRelocations * sizeof (MACH_RELOCATION_INFO);
@@ -637,14 +637,14 @@ MACH_X (
 
           SectionOffset += CurrentDelta;
 
-          DEBUG ((
-            DEBUG_VERBOSE,
-            "OCMCO: Dst section %u relocs offset 0x%X count %u delta 0x%X\n",
-            Index,
-            SectionOffset,
-            DstSegment->Sections[Index].NumRelocations,
-            CurrentDelta
-            ));
+//          DEBUG ((
+//            DEBUG_VERBOSE,
+//            "OCMCO: Dst section %u relocs offset 0x%X count %u delta 0x%X\n",
+//            Index,
+//            SectionOffset,
+//            DstSegment->Sections[Index].NumRelocations,
+//            CurrentDelta
+//            ));
 
           if (!CalculateSizeOnly) {
             DstSegment->Sections[Index].RelocationsOffset = SectionOffset;
@@ -668,15 +668,15 @@ MACH_X (
       SymbolsOffset = Symtab->SymbolsOffset;
       StringsOffset = Symtab->StringsOffset;
 
-      DEBUG ((
-        DEBUG_VERBOSE,
-        "OCMCO: Src symtab 0x%X (%u symbols), strings 0x%X (size 0x%X) delta 0x%X\n",
-        SymbolsOffset,
-        Symtab->NumSymbols,
-        StringsOffset,
-        Symtab->StringsSize,
-        CurrentDelta
-        ));
+//      DEBUG ((
+//        DEBUG_VERBOSE,
+//        "OCMCO: Src symtab 0x%X (%u symbols), strings 0x%X (size 0x%X) delta 0x%X\n",
+//        SymbolsOffset,
+//        Symtab->NumSymbols,
+//        StringsOffset,
+//        Symtab->StringsSize,
+//        CurrentDelta
+//        ));
 
       if (!CalculateSizeOnly) {
         Symtab = (MACH_SYMTAB_COMMAND *)((UINT8 *)Symtab - Source + Destination);
@@ -724,15 +724,15 @@ MACH_X (
         }
       }
 
-      DEBUG ((
-        DEBUG_VERBOSE,
-        "OCMCO: Dst symtab 0x%X (%u symbols), strings 0x%X (size 0x%X) delta 0x%X\n",
-        SymbolsOffset,
-        Symtab->NumSymbols,
-        StringsOffset,
-        Symtab->StringsSize,
-        CurrentDelta
-        ));
+//      DEBUG ((
+//        DEBUG_VERBOSE,
+//        "OCMCO: Dst symtab 0x%X (%u symbols), strings 0x%X (size 0x%X) delta 0x%X\n",
+//        SymbolsOffset,
+//        Symtab->NumSymbols,
+//        StringsOffset,
+//        Symtab->StringsSize,
+//        CurrentDelta
+//        ));
     }
   }
 

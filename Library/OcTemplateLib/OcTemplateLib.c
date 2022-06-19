@@ -146,15 +146,15 @@ OcBlobAllocate (
 
   Blob = (PRIV_OC_BLOB *)Pointer;
 
-  DEBUG ((
-    DEBUG_VERBOSE,
-    "OCTPL: Allocating %u bytes in blob %p with size %u/%u curr %p\n",
-    Size,
-    Blob,
-    Blob->Size,
-    Blob->MaxSize,
-    Blob->DynValue
-    ));
+//  DEBUG ((
+//    DEBUG_VERBOSE,
+//    "OCTPL: Allocating %u bytes in blob %p with size %u/%u curr %p\n",
+//    Size,
+//    Blob,
+//    Blob->Size,
+//    Blob->MaxSize,
+//    Blob->DynValue
+//    ));
 
   //
   // We fit into static space

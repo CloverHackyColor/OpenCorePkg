@@ -379,17 +379,17 @@ VirtualFileGetInfo (
                                      Buffer
                                      );
 
-  DEBUG ((
-    DEBUG_VERBOSE,
-    "Getting file info %g with now BufferSize %u mode gave - %r\n",
-    InformationType,
-    (UINT32)*BufferSize,
-    Status
-    ));
+//  DEBUG ((
+//    DEBUG_VERBOSE,
+//    "Getting file info %g with now BufferSize %u mode gave - %r\n",
+//    InformationType,
+//    (UINT32)*BufferSize,
+//    Status
+//    ));
 
-  if (!EFI_ERROR (Status) && CompareGuid (InformationType, &gEfiFileInfoGuid)) {
-    DEBUG ((DEBUG_VERBOSE, "Got file size %u\n", (UINT32)((EFI_FILE_INFO *)Buffer)->FileSize));
-  }
+//  if (!EFI_ERROR (Status) && CompareGuid (InformationType, &gEfiFileInfoGuid)) {
+//    DEBUG ((DEBUG_VERBOSE, "Got file size %u\n", (UINT32)((EFI_FILE_INFO *)Buffer)->FileSize));
+//  }
 
   return Status;
 }

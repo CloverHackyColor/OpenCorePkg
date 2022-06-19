@@ -199,14 +199,14 @@ InternalGetApfsSpecialFileInfo (
       return EFI_NOT_FOUND;
     }
 
-    DEBUG ((
-      DEBUG_BULK_INFO,
-      "OCBP: APFS Volume Info - %p (%u, %g, %u)\n",
-      *VolumeInfo,
-      (*VolumeInfo)->Always1,
-      &(*VolumeInfo)->Uuid,
-      (*VolumeInfo)->Role
-      ));
+//    DEBUG ((
+//      DEBUG_BULK_INFO,
+//      "OCBP: APFS Volume Info - %p (%u, %g, %u)\n",
+//      *VolumeInfo,
+//      (*VolumeInfo)->Always1,
+//      &(*VolumeInfo)->Uuid,
+//      (*VolumeInfo)->Role
+//      ));
   }
 
   if (ContainerInfo != NULL) {
@@ -226,13 +226,13 @@ InternalGetApfsSpecialFileInfo (
       return EFI_NOT_FOUND;
     }
 
-    DEBUG ((
-      DEBUG_BULK_INFO,
-      "OCBP: APFS Container Info - %p (%u, %g)\n",
-      *ContainerInfo,
-      (*ContainerInfo)->Always1,
-      &(*ContainerInfo)->Uuid
-      ));
+//    DEBUG ((
+//      DEBUG_BULK_INFO,
+//      "OCBP: APFS Container Info - %p (%u, %g)\n",
+//      *ContainerInfo,
+//      (*ContainerInfo)->Always1,
+//      &(*ContainerInfo)->Uuid
+//      ));
   }
 
   return EFI_SUCCESS;
