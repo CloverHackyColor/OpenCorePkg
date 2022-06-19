@@ -1147,6 +1147,10 @@ OcKernelFileOpen (
 
   Status = OcSafeFileOpen (This, NewHandle, FileName, OpenMode, Attributes);
 
+#ifdef CLOVER_BUILD
+  extern int g_OpeningLogFile;
+  if ( !g_OpeningLogFile ) {
+#endif
   DEBUG ((
     DEBUG_VERBOSE,
     "OC: Opening file %s with %u mode gave - %r\n",
@@ -1154,6 +1158,9 @@ OcKernelFileOpen (
     (UINT32)OpenMode,
     Status
     ));
+#ifdef CLOVER_BUILD
+  }
+#endif
 
   //
   // Hook kernelcache read attempts for fuzzy kernelcache matching.
