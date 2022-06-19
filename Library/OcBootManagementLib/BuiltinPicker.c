@@ -44,6 +44,10 @@
 #include <Library/UefiLib.h>
 #include <Library/ResetSystemLib.h>
 
+#ifdef CLOVER_BUILD
+#include <Library/OcCpuLib.h>
+#endif
+
 STATIC INT32  mStatusRow;
 STATIC INT32  mStatusColumn;
 
@@ -579,7 +583,11 @@ OcShowSimpleBootMenu (
         gST->ConOut->OutputString (gST->ConOut, L"\r\n\r\n");
         Print (
           L"mTscFrequency  = %,Lu\n",
+#ifndef CLOVER_BUILD
           GetTscFrequency ()
+#else
+          OcGetTSCFrequency ()
+#endif
           );
         gST->ConOut->SetCursorPosition (gST->ConOut, mStatusColumn, mStatusRow);
       }

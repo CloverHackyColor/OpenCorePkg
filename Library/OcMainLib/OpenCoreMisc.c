@@ -399,6 +399,50 @@ OcMiscGetVersionString (
   return mOpenCoreVersion;
 }
 
+// jief : This is the same as the beginning of OcMiscEarlyInit.
+//        I could replace the beginning of OcMiscEarlyInit by a call to this function,
+//        but it makes it harder to understand for diff algorithm.
+#ifdef CLOVER_BUILD
+EFI_STATUS
+ClOcReadConfigurationFile(
+  IN  OC_STORAGE_CONTEXT *Storage,
+  IN  CONST CHAR16* configPath,
+  OUT OC_GLOBAL_CONFIG   *Config
+ )
+{
+  EFI_STATUS                Status;
+  CHAR8                     *ConfigData;
+  UINT32                    ConfigDataSize;
+
+  SetMem(Config, sizeof(*Config), 0);
+
+  ConfigData = OcStorageReadFileUnicode (
+    Storage,
+    OPEN_CORE_CONFIG_PATH,
+    &ConfigDataSize
+    );
+
+  if (ConfigData != NULL) {
+    DEBUG ((DEBUG_INFO, "OC: Loaded configuration of %u bytes\n", ConfigDataSize));
+
+    Status = OcConfigurationInit (Config, ConfigData, ConfigDataSize, NULL);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "OC: Failed to parse configuration!\n"));
+      CpuDeadLoop ();
+      return EFI_UNSUPPORTED; ///< Should be unreachable.
+    }
+
+    FreePool (ConfigData);
+  } else {
+    DEBUG ((DEBUG_ERROR, "OC: Failed to load configuration!\n"));
+    CpuDeadLoop ();
+    return EFI_UNSUPPORTED; ///< Should be unreachable.
+  }
+  return EFI_SUCCESS;
+}
+#endif
+
+
 EFI_STATUS
 OcMiscEarlyInit (
   IN  OC_STORAGE_CONTEXT  *Storage,
@@ -409,10 +453,14 @@ OcMiscEarlyInit (
   EFI_STATUS      Status;
   CHAR8           *ConfigData;
   UINT32          ConfigDataSize;
+#ifndef CLOVER_BUILD
   EFI_TIME        BootTime;
+#endif
   CONST CHAR8     *AsciiVault;
   OCS_VAULT_MODE  Vault;
+#ifndef CLOVER_BUILD
   UINTN           PciDeviceInfoSize;
+#endif
 
   ConfigData = OcStorageReadFileUnicode (
                  Storage,
@@ -476,6 +524,7 @@ OcMiscEarlyInit (
     gBS->SetWatchdogTimer (0, 0, 0, NULL);
   }
 
+#ifndef CLOVER_BUILD // Not sure what is this for. USB serial devices ?
   if (Config->Misc.Serial.Override) {
     //
     // Validate the size of PciDeviceInfo. Abort on error.
@@ -498,6 +547,7 @@ OcMiscEarlyInit (
       PatchPcdSet32 (PcdSerialRegisterStride, Config->Misc.Serial.Custom.RegisterStride);
     }
   }
+#endif
 
   if (Config->Misc.Serial.Init) {
     SerialPortInitialize ();
@@ -521,7 +571,7 @@ OcMiscEarlyInit (
     Storage->HasVault,
     VaultKey != NULL
     ));
-
+#ifndef CLOVER_BUILD
   Status = gRT->GetTime (&BootTime, NULL);
   if (!EFI_ERROR (Status)) {
     DEBUG ((
@@ -541,7 +591,7 @@ OcMiscEarlyInit (
       Status
       ));
   }
-
+#endif
   return EFI_SUCCESS;
 }
 

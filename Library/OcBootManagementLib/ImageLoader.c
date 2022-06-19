@@ -137,7 +137,9 @@ RestoreGrubShimHooks (
   }
 }
 
+#ifndef CLOVER_BUILD
 STATIC
+#endif
 EFI_STATUS
 InternalEfiLoadImageFile (
   IN  EFI_DEVICE_PATH_PROTOCOL  *DevicePath,

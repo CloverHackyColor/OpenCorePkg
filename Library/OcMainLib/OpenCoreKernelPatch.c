@@ -95,8 +95,10 @@ OcKernelApplyPatches (
   UINT32                 MaxKernel;
   UINT32                 MinKernel;
   BOOLEAN                IsKernelPatch;
+#ifndef CLOVER_BUILD
   UINTN                  RegisterBase;
   UINT32                 RegisterStride;
+#endif
 
   IsKernelPatch = Context == NULL;
 
@@ -315,7 +317,7 @@ OcKernelApplyPatches (
     if (Config->Kernel.Quirks.AppleXcpmForceBoost) {
       OcKernelApplyQuirk (KernelQuirkAppleXcpmForceBoost, CacheType, DarwinVersion, NULL, &KernelPatcher);
     }
-
+#ifndef CLOVER_BUILD // Not sure what is this for. USB serial devices ?
     //
     // Only apply the patch when Misc->Serial->Custom is set (i.e. Override).
     //
@@ -331,7 +333,7 @@ OcKernelApplyPatches (
         DEBUG ((DEBUG_INFO, "OC: Aborting patching PciSerialDevice because RegisterBase is zero/default value!\n"));
       }
     }
-
+#endif
     if (Config->Kernel.Quirks.PanicNoKextDump) {
       OcKernelApplyQuirk (KernelQuirkPanicNoKextDump, CacheType, DarwinVersion, NULL, &KernelPatcher);
     }
