@@ -363,9 +363,11 @@ OcReinstallProtocols (
   IN OC_GLOBAL_CONFIG  *Config
   )
 {
+#ifndef CLOVER_BUILD
   CONST CHAR8  *AppleEventMode;
   BOOLEAN      InstallAppleEvent;
   BOOLEAN      OverrideAppleEvent;
+#endif
 
   if (OcAudioInstallProtocols (
         Config->Uefi.ProtocolOverrides.AppleAudio,
@@ -417,6 +419,7 @@ OcReinstallProtocols (
   }
 #endif
 
+#ifndef CLOVER_BUILD
   InstallAppleEvent  = TRUE;
   OverrideAppleEvent = FALSE;
 
@@ -456,7 +459,7 @@ OcReinstallProtocols (
   if (OcOSInfoInstallProtocol (Config->Uefi.ProtocolOverrides.OSInfo) == NULL) {
     DEBUG ((DEBUG_INFO, "OC: Failed to install os info protocol\n"));
   }
-
+#endif
   if (OcAppleRtcRamInstallProtocol (Config->Uefi.ProtocolOverrides.AppleRtcRam) == NULL) {
     DEBUG ((DEBUG_INFO, "OC: Failed to install rtc ram protocol\n"));
   }
