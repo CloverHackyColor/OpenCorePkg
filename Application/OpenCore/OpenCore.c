@@ -304,6 +304,9 @@ OcBootstrap (
              );
 
   if (!EFI_ERROR (Status)) {
+    extern OC_STORAGE_CONTEXT* mOpenCoreStoragePtr;
+    mOpenCoreStoragePtr = &mOpenCoreStorage;
+
     OcMain (&mOpenCoreStorage, LoadPath);
     OcStorageFree (&mOpenCoreStorage);
   } else {

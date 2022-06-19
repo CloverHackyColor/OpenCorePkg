@@ -194,6 +194,129 @@ OcBufferEarlyLog (
   }
 }
 
+#include <Library/OcStorageLib.h>
+OC_STORAGE_CONTEXT* mOpenCoreStoragePtr = NULL; // define even if ALTERNATE_LOGGING is NOT defined. Just to avoid conditional compilation in OpenCore.c
+
+#ifdef JIEF_DEBUG
+#define ALTERNATE_LOGGING
+#endif
+
+#ifdef ALTERNATE_LOGGING
+#include <Protocol/SimpleFileSystem.h>
+#include <Library/SerialPortLib.h>
+
+static EFI_FILE_PROTOCOL* gLogFile = NULL;
+static CHAR16* debugLogFileName = NULL;
+
+
+static UINTN GetDebugLogFile()
+{
+  EFI_STATUS          Status;
+  EFI_FILE_PROTOCOL   *LogFile;
+
+  if ( gLogFile ) return 0;
+  if ( mOpenCoreStoragePtr == NULL ) {
+     gST->ConOut->OutputString(gST->ConOut, L"GetDebugLogFile, mOpenCoreStorage == NULL\r\n");
+     return 0;
+  }
+  if ( mOpenCoreStoragePtr->FileSystem == NULL ) {
+     gST->ConOut->OutputString(gST->ConOut, L"GetDebugLogFile, mOpenCoreStorage.FileSystem == NULL\r\n");
+     return 0;
+  }
+
+//  EFI_TIME          Now;
+//  Status = gRT->GetTime(&Now, NULL);
+//  if ( EFI_ERROR(Status) ) {
+//    DBG("GetTime return %s\n", efiStrError(Status));
+//  }
+
+  EFI_FILE_PROTOCOL     *LogRoot = NULL;
+  Status = mOpenCoreStoragePtr->FileSystem->OpenVolume(mOpenCoreStoragePtr->FileSystem, &LogRoot);
+  if ( EFI_ERROR(Status) ) {
+     gST->ConOut->OutputString(gST->ConOut, L"GetDebugLogFile, OpenVolume failed\r\n");
+     return 0;
+  }
+  LogFile = NULL;
+
+  if ( debugLogFileName == NULL )
+  {
+    debugLogFileName = L"EFI\\CLOVER\\misc\\oc.log";
+    Status = LogRoot->Open(LogRoot, &LogFile, debugLogFileName, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
+    if ( !EFI_ERROR(Status) ) {
+      LogFile->Delete(LogFile);
+      LogFile = NULL;
+    }
+    Status = LogRoot->Open(LogRoot, &LogFile, debugLogFileName, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE, 0);
+    if ( EFI_ERROR(Status) ) {
+      gST->ConOut->OutputString(gST->ConOut, L"GetDebugLogFile, re-open create failed\r\n");
+      return 0;
+    }
+  }else{
+    Status = LogRoot->Open(LogRoot, &LogFile, debugLogFileName, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
+    if ( EFI_ERROR(Status) ) {
+      gST->ConOut->OutputString(gST->ConOut, L"GetDebugLogFile, re-open failed\r\n");
+      return 0;
+    }
+  }
+
+  if (!EFI_ERROR(Status)) {
+    Status = LogFile->SetPosition(LogFile, 0xFFFFFFFFFFFFFFFFULL);
+    if ( EFI_ERROR (Status) ) {
+      gST->ConOut->OutputString(gST->ConOut, L"GetDebugLogFile() -> Cannot set log position to 0xFFFFFFFFFFFFFFFFULL\r\n");
+      LogFile->Close(LogFile);
+    }else{
+      UINTN size;
+      Status = LogFile->GetPosition(LogFile, &size);
+      if ( EFI_ERROR (Status) ) {
+        gST->ConOut->OutputString(gST->ConOut, L"GetDebugLogFile() -> Cannot get log position\r\n");
+        LogFile->Close(LogFile);
+      }else{
+        //gST->ConOut->OutputString(gST->ConOut, L"GetDebugLogFile() -> opened. log position = %lld (lwo %lld)\n", size, lastWrittenOffset);
+        gLogFile = LogFile;
+        return size;
+      }
+    }
+  }
+  return 0;
+}
+
+
+void closeDebugLog()
+{
+  if ( !gLogFile ) return;
+
+  /*Status =*/ gLogFile->Close(gLogFile);
+  gLogFile = NULL;
+}
+
+
+VOID SaveMessageToDebugLogFile(IN CHAR8 *LastMessage)
+{
+  EFI_STATUS Status;
+
+  UINTN lastWrittenOffset = GetDebugLogFile();
+
+  if ( gLogFile == NULL ) return;
+
+  // Write out this message
+  UINTN TextLen = AsciiStrLen(LastMessage);
+  UINTN TextLen2 = TextLen;
+
+  Status = gLogFile->Write(gLogFile, &TextLen2, LastMessage);
+  lastWrittenOffset += TextLen2;
+  if ( EFI_ERROR(Status) ) {
+    gST->ConOut->OutputString(gST->ConOut, L"SaveMessageToDebugLogFile write error\n");
+  }else{
+    if ( TextLen2 != TextLen ) {
+      gST->ConOut->OutputString(gST->ConOut, L"SaveMessageToDebugLogFile TextLen2() != TextLen()\n");
+    }
+  }
+  // Not all Firmware implements Flush. So we have to close every time to force flush.
+  closeDebugLog();
+}
+
+#endif
+
 /**
   Prints a debug message to the debug output device if the specified error level is enabled.
   If any bit in ErrorLevel is also set in DebugPrintErrorLevelLib function
@@ -221,6 +344,29 @@ DebugPrint (
 
   ASSERT (Format != NULL);
 
+#ifdef ALTERNATE_LOGGING
+
+  VA_LIST          Marker2;
+  CHAR8            Buffer8[512];
+
+  VA_START (Marker, Format);
+
+  VA_COPY(Marker2, Marker);
+  AsciiVSPrint(Buffer8, sizeof(Buffer8), Format, Marker2);
+  if ( ErrorLevel != DEBUG_VERBOSE ) {
+    SaveMessageToDebugLogFile(Buffer8);
+    SerialPortWrite((UINT8*)Buffer8, AsciiStrLen(Buffer8));
+  }
+  UnicodeVSPrintAsciiFormat (Buffer, sizeof(Buffer), Format, Marker);
+
+  if ( ErrorLevel >= DEBUG_ERROR ) {
+    gST->ConOut->OutputString (gST->ConOut, Buffer);
+  }
+  VA_END (Marker2);
+  VA_END (Marker);
+
+#else
+
   OcLog                   = InternalGetOcLog ();
   IsBufferEarlyLogEnabled = PcdGetBool (PcdDebugLibProtocolBufferEarlyLog);
   ShouldPrintConsole      = (ErrorLevel & GetDebugPrintErrorLevel ()) != 0;
@@ -240,6 +386,8 @@ DebugPrint (
       gST->ConOut->OutputString (gST->ConOut, Buffer);
     }
   }
+
+#endif
 
   VA_END (Marker);
 }
