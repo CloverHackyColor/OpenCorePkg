@@ -47,6 +47,7 @@ OcConfigureLogProtocol (
   )
 {
   (void)Options;
+  (void)LogModules;
   (void)DisplayDelay;
   (void)DisplayLevel;
   (void)HaltLevel;
