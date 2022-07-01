@@ -285,6 +285,6 @@ struct EFI_AUDIO_IO_PROTOCOL_ {
   EFI_AUDIO_IO_STOP_PLAYBACK           StopPlayback;
 };
 
-extern EFI_GUID  gEfiAudioIoProtocolGuid;
+extern EFI_GUID  gEfiAudioIo2ProtocolGuid;
 
 #endif // EFI_AUDIO_IO_H

@@ -1097,7 +1097,7 @@ HdaCodecInstallProtocols (
                   &HdaCodecDev->ControllerHandle,
                   &gEfiHdaCodecInfoProtocolGuid,
                   &HdaCodecInfoData->HdaCodecInfo,
-                  &gEfiAudioIoProtocolGuid,
+                  &gEfiAudioIo2ProtocolGuid,
                   &AudioIoData->AudioIo,
                   &gEfiCallerIdGuid,
                   HdaCodecDev,
@@ -1620,7 +1620,7 @@ HdaCodecCleanup (
     DEBUG ((DEBUG_VERBOSE, "HdaCodecCleanup(): clean Audio I/O\n"));
     Status = gBS->UninstallProtocolInterface (
                     HdaCodecDev->ControllerHandle,
-                    &gEfiAudioIoProtocolGuid,
+                    &gEfiAudioIo2ProtocolGuid,
                     &HdaCodecDev->AudioIoData->AudioIo
                     );
     ASSERT_EFI_ERROR (Status);

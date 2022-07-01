@@ -114,7 +114,7 @@ InternalMatchCodecDevicePath (
     OutputPortsCount = 0;
     Status           = gBS->HandleProtocol (
                               AudioIoHandles[Index],
-                              &gEfiAudioIoProtocolGuid,
+                              &gEfiAudioIo2ProtocolGuid,
                               (VOID **)&Private->AudioIo
                               );
     if (!EFI_ERROR (Status)) {
@@ -151,7 +151,7 @@ InternalMatchCodecDevicePath (
     if (IsDevicePathEqual (DevicePath, CodecDevicePath)) {
       Status = gBS->HandleProtocol (
                       AudioIoHandles[Index],
-                      &gEfiAudioIoProtocolGuid,
+                      &gEfiAudioIo2ProtocolGuid,
                       (VOID **)&Private->AudioIo
                       );
       if (!EFI_ERROR (Status)) {
@@ -202,7 +202,7 @@ InternalOcAudioConnect (
 
   if (DevicePath == NULL) {
     Status = gBS->LocateProtocol (
-                    &gEfiAudioIoProtocolGuid,
+                    &gEfiAudioIo2ProtocolGuid,
                     NULL,
                     (VOID **)&Private->AudioIo
                     );
@@ -212,7 +212,7 @@ InternalOcAudioConnect (
   } else {
     Status = gBS->LocateHandleBuffer (
                     ByProtocol,
-                    &gEfiAudioIoProtocolGuid,
+                    &gEfiAudioIo2ProtocolGuid,
                     NULL,
                     &AudioIoHandleCount,
                     &AudioIoHandles

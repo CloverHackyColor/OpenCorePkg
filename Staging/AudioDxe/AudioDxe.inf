@@ -58,7 +58,7 @@
   gEfiHdaControllerInfoProtocolGuid   # PRODUCES
   gEfiHdaIoProtocolGuid               # PRODUCES
   gEfiHdaCodecInfoProtocolGuid        # PRODUCES
-  gEfiAudioIoProtocolGuid             # PRODUCES
+  gEfiAudioIo2ProtocolGuid             # PRODUCES
   gEfiAudioDecodeProtocolGuid         # PRODUCES
   gVMwareHdaProtocolGuid              # SOMETIMES_CONSUMES
 
