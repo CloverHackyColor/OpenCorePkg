@@ -76,7 +76,7 @@
   OcDevicePathLib
   OcDevicePropertyLib
   OcDriverConnectionLib
-  OcFirmwareVolumeLib
+  #OcFirmwareVolumeLib
   OcGuardLib
   OcHashServicesLib
   OcMachoLib
