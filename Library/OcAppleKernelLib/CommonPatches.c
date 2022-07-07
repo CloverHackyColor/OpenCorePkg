@@ -69,7 +69,7 @@ PatchAppleCpuPmCfgLock (
 
   Count     = 0;
   Walker    = (UINT8 *)MachoGetMachHeader (&Patcher->MachContext);
-  WalkerEnd = Walker + MachoGetFileSize (&Patcher->MachContext) - mWrmsrMaxDistance;
+  WalkerEnd = Walker + MachoGetInnerSize (&Patcher->MachContext) - mWrmsrMaxDistance;
 
   //
   // Thanks to Clover developers for the approach.
@@ -243,7 +243,7 @@ PatchAppleXcpmCfgLock (
   }
 
   Last = (XCPM_MSR_RECORD *)((UINT8 *)MachoGetMachHeader (&Patcher->MachContext)
-                             + MachoGetFileSize (&Patcher->MachContext) - sizeof (XCPM_MSR_RECORD));
+                             + MachoGetInnerSize (&Patcher->MachContext) - sizeof (XCPM_MSR_RECORD));
 
   Replacements = 0;
 
@@ -367,7 +367,7 @@ PatchAppleXcpmExtraMsrs (
   }
 
   Last = (XCPM_MSR_RECORD *)((UINT8 *)MachoGetMachHeader (&Patcher->MachContext)
-                             + MachoGetFileSize (&Patcher->MachContext) - sizeof (XCPM_MSR_RECORD));
+                             + MachoGetInnerSize (&Patcher->MachContext) - sizeof (XCPM_MSR_RECORD));
 
   Replacements = 0;
 
@@ -492,7 +492,7 @@ PatchAppleXcpmForceBoost (
   }
 
   Start   = (UINT8 *)MachoGetMachHeader (&Patcher->MachContext);
-  Last    = Start + MachoGetFileSize (&Patcher->MachContext) - EFI_PAGE_SIZE * 2;
+  Last    = Start + MachoGetInnerSize (&Patcher->MachContext) - EFI_PAGE_SIZE * 2;
   Start  += EFI_PAGE_SIZE;
   Current = Start;
 
@@ -1144,7 +1144,7 @@ PatchCustomPciSerialPmio (
 
   Count     = 0;
   Walker    = (UINT8 *)MachoGetMachHeader (&Patcher->MachContext);
-  WalkerEnd = Walker + MachoGetFileSize (&Patcher->MachContext) - mInOutMaxDistance;
+  WalkerEnd = Walker + MachoGetInnerSize (&Patcher->MachContext) - mInOutMaxDistance;
 
   while (Walker < WalkerEnd) {
     if (  (Walker[0] == mSerialDevicePmioFind[0])
@@ -1328,7 +1328,7 @@ PatchPanicKextDump (
   }
 
   Last = ((UINT8 *)MachoGetMachHeader (&Patcher->MachContext)
-          + MachoGetFileSize (&Patcher->MachContext) - EFI_PAGE_SIZE);
+          + MachoGetInnerSize (&Patcher->MachContext) - EFI_PAGE_SIZE);
 
   //
   // This should work on 10.15 and all debug kernels.
@@ -1740,7 +1740,7 @@ PatchSegmentJettison (
   }
 
   Last = (UINT8 *)MachoGetMachHeader (&Patcher->MachContext)
-         + MachoGetFileSize (&Patcher->MachContext) - sizeof (EFI_PAGE_SIZE) * 2;
+         + MachoGetInnerSize (&Patcher->MachContext) - sizeof (EFI_PAGE_SIZE) * 2;
 
   Status = PatcherGetSymbolAddress (Patcher, "__ZN6OSKext19removeKextBootstrapEv", (UINT8 **)&RemoveBs);
   if (EFI_ERROR (Status) || (RemoveBs > Last)) {
@@ -1978,7 +1978,7 @@ PatchLegacyCommpage (
   ASSERT (Patcher != NULL);
 
   Start = ((UINT8 *)MachoGetMachHeader (&Patcher->MachContext));
-  Last  = Start + MachoGetFileSize (&Patcher->MachContext) - EFI_PAGE_SIZE * 2 - (Patcher->Is32Bit ? sizeof (COMMPAGE_DESCRIPTOR) : sizeof (COMMPAGE_DESCRIPTOR_64));
+  Last  = Start + MachoGetInnerSize (&Patcher->MachContext) - EFI_PAGE_SIZE * 2 - (Patcher->Is32Bit ? sizeof (COMMPAGE_DESCRIPTOR) : sizeof (COMMPAGE_DESCRIPTOR_64));
 
   //
   // This is a table of pointers to commpage entries.
@@ -2211,7 +2211,7 @@ PatchForceSecureBootScheme (
   //
 
   Last = ((UINT8 *)MachoGetMachHeader (&Patcher->MachContext)
-          + MachoGetFileSize (&Patcher->MachContext) - 64);
+          + MachoGetInnerSize (&Patcher->MachContext) - 64);
 
   Status = PatcherGetSymbolAddress (Patcher, "_img4_chip_select_effective_ap", &SelectAp);
   if (EFI_ERROR (Status) || (SelectAp > Last)) {
