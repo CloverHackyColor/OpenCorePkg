@@ -953,7 +953,8 @@ PrelinkedInjectKext (
   IN     UINT32             InfoPlistSize,
   IN     CONST CHAR8        *ExecutablePath OPTIONAL,
   IN     CONST UINT8        *Executable OPTIONAL,
-  IN     UINT32             ExecutableSize OPTIONAL
+  IN     UINT32             ExecutableSize OPTIONAL,
+  OUT    CONST CHAR8        **BundleVersion OPTIONAL
   )
 {
   EFI_STATUS  Status;
@@ -961,6 +962,7 @@ PrelinkedInjectKext (
 
   XML_DOCUMENT      *InfoPlistDocument;
   XML_NODE          *InfoPlistRoot;
+  XML_NODE          *KextPlistValue;
   CHAR8             *TmpInfoPlist;
   CHAR8             *NewInfoPlist;
   OC_MACHO_CONTEXT  ExecutableContext;
@@ -987,6 +989,13 @@ PrelinkedInjectKext (
   ASSERT (BundlePath != NULL);
   ASSERT (InfoPlist != NULL);
   ASSERT (InfoPlistSize > 0);
+
+  //
+  // Assume no bundle version from the beginning.
+  //
+  if (BundleVersion != NULL) {
+    *BundleVersion = NULL;
+  }
 
   KmodAddress           = 0;
   AlignedExecutableSize = 0;
@@ -1078,8 +1087,30 @@ PrelinkedInjectKext (
   // code in debug mode to diagnose it.
   //
   DEBUG_CODE_BEGIN ();
-  if (Executable == NULL) {
     FieldCount = PlistDictChildren (InfoPlistRoot);
+
+  if (BundleVersion != NULL) {
+    for (FieldIndex = 0; FieldIndex < FieldCount; ++FieldIndex) {
+      TmpKeyValue = PlistKeyValue (PlistDictChild (InfoPlistRoot, FieldIndex, &KextPlistValue));
+      if (TmpKeyValue == NULL) {
+        continue;
+      }
+
+      //
+      // Match CFBundleVersion.
+      //
+      if (AsciiStrCmp (TmpKeyValue, INFO_BUNDLE_VERSION_KEY) == 0) {
+        if (PlistNodeCast (KextPlistValue, PLIST_NODE_TYPE_STRING) == NULL) {
+          break;
+        }
+
+        *BundleVersion = XmlNodeContent (KextPlistValue);
+        break;
+      }
+    }
+  }
+
+  if (Executable == NULL) {
     for (FieldIndex = 0; FieldIndex < FieldCount; ++FieldIndex) {
       TmpKeyValue = PlistKeyValue (PlistDictChild (InfoPlistRoot, FieldIndex, NULL));
       if (TmpKeyValue == NULL) {

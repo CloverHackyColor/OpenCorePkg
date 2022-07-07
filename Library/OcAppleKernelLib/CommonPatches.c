@@ -65,7 +65,10 @@ PatchAppleCpuPmCfgLock (
     return EFI_SUCCESS;
   }
 
-  ASSERT (Patcher != NULL);
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
+  }
 
   Count     = 0;
   Walker    = (UINT8 *)MachoGetMachHeader (&Patcher->MachContext);
@@ -648,6 +651,11 @@ PatchUsbXhciPortLimit1 (
     return EFI_SUCCESS;
   }
 
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
+  }
+
   Status = PatcherApplyGenericPatch (Patcher, &mRemoveUsbLimitIoP1Patch);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_INFO, "OCAK: Failed to apply port patch com.apple.iokit.IOUSBHostFamily - %r\n", Status));
@@ -667,11 +675,14 @@ PatchUsbXhciPortLimit2 (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
-
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_HIGH_SIERRA_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping modern port patch AppleUSBXHCI on %u\n", KernelVersion));
     return EFI_SUCCESS;
+  }
+
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
   }
 
   //
@@ -728,11 +739,14 @@ PatchUsbXhciPortLimit3 (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
-
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_EL_CAPITAN_MIN, KERNEL_VERSION_HIGH_SIERRA_MAX)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping legacy port patch AppleUSBXHCIPCI on %u\n", KernelVersion));
     return EFI_SUCCESS;
+  }
+
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
   }
 
   //
@@ -819,7 +833,10 @@ PatchThirdPartyDriveSupport (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
+  }
 
   Status = PatcherApplyGenericPatch (Patcher, &mIOAHCIBlockStoragePatchV1);
   if (EFI_ERROR (Status)) {
@@ -888,7 +905,10 @@ PatchForceInternalDiskIcons (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
+  }
 
   Status = PatcherApplyGenericPatch (Patcher, &mIOAHCIPortPatch);
   if (EFI_ERROR (Status)) {
@@ -935,11 +955,14 @@ PatchAppleIoMapperSupport (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
-
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_MOUNTAIN_LION_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping AppleIoMapper patch on %u\n", KernelVersion));
     return EFI_SUCCESS;
+  }
+
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
   }
 
   Status = PatcherApplyGenericPatch (Patcher, &mAppleIoMapperPatch);
@@ -987,7 +1010,10 @@ PatchDummyPowerManagement (
     return EFI_SUCCESS;
   }
 
-  ASSERT (Patcher != NULL);
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
+  }
 
   Status = PatcherApplyGenericPatch (Patcher, &mAppleDummyCpuPmPatch);
   if (EFI_ERROR (Status)) {
@@ -1062,11 +1088,14 @@ PatchIncreasePciBarSize (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
-
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_YOSEMITE_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping com.apple.iokit.IOPCIFamily IncreasePciBarSize on %u\n", KernelVersion));
     return EFI_SUCCESS;
+  }
+
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
   }
 
   Status = PatcherApplyGenericPatch (Patcher, &mIncreasePciBarSizePatch);
@@ -1271,7 +1300,10 @@ PatchCustomSmbiosGuid (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
+  }
 
   Status = PatcherApplyGenericPatch (Patcher, &mCustomSmbiosGuidPatch);
   if (!EFI_ERROR (Status)) {
@@ -1705,7 +1737,10 @@ PatchAppleRtcChecksum (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
+  }
 
   Status = PatcherApplyGenericPatch (Patcher, Patcher->Is32Bit ? &mAppleRtcChecksumPatch32 : &mAppleRtcChecksumPatch64);
   if (EFI_ERROR (Status)) {
@@ -1866,11 +1901,14 @@ PatchBTFeatureFlags (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
-
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_MOUNTAIN_LION_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping BTFeatureFlags on %u\n", KernelVersion));
     return EFI_SUCCESS;
+  }
+
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
   }
 
   Status = PatcherApplyGenericPatch (Patcher, &mBTFeatureFlagsPatchV1);
@@ -2141,14 +2179,17 @@ PatchAquantiaEthernet (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
-
   //
   // This patch is not required before macOS 10.15.4.
   //
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION (KERNEL_VERSION_CATALINA, 4, 0), 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping patching AquantiaEthernet on %u\n", KernelVersion));
     return EFI_SUCCESS;
+  }
+
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
   }
 
   //
@@ -2188,11 +2229,14 @@ PatchForceSecureBootScheme (
   UINT8       *HybridAp;
   UINT32      Diff;
 
-  ASSERT (Patcher != NULL);
-
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_BIG_SUR_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping sb scheme on %u\n", KernelVersion));
     return EFI_SUCCESS;
+  }
+
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
   }
 
   //
@@ -2308,11 +2352,14 @@ PatchSetApfsTrimTimeout (
 {
   EFI_STATUS  Status;
 
-  ASSERT (Patcher != NULL);
-
   if (!OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_MOJAVE_MIN, 0)) {
     DEBUG ((DEBUG_INFO, "OCAK: Skipping apfs timeout on %u\n", KernelVersion));
     return EFI_SUCCESS;
+  }
+
+  if (Patcher == NULL) {
+    DEBUG ((DEBUG_INFO, "OCAK: Skipping %a on NULL Patcher on %u\n", __func__, KernelVersion));
+    return EFI_NOT_FOUND;
   }
 
   //
