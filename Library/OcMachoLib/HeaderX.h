@@ -465,7 +465,7 @@ MACH_X (
 //      CurrentDelta
 //      ));
 
-    if (!IsObject && (DstSegment->VirtualAddress - (SegmentOffset - Context->ContainerOffset) != FirstSegment->VirtualAddress)) {
+    if (!IsObject && (DstSegment->VirtualAddress - SegmentOffset != FirstSegment->VirtualAddress)) {
       return 0;
     }
 
