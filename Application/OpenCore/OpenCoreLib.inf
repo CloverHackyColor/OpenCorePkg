@@ -81,7 +81,7 @@
   OcMiscLib
   OcOSInfoLib
   OcSmbiosLib
-  OcSmcLib
+  #OcSmcLib
   OcStorageLib
   OcUnicodeCollationEngGenericLib
   OcVirtualFsLib
