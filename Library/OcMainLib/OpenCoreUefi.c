@@ -380,11 +380,11 @@ OcReinstallProtocols (
   if (OcAppleBootPolicyInstallProtocol (Config->Uefi.ProtocolOverrides.AppleBootPolicy) == NULL) {
     DEBUG ((DEBUG_INFO, "OC: Failed to install boot policy protocol\n"));
   }
-
+#ifndef CLOVER_BUILD
   if (OcDataHubInstallProtocol (Config->Uefi.ProtocolOverrides.DataHub) == NULL) {
     DEBUG ((DEBUG_INFO, "OC: Failed to install data hub protocol\n"));
   }
-
+#endif
   if (OcDevicePathPropertyInstallProtocol (Config->Uefi.ProtocolOverrides.DeviceProperties) == NULL) {
     DEBUG ((DEBUG_INFO, "OC: Failed to install device properties protocol\n"));
   }
