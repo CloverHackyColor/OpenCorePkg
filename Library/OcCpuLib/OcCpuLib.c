@@ -1264,7 +1264,7 @@ OcCpuCorrectTscSync (
   BOOLEAN                             InterruptState;
 
   if (Cpu->ThreadCount <= 1) {
-    DEBUG ((DEBUG_INFO, "OCCPU: Thread count is too low for sync - %u\n", Cpu->ThreadCount));
+    DEBUG ((DEBUG_ERROR, "OCCPU: Thread count is too low for sync - %u\n", Cpu->ThreadCount));
     return EFI_UNSUPPORTED;
   }
 
@@ -1283,7 +1283,7 @@ OcCpuCorrectTscSync (
                         );
 
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_INFO, "OCCPU: Failed to find mp services - %r\n", Status));
+      DEBUG ((DEBUG_ERROR, "OCCPU: Failed to find mp services - %r\n", Status));
       return Status;
     }
   }
@@ -1317,7 +1317,7 @@ OcCpuCorrectTscSync (
   SetInterruptState (InterruptState);
   gBS->RestoreTPL (OldTpl);
 
-  DEBUG ((DEBUG_INFO, "OCCPU: Completed TSC sync with code - %r\n", Status));
+  DEBUG ((DEBUG_ERROR, "OCCPU: Completed TSC sync with code - %r\n", Status));
 
   return Status;
 }
