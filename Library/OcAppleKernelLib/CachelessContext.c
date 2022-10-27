@@ -27,6 +27,7 @@
 #include <Library/OcVirtualFsLib.h>
 
 #include "CachelessInternal.h"
+#include "MkextInternal.h"
 #include "PrelinkedInternal.h"
 
 STATIC

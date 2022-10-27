@@ -210,6 +210,7 @@ PatcherInitContextFromBuffer (
   return EFI_SUCCESS;
 }
 
+/*
 EFI_STATUS
 PatcherGetSymbolAddress (
   IN OUT PATCHER_CONTEXT  *Context,
@@ -282,6 +283,106 @@ PatcherGetSymbolAddress (
   *Address = (UINT8 *)MachoGetFileData (&Context->MachContext) + Offset;
   return EFI_SUCCESS;
 }
+*/
+
+
+EFI_STATUS
+PatcherGetSymbolAddress (
+  IN OUT PATCHER_CONTEXT  *Context,
+  IN     CONST CHAR8      *Name,
+  IN OUT UINT8            **Address
+  )
+{
+  return PatcherGetSymbolAddressValue (Context, Name, Address, NULL);
+}
+
+EFI_STATUS
+PatcherGetSymbolValue (
+  IN OUT PATCHER_CONTEXT  *Context,
+  IN     CONST CHAR8      *Name,
+  IN OUT UINT64           *Value
+  )
+{
+  return PatcherGetSymbolAddressValue (Context, Name, NULL, Value);
+}
+
+
+EFI_STATUS
+PatcherGetSymbolAddressValue (
+  IN OUT PATCHER_CONTEXT  *Context,
+  IN     CONST CHAR8      *Name,
+  IN OUT UINT8            **Address,
+  IN OUT UINT64           *Value
+  )
+{
+  MACH_NLIST_ANY  *Symbol;
+  CONST CHAR8     *SymbolName;
+  UINT64          SymbolAddress;
+  UINT32          Offset;
+  UINT32          Index;
+
+  Index  = 0;
+  Offset = 0;
+  while (TRUE) {
+    //
+    // Try the usual way first via SYMTAB.
+    //
+    Symbol = MachoGetSymbolByIndex (&Context->MachContext, Index);
+    if (Symbol == NULL) {
+      //
+      // If we have KxldState, use it.
+      //
+      if ((Index == 0) && (Context->KxldState != NULL)) {
+        SymbolAddress = InternalKxldSolveSymbol (
+                          Context->Is32Bit,
+                          Context->KxldState,
+                          Context->KxldStateSize,
+                          Name
+                          );
+        //
+        // If we have a symbol, get its ondisk offset.
+        //
+        if ((SymbolAddress != 0) && MachoSymbolGetDirectFileOffset (&Context->MachContext, SymbolAddress, &Offset, NULL)) {
+          //
+          // Proceed to success.
+          //
+          break;
+        }
+      }
+
+      return EFI_NOT_FOUND;
+    }
+
+    SymbolName = MachoGetSymbolName (&Context->MachContext, Symbol);
+    if ((SymbolName != NULL) && (AsciiStrCmp (Name, SymbolName) == 0)) {
+      //
+      // Once we have a symbol, get its ondisk offset.
+      //
+      if (MachoSymbolGetFileOffset (&Context->MachContext, Symbol, &Offset, NULL)) {
+        //
+        // Proceed to success.
+        //
+        SymbolAddress = Context->Is32Bit ? Symbol->Symbol32.Value : Symbol->Symbol64.Value;
+        break;
+      }
+
+      return EFI_INVALID_PARAMETER;
+    }
+
+    Index++;
+  }
+
+  if (Address != NULL) {
+    *Address = (UINT8 *)MachoGetFileData (&Context->MachContext) + Offset;
+  }
+
+  if (Value != NULL) {
+    *Value = SymbolAddress;
+  }
+
+  return EFI_SUCCESS;
+}
+
 
 EFI_STATUS
 PatcherApplyGenericPatch (
