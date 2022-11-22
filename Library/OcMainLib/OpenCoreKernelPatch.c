@@ -89,7 +89,7 @@ OcKernelApplyPatches (
   UINT32                 Index;
   PATCHER_GENERIC_PATCH  Patch;
   OC_KERNEL_PATCH_ENTRY  *UserPatch;
-  CONST CHAR8            *Target;
+  CONST CHAR8            *Target = NULL;
   CONST CHAR8            *Comment;
   CONST CHAR8            *Arch;
   UINT32                 MaxKernel;

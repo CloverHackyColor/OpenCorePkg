@@ -158,7 +158,7 @@ ScanExtensions (
   XML_NODE      *InfoPlistRoot;
   XML_NODE      *InfoPlistValue;
   XML_NODE      *InfoPlistLibraries;
-  XML_NODE      *InfoPlistLibraries64;
+  XML_NODE      *InfoPlistLibraries64 = NULL;
   CONST CHAR8   *TmpKeyValue;
   UINT32        FieldCount;
   UINT32        FieldIndex;
@@ -1391,7 +1391,7 @@ CachelessContextHookBuiltin (
   EFI_STATUS    Status;
   EFI_TIME      ModificationTime;
   BUILTIN_KEXT  *BuiltinKext;
-  KEXT_PATCH    *KextPatch;
+  KEXT_PATCH    *KextPatch = NULL;
   PATCHED_KEXT  *PatchedKext;
   DEPEND_KEXT   *DependKext;
   LIST_ENTRY    *KextLink;

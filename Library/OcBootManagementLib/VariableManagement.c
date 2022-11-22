@@ -435,7 +435,7 @@ OcDeleteVariables (
   OC_FWRT_CONFIG                Config;
   UINTN                         BootProtectSize;
   UINT32                        BootProtect;
-  VOID                          *BootOption;
+  VOID                          *BootOption = NULL;
   UINTN                         BootOptionSize;
   UINT16                        BootOptionIndex;
 

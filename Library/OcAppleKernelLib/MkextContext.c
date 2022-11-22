@@ -977,7 +977,7 @@ MkextContextInit (
 
   UINT8         *PlistBuffer;
   XML_DOCUMENT  *PlistXml;
-  UINT32        PlistOffset;
+  UINT32        PlistOffset = 0;
   UINT32        PlistFullSize;
   XML_NODE      *PlistBundles;
 

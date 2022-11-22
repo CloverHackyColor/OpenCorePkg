@@ -29,6 +29,8 @@
 
 #include <Library/OcAcpiLib.h>
 
+#define EBDA_BASE_ADDRESS            0x040E
+
 /**
   Find RSD_PTR Table In Legacy Area
 
@@ -62,8 +64,9 @@ AcpiFindLegacyRsdp (
   //
 
   if (Rsdp == NULL) {
-    Address = ((UINTN)(*(UINT16 *)0x040E) << 4U);
-
+    volatile UINT16* volatile ebda = (UINT16 *)(UINTN)(EBDA_BASE_ADDRESS);
+    Address = (UINTN)(*ebda) << 4U;
+    if ( Address == 0 ) return NULL;
     for (Index = 0; Index < 0x0400; Index += 16) {
       if (*(UINT64 *)(Address + Index) == EFI_ACPI_6_2_ROOT_SYSTEM_DESCRIPTION_POINTER_SIGNATURE) {
         Rsdp = (EFI_ACPI_6_2_ROOT_SYSTEM_DESCRIPTION_POINTER *)Address;

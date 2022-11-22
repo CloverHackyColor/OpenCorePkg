@@ -144,8 +144,8 @@ ControlledClearScreen (
 {
   EFI_STATUS                            Status;
   EFI_GRAPHICS_OUTPUT_PROTOCOL          *GraphicsOutput;
-  UINT32                                Width;
-  UINT32                                Height;
+  UINT32                                Width = 800;
+  UINT32                                Height = 600;
   UINTN                                 SizeOfInfo;
   EFI_GRAPHICS_OUTPUT_MODE_INFORMATION  *Info;
 

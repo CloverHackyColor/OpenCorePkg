@@ -458,8 +458,8 @@ OcParseVars (
   BOOLEAN           Retake;
   CHAR16            Ch;
   VOID              *Name;
-  VOID              *Value;
-  OC_PARSED_VAR     *Option;
+  VOID              *Value = NULL;
+  OC_PARSED_VAR     *Option = NULL;
 
   if ((StrVars == NULL) || (IsUnicode ? (((CHAR16 *)StrVars)[0] == CHAR_NULL) : (((CHAR8 *)StrVars)[0] == '\0'))) {
     DEBUG ((OC_TRACE_PARSE_VARS, "OCB: No vars (%p)\n", StrVars));
