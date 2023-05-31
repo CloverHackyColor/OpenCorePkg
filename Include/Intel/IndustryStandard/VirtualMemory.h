@@ -55,7 +55,7 @@ typedef union {
     UINT64    CacheDisabled        : 1;  // 0 = Cached, 1=Non-Cached
     UINT64    Accessed             : 1;  // 0 = Not accessed, 1 = Accessed (set by CPU)
     UINT64    Dirty                : 1;  // 0 = Not Dirty, 1 = written by processor on access to page
-    UINT64    PAT                  : 1;  //
+    UINT64    PAT                  : 1;  // Combines with CD, WT and MTRR to define true caching type
     UINT64    Global               : 1;  // 0 = Not global page, 1 = global page TLB not cleared on CR3 write
     UINT64    Available            : 3;  // Available for use by system software
     UINT64    PageTableBaseAddress : 40; // Page Table Base Address
@@ -80,7 +80,7 @@ typedef union {
     UINT64    MustBe1              : 1;  // Must be 1
     UINT64    Global               : 1;  // 0 = Not global page, 1 = global page TLB not cleared on CR3 write
     UINT64    Available            : 3;  // Available for use by system software
-    UINT64    PAT                  : 1;  //
+    UINT64    PAT                  : 1;  // Combines with CD, WT and MTRR to define true caching type
     UINT64    MustBeZero           : 8;  // Must be zero;
     UINT64    PageTableBaseAddress : 31; // Page Table Base Address
     UINT64    AvabilableHigh       : 11; // Available for use by system software
@@ -104,7 +104,7 @@ typedef union {
     UINT64    MustBe1              : 1;  // Must be 1
     UINT64    Global               : 1;  // 0 = Not global page, 1 = global page TLB not cleared on CR3 write
     UINT64    Available            : 3;  // Available for use by system software
-    UINT64    PAT                  : 1;  //
+    UINT64    PAT                  : 1;  // Combines with CD, WT and MTRR to define true caching type
     UINT64    MustBeZero           : 17; // Must be zero;
     UINT64    PageTableBaseAddress : 22; // Page Table Base Address
     UINT64    AvabilableHigh       : 11; // Available for use by system software

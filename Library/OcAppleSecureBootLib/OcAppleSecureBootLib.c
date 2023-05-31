@@ -615,11 +615,13 @@ InternalGetImg4ByPath (
                   (VOID **)&FileSystem
                   );
   if (EFI_ERROR (Status)) {
+    FreePool (Path);
     return EFI_NO_MEDIA;
   }
 
   Status = FileSystem->OpenVolume (FileSystem, &Root);
   if (EFI_ERROR (Status)) {
+    FreePool (Path);
     return EFI_NO_MEDIA;
   }
 
@@ -653,12 +655,14 @@ InternalGetImg4ByPath (
   }
 
   if (!Result) {
+    FreePool (Path);
     Root->Close (Root);
     return EFI_LOAD_ERROR;
   }
 
   ManifestBuffer = InternalReadFile (Root, Path, &ManifestSize);
 
+  FreePool (Path);
   Root->Close (Root);
 
   if (ManifestBuffer == NULL) {
