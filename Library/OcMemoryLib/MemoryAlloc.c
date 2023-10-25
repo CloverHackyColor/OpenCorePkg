@@ -92,7 +92,7 @@ OcAllocatePagesFromTop (
       }
 
       Status = (AllocatePages != NULL ? AllocatePages : gBS->AllocatePages)(
-  AllocateAddress,
+  AllocateMaxAddress,
   MemoryType,
   Pages,
   Memory
