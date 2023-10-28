@@ -207,6 +207,7 @@ enum {
 #define CPU_MODEL_TIGERLAKE_U     0x8C
 #define CPU_MODEL_ALDERLAKE_S     0x97
 #define CPU_MODEL_RAPTORLAKE      0xB7  /* 13h Raptor Lake */
+#define CPU_MODEL_METEORLAKE      0xAA
 
 #define AMD_CPU_FAMILY          0xF
 #define AMD_CPU_EXT_FAMILY_15H  0x6

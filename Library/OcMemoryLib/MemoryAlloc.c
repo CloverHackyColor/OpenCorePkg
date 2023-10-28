@@ -34,11 +34,11 @@ OcAllocatePagesFromTop (
   )
 {
   EFI_STATUS             Status;
-  UINTN                  MemoryMapSize;
+  UINTN                  MemoryMapSize = 0;
   EFI_MEMORY_DESCRIPTOR  *MemoryMap;
-  UINTN                  MapKey;
-  UINTN                  DescriptorSize;
-  UINT32                 DescriptorVersion;
+  UINTN                  MapKey = 0
+  UINTN                  DescriptorSize = 0;
+  UINT32                 DescriptorVersion = 0;
   EFI_MEMORY_DESCRIPTOR  *MemoryMapEnd;
   EFI_MEMORY_DESCRIPTOR  *Desc;
 
@@ -92,11 +92,12 @@ OcAllocatePagesFromTop (
       }
 
       Status = (AllocatePages != NULL ? AllocatePages : gBS->AllocatePages)(
-  AllocateAddress,
-  MemoryType,
-  Pages,
-  Memory
-  );
+/*      gBS->AllocatePages( */
+          AllocateAddress,
+          MemoryType,
+          Pages,
+          Memory
+          );
 
       break;
     }
