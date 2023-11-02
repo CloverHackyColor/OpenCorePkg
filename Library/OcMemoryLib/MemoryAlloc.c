@@ -36,7 +36,7 @@ OcAllocatePagesFromTop (
   EFI_STATUS             Status;
   UINTN                  MemoryMapSize = 0;
   EFI_MEMORY_DESCRIPTOR  *MemoryMap;
-  UINTN                  MapKey = 0
+  UINTN                  MapKey = 0;
   UINTN                  DescriptorSize = 0;
   UINT32                 DescriptorVersion = 0;
   EFI_MEMORY_DESCRIPTOR  *MemoryMapEnd;
