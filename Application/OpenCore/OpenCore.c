@@ -305,8 +305,11 @@ OcBootstrap (
              );
 
   if (!EFI_ERROR (Status)) {
-    extern OC_STORAGE_CONTEXT* mOpenCoreStoragePtr;
-    mOpenCoreStoragePtr = &mOpenCoreStorage;
+    // This for an "alternate logging" when JIEF_DEBUG is defined.
+    // I may need that on day, but that has to be reworked.
+    // I'll just keep it there for now for reference.
+    //extern OC_STORAGE_CONTEXT* mOpenCoreStoragePtr;
+    //mOpenCoreStoragePtr = &mOpenCoreStorage;
 
     OcMain (&mOpenCoreStorage, LoadPath);
     OcStorageFree (&mOpenCoreStorage);

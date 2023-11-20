@@ -194,11 +194,14 @@ OcBufferEarlyLog (
   }
 }
 
-#include <Library/OcStorageLib.h>
-OC_STORAGE_CONTEXT* mOpenCoreStoragePtr = NULL; // define even if ALTERNATE_LOGGING is NOT defined. Just to avoid conditional compilation in OpenCore.c
+// I may need that on day, but that has to be reworked.
+// I'll just keep it there for now for reference.
+
+//#include <Library/OcStorageLib.h>
+//OC_STORAGE_CONTEXT* mOpenCoreStoragePtr = NULL; // define even if ALTERNATE_LOGGING is NOT defined. Just to avoid conditional compilation in OpenCore.c
 
 #ifdef JIEF_DEBUG
-#define ALTERNATE_LOGGING
+//#define ALTERNATE_LOGGING
 #endif
 
 #ifdef ALTERNATE_LOGGING
