@@ -203,11 +203,15 @@ enum {
 #define CPU_MODEL_COMETLAKE_S     0xA5 /* desktop CometLake */
 #define CPU_MODEL_COMETLAKE_Y     0xA5 /* aka 10th generation Amber Lake Y */
 #define CPU_MODEL_COMETLAKE_U     0xA6
-#define CPU_MODEL_ROCKETLAKE_S    0xA7/* desktop RocketLake */
+#define CPU_MODEL_ROCKETLAKE_S    0xA7/* 11h desktop RocketLake */
 #define CPU_MODEL_TIGERLAKE_U     0x8C
 #define CPU_MODEL_ALDERLAKE_S     0x97
+//from Clover
+#define CPU_MODEL_ALDERLAKE_ULT   0x9A  /* 12h generation Alder Lake, i5-12500h */
 #define CPU_MODEL_RAPTORLAKE      0xB7  /* 13h Raptor Lake */
-#define CPU_MODEL_METEORLAKE      0xAA
+#define CPU_MODEL_RAPTORLAKE_B    0xBF  /* 13h Raptor Lake, i5-13400h */
+#define CPU_MODEL_METEORLAKE      0xAA  /* 14h Meteor Lake */
+
 
 #define AMD_CPU_FAMILY          0xF
 #define AMD_CPU_EXT_FAMILY_15H  0x6
