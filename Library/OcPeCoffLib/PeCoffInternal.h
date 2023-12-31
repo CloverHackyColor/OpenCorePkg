@@ -22,8 +22,8 @@
 #include <Library/OcPeCoffLib.h>
 #include <Library/OcGuardLib.h>
 
-#define IS_ALIGNED(v, a)  (((v) & ((a) - 1U)) == 0U)
-#define IS_POW2(v)        ((v) != 0 && ((v) & ((v) - 1U)) == 0)
+//#define IS_ALIGNED(v, a)  (((v) & ((a) - 1U)) == 0U)
+//#define IS_POW2(v)        ((v) != 0 && ((v) & ((v) - 1U)) == 0)
 
 #define PTR_TO_ADDR(Ptr, Size)  ((UINTN) Ptr)
 

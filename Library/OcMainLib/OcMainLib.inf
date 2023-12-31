@@ -92,7 +92,7 @@
   OcDevicePathLib
   OcDevicePropertyLib
   OcDriverConnectionLib
-  OcFirmwareVolumeLib
+#  OcFirmwareVolumeLib
   OcGuardLib
   OcHashServicesLib
   OcLogAggregatorLib
@@ -100,7 +100,7 @@
   OcMiscLib
   OcOSInfoLib
   OcSmbiosLib
-  #OcSmcLib
+# OcSmcLib
   OcStorageLib
   OcUnicodeCollationEngGenericLib
   OcVirtualFsLib
