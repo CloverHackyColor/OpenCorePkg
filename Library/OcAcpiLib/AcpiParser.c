@@ -228,7 +228,7 @@ ParseScopeOrDevice (
   UINT32      *CurrentPath;
   UINT8       *ScopeEnd;
   UINT8       *ScopeName;
-  UINT8       *ScopeNameStart;
+//   UINT8       *ScopeNameStart;
   UINT8       ScopeNameLength;
   UINT8       IsRootPath;
   EFI_STATUS  Status;
@@ -269,7 +269,7 @@ ParseScopeOrDevice (
     return EFI_DEVICE_ERROR;
   }
 
-  ScopeNameStart = ScopeName;
+//   ScopeNameStart = ScopeName;
 
   if (Context->CurrentOpcode > ScopeEnd) {
     return EFI_DEVICE_ERROR;
