@@ -56,7 +56,7 @@ typedef struct {
   Print new entry name.
 **/
 #define CONTEXT_ENTER(Context, Name) \
-//  DEBUG (( \
+/*  DEBUG (( 
 //    DEBUG_VERBOSE, \
 //    "%a 0x%x (looking for %c%c%c%c)\n", \
 //    (Name), \
