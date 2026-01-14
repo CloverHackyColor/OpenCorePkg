@@ -602,7 +602,7 @@ OC_DECLARE(OC_PLATFORM_MEMORY_CONFIG)
 #define OC_UEFI_UNLOAD_ARRAY_FIELDS(_, __) OC_ARRAY(OC_STRING, _, __)
 OC_DECLARE(OC_UEFI_UNLOAD_ARRAY)
 
-///#define OC_PLATFORM_NVRAM_CONFIG_FIELDS(_, __)                                 \
+#define OC_PLATFORM_NVRAM_CONFIG_FIELDS(_, __)                                 \
   _(OC_STRING, Bid, , OC_STRING_CONSTR("", _, __), OC_DESTR(OC_STRING))        \
   _(OC_STRING, Mlb, , OC_STRING_CONSTR("", _, __), OC_DESTR(OC_STRING))        \
   _(OC_STRING, SystemSerialNumber, , OC_STRING_CONSTR("", _, __),              \
@@ -612,6 +612,7 @@ OC_DECLARE(OC_UEFI_UNLOAD_ARRAY)
   _(UINT64, FirmwareFeatures, , 0, ())                                         \
   _(UINT64, FirmwareFeaturesMask, , 0, ())
 OC_DECLARE(OC_PLATFORM_NVRAM_CONFIG)
+
 
 #define OC_PLATFORM_SMBIOS_CONFIG_FIELDS(_, __)                                \
   _(OC_STRING, BIOSVendor, , OC_STRING_CONSTR("", _, __), OC_DESTR(OC_STRING)) \
