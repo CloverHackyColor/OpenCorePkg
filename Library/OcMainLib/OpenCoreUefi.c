@@ -346,7 +346,7 @@ OcExitBootServicesHandler (
   CONST EFI_MEMORY_ATTRIBUTES_TABLE  *MemoryAttributesTable;
 
   MemoryAttributesTable = OcGetMemoryAttributes (NULL);
-  UINTN nb = MemoryAttributesTable->NumberOfEntries;
+  UINT32 nb = MemoryAttributesTable->NumberOfEntries;
   //gST->NumberOfTableEntries
 
   if ( nb >= 120 ) {
