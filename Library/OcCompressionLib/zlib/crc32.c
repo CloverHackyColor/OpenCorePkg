@@ -123,8 +123,7 @@ local z_crc_t x2nmodp OF((z_off64_t n, unsigned k));
   instruction, if one is available. This assumes that word_t is either 32 bits
   or 64 bits.
  */
-local z_word_t byte_swap(word)
-    z_word_t word;
+local z_word_t byte_swap(z_word_t word)
 {
 #  if W == 8
     return
@@ -196,9 +195,9 @@ struct once_s {
   invoke once() at the same time. The state must be a once_t initialized with
   ONCE_INIT.
  */
-local void once(state, init)
-    once_t *state;
-    void (*init)(void);
+local void once(once_t *state, void (*init)(void))
+ //   once_t *state;
+ //   void (*init)(void);
 {
     if (!atomic_load(&state->done)) {
         if (atomic_flag_test_and_set(&state->begun))
@@ -234,9 +233,9 @@ local int test_and_set(flag)
 }
 
 /* Run the provided init() function once. This is not thread-safe. */
-local void once(state, init)
-    once_t *state;
-    void (*init)(void);
+local void once(once_t *state, void (*init)(void))
+//    once_t *state;
+//    void (*init)(void);
 {
     if (!state->done) {
         if (test_and_set(&state->begun))
@@ -447,10 +446,10 @@ local void make_crc_table()
    Write the 32-bit values in table[0..k-1] to out, five per line in
    hexadecimal separated by commas.
  */
-local void write_table(out, table, k)
-    FILE *out;
-    const z_crc_t FAR *table;
-    int k;
+local void write_table(FILE *out, const z_crc_t FAR *table, int k)
+//    FILE *out;
+//    const z_crc_t FAR *table;
+//    int k;
 {
     int n;
 
@@ -464,10 +463,10 @@ local void write_table(out, table, k)
    Write the high 32-bits of each value in table[0..k-1] to out, five per line
    in hexadecimal separated by commas.
  */
-local void write_table32hi(out, table, k)
-FILE *out;
-const z_word_t FAR *table;
-int k;
+local void write_table32hi(FILE *out, const z_word_t FAR *table, int k)
+//FILE *out;
+//const z_word_t FAR *table;
+//int k;
 {
     int n;
 
@@ -484,10 +483,10 @@ int k;
   bits. If not, then the type cast and format string can be adjusted
   accordingly.
  */
-local void write_table64(out, table, k)
-    FILE *out;
-    const z_word_t FAR *table;
-    int k;
+local void write_table64(FILE *out, const z_word_t FAR *table, int k)
+//    FILE *out;
+//    const z_word_t FAR *table;
+//    int k;
 {
     int n;
 

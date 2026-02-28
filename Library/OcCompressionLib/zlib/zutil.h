@@ -167,6 +167,9 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #endif
 
 #ifdef __APPLE__
+#ifdef OS_CODE
+#undef OS_CODE
+#endif
 #  define OS_CODE 19
 #endif
 
