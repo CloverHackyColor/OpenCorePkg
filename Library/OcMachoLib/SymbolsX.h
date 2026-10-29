@@ -351,6 +351,7 @@ MACH_X (
       return FALSE;
     }
   }
+  #endif
 
   return MACH_X (MachoSymbolIsDefined)(Symbol);
 }

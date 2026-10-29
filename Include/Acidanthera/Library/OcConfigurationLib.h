@@ -694,12 +694,6 @@ OC_DECLARE(OC_PLATFORM_CONFIG)
   Uefi section
 **/
 
-///
-/// Array of driver names to unload.
-///
-#define OC_UEFI_UNLOAD_ARRAY_FIELDS(_, __) \
-  OC_ARRAY (OC_STRING, _, __)
-OC_DECLARE (OC_UEFI_UNLOAD_ARRAY)
 
 ///
 /// Drivers is an ordered array of drivers to load.

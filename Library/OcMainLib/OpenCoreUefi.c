@@ -932,9 +932,9 @@ OcLoadUefiSupport (
   UINTN       HandleCount;
   EFI_EVENT   Event;
   BOOLEAN     AccelEnabled;
-
+#ifndef CLOVER_BUILD
   OcUnloadDrivers (Config);
-
+#endif
   OcReinstallProtocols (Config);
 
   OcImageLoaderInit (Config->Booter.Quirks.ProtectUefiServices, Config->Booter.Quirks.FixupAppleEfiImages);

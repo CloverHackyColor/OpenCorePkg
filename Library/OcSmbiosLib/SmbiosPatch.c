@@ -442,15 +442,15 @@ PatchCacheInformation (
     // MaximumCacheSize2 and InstalledSize2 are to be set to the same values
     // as MaximumCacheSize and InstalledSize if the cache size is under 2047MB.
     //
-    if (!SMBIOS_ACCESSIBLE (Original, Standard.Type7->MaximumCacheSize2)) {
-      Table->CurrentPtr.Standard.Type7->MaximumCacheSize2.Size           = Table->CurrentPtr.Standard.Type7->MaximumCacheSize.Size;
-      Table->CurrentPtr.Standard.Type7->MaximumCacheSize2.Granularity64K = Table->CurrentPtr.Standard.Type7->MaximumCacheSize.Granularity64K;
-      Table->CurrentPtr.Standard.Type7->InstalledSize2.Size              = Table->CurrentPtr.Standard.Type7->InstalledSize.Size;
-      Table->CurrentPtr.Standard.Type7->InstalledSize2.Granularity64K    = Table->CurrentPtr.Standard.Type7->InstalledSize.Granularity64K;
-    } else {
-      SMBIOS_OVERRIDE_V (Table, Standard.Type7->MaximumCacheSize2, Original, NULL, NULL);
-      SMBIOS_OVERRIDE_V (Table, Standard.Type7->InstalledSize2, Original, NULL, NULL);
-    }
+//     if (!SMBIOS_ACCESSIBLE (Original, Standard.Type7->MaximumCacheSize2)) {
+//       Table->CurrentPtr.Standard.Type7->MaximumCacheSize2.Size           = Table->CurrentPtr.Standard.Type7->MaximumCacheSize.Size;
+//       Table->CurrentPtr.Standard.Type7->MaximumCacheSize2.Granularity64K = Table->CurrentPtr.Standard.Type7->MaximumCacheSize.Granularity64K;
+//       Table->CurrentPtr.Standard.Type7->InstalledSize2.Size              = Table->CurrentPtr.Standard.Type7->InstalledSize.Size;
+//       Table->CurrentPtr.Standard.Type7->InstalledSize2.Granularity64K    = Table->CurrentPtr.Standard.Type7->InstalledSize.Granularity64K;
+//     } else {
+//       SMBIOS_OVERRIDE_V (Table, Standard.Type7->MaximumCacheSize2, Original, NULL, NULL);
+//       SMBIOS_OVERRIDE_V (Table, Standard.Type7->InstalledSize2, Original, NULL, NULL);
+//     }
 
     *NewHandle = Table->CurrentPtr.Standard.Hdr->Handle;
     (*Index)++;

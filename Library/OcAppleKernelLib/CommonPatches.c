@@ -750,10 +750,6 @@ PATCHER_GENERIC_PATCH
   .Limit       = 4096
 };
 
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/master
 STATIC
 CONST UINT8
   mRemoveUsbLimitIoP1Find2[] = {
@@ -824,7 +820,6 @@ PatchUsbXhciPortLimit1 (
     return EFI_NOT_FOUND;
   }
 
-<<<<<<< HEAD
 //  Status = PatcherApplyGenericPatch (Patcher, &mRemoveUsbLimitIoP1Patch1);
 //  if (EFI_ERROR (Status)) {
 //    DEBUG ((DEBUG_INFO, "OCAK: [FAIL] Failed to apply port patch com.apple.iokit.IOUSBHostFamily part 1 - %r\n", Status));
@@ -853,28 +848,6 @@ PatchUsbXhciPortLimit1 (
       }
     }
 
-
-=======
-  //
-  // For macOS 26.0 (Darwin 25.0.0) and above use Tahoe-specific patch,
-  // otherwise use the original patch.
-  //
-  if (OcMatchDarwinVersion (KernelVersion, KERNEL_VERSION_TAHOE_MIN, 0)) {
-    Status = PatcherApplyGenericPatch (Patcher, &mRemoveUsbLimitIoP1Patch1Tahoe);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_INFO, "OCAK: [FAIL] Failed to apply Tahoe port patch com.apple.iokit.IOUSBHostFamily part 1 - %r\n", Status));
-    } else {
-      DEBUG ((DEBUG_INFO, "OCAK: [OK] Patch success Tahoe port com.apple.iokit.IOUSBHostFamily part 1\n"));
-    }
-  } else {
-    Status = PatcherApplyGenericPatch (Patcher, &mRemoveUsbLimitIoP1Patch1);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_INFO, "OCAK: [FAIL] Failed to apply pre-Tahoe port patch com.apple.iokit.IOUSBHostFamily part 1 - %r\n", Status));
-    } else {
-      DEBUG ((DEBUG_INFO, "OCAK: [OK] Patch success pre-Tahoe port com.apple.iokit.IOUSBHostFamily part 1\n"));
-    }
-  }
->>>>>>> upstream/master
 
   //
   // The following patch is only needed on macOS 11.1 (Darwin 20.2.0) and above; skip it otherwise.

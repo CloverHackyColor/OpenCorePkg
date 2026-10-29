@@ -498,12 +498,12 @@ InternalCalculateARTFrequencyIntel (
   CPUID_STRUCTURED_EXTENDED_FEATURE_FLAGS_EDX  CpuidFeatureFlagsEdx;
   UINT32                                       CpuidDenominatorEax;
   UINT32                                       CpuidNumeratorEbx;
-  UINT32                                       CpuidARTFrequencyEcx;
+  // UINT32                                       CpuidARTFrequencyEcx;
   CPUID_PROCESSOR_FREQUENCY_EAX                CpuidFrequencyEax;
   UINT64                                       TscAdjust;
   UINT64                                       CPUFrequencyFromTSC;
-  CPUID_VERSION_INFO_EAX                       CpuidVerEax;
-  UINT8                                        Model;
+ // CPUID_VERSION_INFO_EAX                       CpuidVerEax;
+ // UINT8                                        Model;
 
   if (Recalculate) {
     ObtainedARTFreq     = FALSE;

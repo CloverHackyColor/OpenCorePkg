@@ -1512,26 +1512,12 @@ InternalDetectIntelProcessorGeneration (
         CpuGeneration = OcCpuGenerationTigerLake;
         break;
       case CPU_MODEL_ALDERLAKE_S:
-
       case CPU_MODEL_ALDERLAKE_ULT:
     	  CpuGeneration = OcCpuGenerationAlderLake;
     	  break;
-      case CPU_MODEL_RAPTORLAKE_B:
-      case CPU_MODEL_RAPTORLAKE:
-      case CPU_MODEL_METEORLAKE:
-        CpuGeneration = OcCpuGenerationRaptorLake;
-        break;
-      case CPU_MODEL_ARROWLAKE:
-      case CPU_MODEL_ARROWLAKE_X:
-      case CPU_MODEL_ARROWLAKE_U:
-        CpuGeneration = OcCpuGenerationArrowLake;
-        break;
-
-
-        CpuGeneration = OcCpuGenerationAlderLake;
-        break;
-      case CPU_MODEL_RAPTORLAKE_S:
       case CPU_MODEL_RAPTORLAKE_HX:
+      case CPU_MODEL_RAPTORLAKE_S:
+      case CPU_MODEL_METEORLAKE:
         CpuGeneration = OcCpuGenerationRaptorLake;
         break;
       case CPU_MODEL_ARROWLAKE_S:
