@@ -17,7 +17,7 @@
   PACKAGE_NAME      = OpenCorePkg
   PACKAGE_GUID      = 6B1D3AB4-5C85-462D-9DC5-480F8B17D5CB
   PACKAGE_VERSION   = 1.0
-  DEC_SPECIFICATION = 0x00010005
+  DEC_SPECIFICATION = 0x0001001B
 
 [Includes]
   Include/AMI
@@ -101,6 +101,9 @@
 
   ## Include/Acidanthera/Protocol/HdaIo.h
   gEfiHdaIoDevicePathGuid                    = { 0xA9003FEB, 0xD806, 0x41DB, { 0xA4, 0x91, 0x54, 0x05, 0xFE, 0xEF, 0x46, 0xC3 }}
+
+  ## Include/Acidanthera/Guid/LegacyBios.h
+  gEfiLegacyBiosGuid                         = { 0x2E3044AC, 0x879F, 0x490F, { 0x97, 0x60, 0xBB, 0xDF, 0xAF, 0x69, 0x5F, 0x50 }}
 
   ## Include/Apple/Guid/AppleApfsInfo.h
   gAppleApfsPartitionTypeGuid                = { 0x7C3457EF, 0x0000, 0x11AA, { 0xAA, 0x11, 0x00, 0x30, 0x65, 0x43, 0xEC, 0xAC }}
@@ -481,6 +484,9 @@
   ## Include/Acidanthera/Protocol/AudioIo.h
   gEfiAudioIoProtocolGuid                    = { 0x22266891, 0x2032, 0x4BAE, { 0xB7, 0xB5, 0x43, 0x74, 0xE7, 0x32, 0x09, 0x49 }}
 
+  ## Include/Intel/Protocol/DeviceIo.h
+  gEfiDeviceIoProtocolGuid                   = { 0xAF6AC311, 0x84C3, 0x11D2, { 0x8E, 0x3C, 0x00, 0xA0, 0xC9, 0x69, 0x72, 0x3B }}
+
   ## Include/Acidanthera/Protocol/HdaCodecInfo.h
   gEfiHdaCodecInfoProtocolGuid               = { 0x6C9CDDE1, 0xE8A5, 0x43E5, { 0xBE, 0x88, 0xDA, 0x15, 0xBC, 0x1C, 0x02, 0x50 }}
 
@@ -489,6 +495,15 @@
 
   ## Include/Acidanthera/Protocol/HdaIo.h
   gEfiHdaIoProtocolGuid                      = { 0xA090D7F9, 0xB50A, 0x4EA1, { 0xBD, 0xE9, 0x1A, 0xA5, 0xE9, 0x81, 0x2F, 0x45 }}
+
+  ## Include/Acidanthera/Protocol/Legacy8259.h
+  gEfiLegacy8259ProtocolGuid                 = { 0x38321dba, 0x4fe0, 0x4e17, { 0x8a, 0xec, 0x41, 0x30, 0x55, 0xea, 0xed, 0xc1 }}
+
+  ## Include/Intel/Protocol/UgaDraw.h
+  gEfiUgaDrawProtocolGuid                    = { 0x982C298B, 0xF4FA, 0x41CB, { 0xB8, 0x38, 0x77, 0xAA, 0x68, 0x8F, 0xB8, 0x39 }}
+
+  ## Include/Intel/Protocol/UgaIo.h
+  gEfiUgaIoProtocolGuid                      = { 0x61A4D49E, 0x6F68, 0x4F1B, { 0xB9, 0x22, 0xA8, 0x6E, 0xED, 0x0B, 0x07, 0xA2 }}
 
   ## Include/Acidanthera/Protocol/OcAudio.h
   gOcAudioProtocolGuid                       = { 0x4B228577, 0x6274, 0x4A48, { 0x82, 0xAE, 0x07, 0x13, 0xA1, 0x17, 0x19, 0x87 }}
@@ -517,16 +532,16 @@
   ## Include/Acidanthera/Protocol/OcVariableRuntime.h
   gOcVariableRuntimeProtocolGuid             = { 0x3DBA852A, 0x2645, 0x4184, { 0x95, 0x71, 0xE6, 0x0C, 0x2B, 0xFD, 0x72, 0x4C }}
 
-  ##  Include/AMI/Protocol/AmiPointer.h
+  ## Include/AMI/Protocol/AmiPointer.h
   gAmiEfiPointerProtocolGuid                 = { 0x15A10CE7, 0xEAB5, 0x43BF, { 0x90, 0x42, 0x74, 0x43, 0x2E, 0x69, 0x63, 0x77 }}
 
-  ##  Include/AMI/Protocol/AmiKeycode.h
+  ## Include/AMI/Protocol/AmiKeycode.h
   gAmiEfiKeycodeProtocolGuid                 = { 0x0ADFB62D, 0xFF74, 0x484C, { 0x89, 0x44, 0xF8, 0x5C, 0x4B, 0xEA, 0x87, 0xA8 }}
 
-  ##  Include/AMI/Protocol/AmiSoftKbd.h
+  ## Include/AMI/Protocol/AmiSoftKbd.h
   gAmiSoftKbdProtocolGuid                    = { 0x96FD60F3, 0x0BC8, 0x4A11, { 0x84, 0xF1, 0x2E, 0xB1, 0xCB, 0x5B, 0xA5, 0xA3 }}
 
-  ##  Include/AMI/Protocol/AmiSoftKbdRestore.h
+  ## Include/AMI/Protocol/AmiSoftKbdRestore.h
   gAmiSoftKbdRestoreProtocolGuid             = { 0x890DF583, 0x0D14, 0x4C82, { 0x99, 0x6D, 0xE5, 0xEA, 0xE8, 0xCA, 0x90, 0x5E }}
 
   ## Include/Intel/Protocol/ConsoleControl.h
@@ -544,10 +559,10 @@
   ## Include/Intel/Protocol/FrameworkMpService.h
   gFrameworkEfiMpServiceProtocolGuid         = { 0xF33261E7, 0x23CB, 0x11D5, { 0xBD, 0x5C, 0x00, 0x80, 0xC7, 0x3C, 0x88, 0x81 }}
 
-  ##  Include/Intel/Protocol/Heci.h
+  ## Include/Intel/Protocol/Heci.h
   gEfiHeciProtocolGuid                       = { 0xCFB33810, 0x6E87, 0x4284, { 0xB2, 0x03, 0xA6, 0x6A, 0xBE, 0x07, 0xF6, 0xE8 }}
 
-  ##  Include/Intel/Protocol/Heci2.h
+  ## Include/Intel/Protocol/Heci2.h
   gEfiHeci2ProtocolGuid                      = { 0x3C7BC880, 0x41F8, 0x4869, { 0xAE, 0xFC, 0x87, 0x0A, 0x3E, 0xD2, 0x82, 0x99 }}
 
   ## Include/Intel/Protocol/HotPlugDevice.h
@@ -571,11 +586,11 @@
   ## Include/Apple/Protocol/AppleDeviceControl.h
   gAppleDeviceControlProtocolGuid            = { 0x8ECE08D8, 0xA6D4, 0x430B, { 0xA7, 0xB0, 0x2D, 0xF3, 0x18, 0xE7, 0x88, 0x4A }}
 
-  ## Include/Apple/Protocol/AppleDiskIo.h
-  gAppleDiskIoProtocolGuid                   = { 0x5B27263B, 0x9083, 0x415E, { 0x88, 0x9E, 0x64, 0x32, 0xCA, 0xA9, 0xB8, 0x13 }}
-
   ## Include/Apple/Protocol/AppleDiskImage.h
   gAppleDiskImageProtocolGuid                = { 0x004B07E8, 0x0B9C, 0x427E, { 0xB0, 0xD4, 0xA4, 0x66, 0xE6, 0xE5, 0x7A, 0x62 }}
+
+  ## Include/Apple/Protocol/AppleDiskIo.h
+  gAppleDiskIoProtocolGuid                   = { 0x5B27263B, 0x9083, 0x415E, { 0x88, 0x9E, 0x64, 0x32, 0xCA, 0xA9, 0xB8, 0x13 }}
 
   ## Include/Apple/Protocol/AppleDmgBoot.h
   gAppleDmgBootProtocolGuid                  = { 0x85290934, 0x28DC, 0x4DF5, { 0x91, 0x9A, 0x60, 0xE2, 0x8B, 0x1B, 0x94, 0x49 }}
@@ -603,6 +618,9 @@
 
   ## Include/Apple/Protocol/AppleKeyMapDatabase.h
   gAppleKeyMapDatabaseProtocolGuid           = { 0x584B9EBE, 0x80C1, 0x4BD6, { 0x98, 0xB0, 0xA7, 0x78, 0x6E, 0xC2, 0xF2, 0xE2 }}
+
+  ## Include/Apple/Protocol/AppleLinkState.h
+  gAppleLinkStateProtocolGuid                = { 0xBF71D7E3, 0x4AE8, 0x47F1, { 0x86, 0x05, 0x9D, 0x57, 0x6A, 0xAB, 0x44, 0x78 }}
 
   ## Include/Apple/Protocol/AppleRamDisk.h
   gAppleRamDiskProtocolGuid                  = { 0x957932CC, 0x7E8E, 0x433B, { 0x8F, 0x41, 0xD3, 0x91, 0xEA, 0x3C, 0x10, 0xF8 }}
@@ -670,7 +688,7 @@
   ## Include/Apple/Protocol/ApfsEncryptedPartition.h
   gApfsEncryptedPartitionProtocolGuid        = { 0x59D76AE4, 0x37E3, 0x55A7, { 0xB4, 0x60, 0xEF, 0x13, 0xD4, 0x6E, 0x60, 0x20 }}
 
-  ## Include/Apple/Protocol/ApfsBdsSupportProtocol.h
+  ## Include/Apple/Protocol/ApfsUnsupportedBds.h
   gApfsUnsupportedBdsProtocolGuid            = { 0xA196A7CA, 0x14C6, 0x11E7, { 0xB9, 0x06, 0xB8, 0xE8, 0x56, 0x2C, 0xBA, 0xFA }}
 
   ## Include/Apple/Protocol/ApfsEfiBootRecordInfo.h
@@ -679,22 +697,22 @@
   ## Include/Apple/Protocol/AppleLoadImage.h
   gAppleLoadImageProtocolGuid                = { 0x6C6148A4, 0x97B8, 0x429C, { 0x95, 0x5E, 0x41, 0x03, 0xE8, 0xAC, 0xA0, 0xFA }}
 
-  ##  Include/Apple/Protocol/AppleHda.h
+  ## Include/Apple/Protocol/AppleHda.h
   gAppleHighDefinitionAudioProtocolGuid      = { 0x3224B169, 0xEC34, 0x46D2, { 0xB7, 0x79, 0xE1, 0xB1, 0x68, 0x7F, 0x52, 0x5F }}
 
-  ##  Include/Apple/Protocol/AppleVO.h
+  ## Include/Apple/Protocol/AppleVoiceOver.h
   gAppleVOAudioProtocolGuid                  = { 0xF4CB0B78, 0x243B, 0x11E7, { 0xA5, 0x24, 0xB8, 0xE8, 0x56, 0x2C, 0xBA, 0xFA }}
 
-  ##  Include/Apple/Protocol/AppleSystemInfo.h
+  ## Include/Apple/Protocol/AppleSystemInfo.h
   gAppleSystemInfoProtocolGuid               = { 0x82ED9A9E, 0xCCBB, 0x4CD2, { 0x8A, 0x94, 0xF4, 0xE3, 0x55, 0x9A, 0xF9, 0x11 }}
 
-  ##  Include/VMware/Protocol/VMwareDebug.h
+  ## Include/VMware/Protocol/VMwareDebug.h
   gVMwareDebugProtocolGuid                   = { 0x5127A9FE, 0x2274, 0x451D, { 0x90, 0xAA, 0xCB, 0xE8, 0x44, 0xCF, 0x55, 0x71 }}
 
-  ##  Include/VMware/Protocol/VMwareHda.h
+  ## Include/VMware/Protocol/VMwareHda.h
   gVMwareHdaProtocolGuid                     = { 0x94E46BC2, 0x9127, 0x11DF, { 0xBF, 0xCE, 0xE7, 0x83, 0xCA, 0x2A, 0x34, 0xBE }}
 
-  ##  Include/VMware/Protocol/VMwareMac.h
+  ## Include/VMware/Protocol/VMwareMac.h
   gVMwareMacProtocolGuid                     = { 0x03F38E56, 0x8231, 0x4469, { 0x94, 0xED, 0x82, 0xAE, 0x53, 0x15, 0x83, 0x4F }}
 
 [PcdsFeatureFlag]
@@ -740,7 +758,7 @@
   ##   TRUE  - Use EFI_OPEN_PROTOCOL_GET_PROTOCOL if EFI_OPEN_PROTOCOL_BY_DRIVER fails.<BR>
   ##   FALSE - Do not use EFI_OPEN_PROTOCOL_GET_PROTOCOL.<BR>
   ## @Prompt Try EFI_OPEN_PROTOCOL_GET_PROTOCOL if EFI_OPEN_PROTOCOL_BY_DRIVER fails.
-  gOpenCorePkgTokenSpaceGuid.PcdAudioControllerTryProtocolGetMode|FALSE|BOOLEAN|0x00000007
+  gOpenCorePkgTokenSpaceGuid.PcdAudioControllerTryProtocolGetMode|TRUE|BOOLEAN|0x00000007
 
   ## Indicates if AudioDxe will use Pin Capabilities to identify outputs.<BR><BR>
   ##   TRUE  - Use Pin Capabilities to identify outputs.<BR>
@@ -753,6 +771,19 @@
   ##   FALSE - DirectGopRendering will not be used.<BR>
   ## @Prompt Use DirectGopRendering.
   gOpenCorePkgTokenSpaceGuid.PcdEnableGopDirect|FALSE|BOOLEAN|0x00000009
+
+  ## Indicates if UGA Draw Protocol will be installed on virtual handle created by ConsplitterDxe.
+  #  It could be set FALSE to save size.<BR><BR>
+  #   TRUE  - Installs UGA Draw Protocol on virtual handle created by ConsplitterDxe.<BR>
+  #   FALSE - Does not install UGA Draw Protocol on virtual handle created by ConsplitterDxe.<BR>
+  # @Prompt Enable ConOut UGA support.
+  gOpenCorePkgTokenSpaceGuid.PcdConOutUgaSupport|TRUE|BOOLEAN|0x0000000a
+
+  ## Indicates if UGA Draw Protocol is still consumed.<BR><BR>
+  #   TRUE  - Consume UGA Draw protocol.<BR>
+  #   FALSE - Does not consume UGA Draw protocol.<BR>
+  # @Prompt Consume UGA Draw Protocol.
+  gOpenCorePkgTokenSpaceGuid.PcdUgaConsumeSupport|TRUE|BOOLEAN|0x0000000b
 
 [PcdsFixedAtBuild]
   ## Defines the Console Control initialization mode set on entry.<BR><BR>
@@ -786,6 +817,32 @@
   ## @Prompt Allow saving early logs when log protocol has not yet arrived.
   gOpenCorePkgTokenSpaceGuid.PcdDebugLibProtocolBufferEarlyLog|TRUE|BOOLEAN|0x00000608
 
+  ## Pcd8259LegacyModeMask defines the default mask value for platform. This
+  #  value is determined.
+  #  1) If platform only support pure UEFI, value should be set to 0xFFFF or
+  #     0xFFFE; Because only clock interrupt is allowed in legacy mode in pure
+  #     UEFI platform.
+  #  2) If platform install CSM and use thunk module:
+  #     a) If thunk call provided by CSM binary requires some legacy interrupt
+  #        support, the corresponding bit should be opened as 0.
+  #        For example, if keyboard interfaces provided CSM binary use legacy
+  #        keyboard interrupt in 8259 bit 1, then the value should be set to
+  #        0xFFFC.
+  #     b) If all thunk call provied by CSM binary do not require legacy
+  #        interrupt support, value should be set to 0xFFFF or 0xFFFE.
+  #
+  #  The default value of legacy mode mask could be changed by
+  #  EFI_LEGACY_8259_PROTOCOL->SetMask(). But it is rarely need change it
+  #  except some special cases such as when initializing the CSM binary, it
+  #  should be set to 0xFFFF to mask all legacy interrupt. Please restore the
+  #  original legacy mask value if changing is made for these special case.
+  gOpenCorePkgTokenSpaceGuid.Pcd8259LegacyModeMask|0xFFFF|UINT16|0x00000609
+
+  ## Pcd8259LegacyModeEdgeLevel defines the default edge level for legacy
+  #  mode's interrrupt controller.
+  #  For the corresponding bits, 0 = Edge triggered and 1 = Level triggered.
+  gOpenCorePkgTokenSpaceGuid.Pcd8259LegacyModeEdgeLevel|0x0000|UINT16|0x0000060a
+
 [LibraryClasses]
   ##  @libraryclass
   OcAcpiLib|Include/Acidanthera/Library/OcAcpiLib.h
@@ -807,6 +864,9 @@
 
   ##  @libraryclass
   OcAppleEventLib|Include/Acidanthera/Library/OcAppleEventLib.h
+
+  ##  @libraryclass
+  OcAppleFirmwarePasswordLib|Include/Acidanthera/Library/OcAppleFirmwarePasswordLib.h
 
   ##  @libraryclass
   OcAppleImageConversionLib|Include/Acidanthera/Library/OcAppleImageConversionLib.h
@@ -879,9 +939,6 @@
 
   ##  @libraryclass
   OcFileLib|Include/Acidanthera/Library/OcFileLib.h
-
-  ##  @libraryclass
-  OcFirmwarePasswordLib|Include/Acidanthera/Library/OcFirmwarePasswordLib.h
 
   ##  @libraryclass
   OcFirmwareVolumeLib|Include/Acidanthera/Library/OcFirmwareVolumeLib.h

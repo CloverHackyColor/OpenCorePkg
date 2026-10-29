@@ -17,26 +17,23 @@ env:
 jobs:
   build-macos:
     name: macOS XCODE5
-    runs-on: macos-13
+    runs-on: macos-latest
+    permissions:
+      contents: write
     env:
       JOB_TYPE: BUILD
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+      HOMEBREW_NO_AUTO_UPDATE: 1
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Add Linux Toolchain
-        run: brew tap FiloSottile/homebrew-musl-cross
+      - uses: actions/checkout@v6
 
       - name: Install Linux Toolchain
-        run: brew install musl-cross
-        env:
-          HOMEBREW_NO_INSTALL_CLEANUP: 1
-          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: |
+          brew tap FiloSottile/homebrew-musl-cross
+          brew install FiloSottile/musl-cross/musl-cross
 
       - name: Install Dependencies
-        run: brew install openssl mingw-w64
-        env:
-          HOMEBREW_NO_INSTALL_CLEANUP: 1
-          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: brew install mingw-w64
 
       - name: CI Bootstrap
         run: |
@@ -46,13 +43,13 @@ jobs:
       - run: ./build_oc.tool
 
       - name: Upload to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: macOS XCODE5 Artifacts
           path: Binaries/*.zip
       - name: Upload to Release
         if: github.event_name == 'release'
-        uses: svenstaro/upload-release-action@e74ff71f7d8a4c4745b560a485cc5fdb9b5b999d
+        uses: svenstaro/upload-release-action@04733e069f2d7f7f0b4aebc4fbdbce8613b03ccd # v2.9.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: Binaries/*.zip
@@ -61,84 +58,94 @@ jobs:
 
   build-linux-clangpdb:
     name: Linux CLANGPDB
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    env:
+      TOOLCHAINS: CLANGPDB
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
+
+      - name: Apply Docker AppArmor settings
+        run: |
+          src=$(/usr/bin/curl -LfsS https://raw.githubusercontent.com/acidanthera/ocbuild/master/docker-apparmor.sh) && eval "$src" || exit 1
 
       - name: Use Docker in rootless mode.
         uses: ScribeMD/rootless-docker@0.2.2
 
       - name: ./build_duet.tool
         run: docker compose run build-duet
-        env:
-          TOOLCHAINS: CLANGPDB
 
       - name: ./build_oc.tool
         run: docker compose run build-oc
-        env:
-          TOOLCHAINS: CLANGPDB
 
       - name: Upload to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: Linux CLANGPDB Artifacts
           path: Binaries/*.zip
 
   build-linux-gcc5:
     name: Linux GCC
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    env:
+      TOOLCHAINS: GCC
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
+
+      - name: Apply Docker AppArmor settings
+        run: |
+          src=$(/usr/bin/curl -LfsS https://raw.githubusercontent.com/acidanthera/ocbuild/master/docker-apparmor.sh) && eval "$src" || exit 1
 
       - name: Use Docker in rootless mode.
         uses: ScribeMD/rootless-docker@0.2.2
 
       - name: ./build_duet.tool
         run: docker compose run build-duet
-        env:
-          TOOLCHAINS: GCC
 
       - name: ./build_oc.tool
         run: docker compose run build-oc
-        env:
-          TOOLCHAINS: GCC
 
       - name: Upload to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: Linux GCC Artifacts
           path: Binaries/*.zip
 
   build-linux-clangdwarf:
     name: Linux CLANGDWARF
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    env:
+      TOOLCHAINS: CLANGDWARF
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
+
+      - name: Apply Docker AppArmor settings
+        run: |
+          src=$(/usr/bin/curl -LfsS https://raw.githubusercontent.com/acidanthera/ocbuild/master/docker-apparmor.sh) && eval "$src" || exit 1
 
       - name: Use Docker in rootless mode.
         uses: ScribeMD/rootless-docker@0.2.2
 
       - name: ./build_duet.tool
         run: docker compose run build-duet
-        env:
-          TOOLCHAINS: CLANGDWARF
 
       - name: ./build_oc.tool
         run: docker compose run build-oc
-        env:
-          TOOLCHAINS: CLANGDWARF
 
       - name: Upload to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: Linux CLANGDWARF Artifacts
           path: Binaries/*.zip
 
   build-linux-docs:
     name: Linux Docs
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
+
+      - name: Apply Docker AppArmor settings
+        run: |
+          src=$(/usr/bin/curl -LfsS https://raw.githubusercontent.com/acidanthera/ocbuild/master/docker-apparmor.sh) && eval "$src" || exit 1
 
       - name: Use Docker in rootless mode.
         uses: ScribeMD/rootless-docker@0.2.2
@@ -147,8 +154,8 @@ jobs:
         run: docker compose run build-docs
 
   build-windows:
-    name: Windows VS2019
-    runs-on: windows-latest
+    name: Windows VS2022
+    runs-on: windows-2022
     env:
       HAS_OPENSSL_BUILD: 0
       CC: gcc
@@ -156,8 +163,10 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v3
-
+      - uses: actions/checkout@v6
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x86
       - name: Install Dependencies
         run: |
           choco install make nasm zip iasl --no-progress
@@ -170,7 +179,7 @@ jobs:
       - run: ./build_oc.tool
 
       - name: Upload to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: Windows Artifacts
           path: Binaries/*.zip

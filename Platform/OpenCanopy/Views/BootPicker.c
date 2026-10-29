@@ -16,6 +16,8 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/TimerLib.h>
+
 #include <Library/OcBootManagementLib.h>
 #include <Library/OcPngLib.h>
 #include <Library/OcStorageLib.h>
@@ -36,6 +38,8 @@
 #define BOOT_LABEL_SHADOW_WIDTH   8U
 #define BOOT_LABEL_SHADOW_HEIGHT  BOOT_ENTRY_LABEL_HEIGHT
 
+#define BOOT_PRESSED_ENTRY_DELAY_NS  (175ULL * 1000000ULL)
+
 extern GUI_KEY_CONTEXT  *mKeyContext;
 
 extern GUI_VOLUME_PICKER  mBootPicker;
@@ -55,6 +59,12 @@ extern INT64  mBackgroundImageOffsetY;
 STATIC UINT32  mBootPickerLabelScrollHoldTime = 0;
 
 STATIC GUI_OBJ  *mBootPickerFocusList[] = {
+  &mBootPicker.Hdr.Obj,
+  &mCommonShutDown.Hdr.Obj,
+  &mCommonRestart.Hdr.Obj
+};
+
+STATIC GUI_OBJ  *mBootPickerFocusListReversed[] = {
   &mBootPicker.Hdr.Obj,
   &mCommonRestart.Hdr.Obj,
   &mCommonShutDown.Hdr.Obj
@@ -449,6 +459,22 @@ InternalBootPickerKeyEvent (
       GuiContext->ReadyToBoot            = TRUE;
       ASSERT (GuiContext->BootEntry == SelectedEntry->Context);
     }
+  } else if (  GuiContext->PickerContext->PickerAudioAssist
+            && (KeyEvent->OcKeyCode >= 0)
+            && ((UINTN)KeyEvent->OcKeyCode < mBootPicker.Hdr.Obj.NumChildren)
+               )
+  {
+    InternalBootPickerChangeEntry (
+      Picker,
+      DrawContext,
+      BaseX,
+      BaseY,
+      (UINT32)KeyEvent->OcKeyCode
+      );
+    SelectedEntry                      = InternalGetVolumeEntry (mBootPicker.SelectedIndex);
+    SelectedEntry->Context->SetDefault = (KeyEvent->OcModifiers & OC_MODIFIERS_SET_DEFAULT) != 0;
+    GuiContext->ReadyToBoot            = TRUE;
+    ASSERT (GuiContext->BootEntry == SelectedEntry->Context);
   } else if (mBootPickerContainer.Obj.Opacity != 0xFF) {
     //
     // FIXME: Other keys are not allowed when boot picker is partially transparent.
@@ -520,7 +546,7 @@ InternalBootPickerEntryDraw (
   /*if (mBootPickerImageIndex < 5) {
     EntryIcon = &((BOOT_PICKER_GUI_CONTEXT *) DrawContext->GuiContext)->Poof[mBootPickerImageIndex];
   } else */{
-    EntryIcon = &Entry->EntryIcon;
+    EntryIcon = Entry->IsHeld ? &Entry->DarkIcon : &Entry->EntryIcon;
   }
   Label = &Entry->Label;
   //
@@ -735,7 +761,9 @@ InternalBootPickerEntryPtrEvent (
   )
 {
   GUI_VOLUME_ENTRY  *Entry;
+  BOOLEAN           IsHeld;
   BOOLEAN           IsHit;
+  BOOLEAN           WasPressed;
   UINT32            OffsetX;
   UINT32            OffsetY;
 
@@ -755,12 +783,43 @@ InternalBootPickerEntryPtrEvent (
             OffsetX,
             OffsetY
             );
+  WasPressed = (Entry->PressStartTsc != 0);
+
+  if (Event->Type == GuiPointerPrimaryUp) {
+    Entry->PressStartTsc = 0;
+  } else if
+  (IsHit && (Event->Type == GuiPointerPrimaryDown) && !WasPressed && (mBootPicker.SelectedIndex != Entry->Index)) {
+    Entry->PressStartTsc = AsmReadTsc ();
+  }
+
+  IsHeld = IsHit && (Event->Type == GuiPointerPrimaryDown) && (Entry->PressStartTsc != 0) && (mBootPicker.SelectedIndex != Entry->Index) && (GetTimeInNanoSecond (AsmReadTsc () - Entry->PressStartTsc) >= BOOT_PRESSED_ENTRY_DELAY_NS);
+
+  if (Entry->IsHeld != IsHeld) {
+    if (IsHeld && (Entry->DarkIcon.Buffer == NULL)) {
+      if (EFI_ERROR (
+            GuiCreateDarkenedImage (
+              &Entry->DarkIcon,
+              &Entry->EntryIcon,
+              BOOT_ACTION_BUTTON_PRESSED_FACTOR
+              )
+            ))
+      {
+        IsHeld = FALSE;
+      }
+    }
+  }
+
+  if (Entry->IsHeld != IsHeld) {
+    Entry->IsHeld = IsHeld;
+    GuiRequestDraw ((UINT32)BaseX, (UINT32)BaseY, This->Width, This->Height);
+  }
+
   if (!IsHit) {
     return This;
   }
 
-  if (Event->Type == GuiPointerPrimaryDown) {
-    if (mBootPicker.SelectedIndex != Entry->Index) {
+  if (Event->Type == GuiPointerPrimaryUp) {
+    if (WasPressed && (mBootPicker.SelectedIndex != Entry->Index)) {
       ASSERT (Entry->Hdr.Parent == &mBootPicker.Hdr.Obj);
       InternalBootPickerChangeEntry (
         &mBootPicker,
@@ -771,11 +830,17 @@ InternalBootPickerEntryPtrEvent (
         );
     }
   } else if (Event->Type == GuiPointerPrimaryDoubleClick) {
-    //
-    // This must be ensured because the UI directs Move/Up events to the object
-    // Down had been sent to.
-    //
-    ASSERT (mBootPicker.SelectedIndex == Entry->Index);
+    if (mBootPicker.SelectedIndex != Entry->Index) {
+      ASSERT (Entry->Hdr.Parent == &mBootPicker.Hdr.Obj);
+      InternalBootPickerChangeEntry (
+        &mBootPicker,
+        DrawContext,
+        BaseX - This->OffsetX,
+        BaseY - This->OffsetY,
+        Entry->Index
+        );
+    }
+
     Context->ReadyToBoot = TRUE;
   }
 
@@ -1318,6 +1383,18 @@ GLOBAL_REMOVE_IF_UNREFERENCED GUI_VIEW_CONTEXT  mBootPickerViewContext = {
   ARRAY_SIZE (mBootPickerFocusList)
 };
 
+GLOBAL_REMOVE_IF_UNREFERENCED GUI_VIEW_CONTEXT  mBootPickerViewContextReversed = {
+  InternalCommonViewDraw,
+  InternalCommonViewPtrEvent,
+  ARRAY_SIZE (mBootPickerViewChildren),
+  mBootPickerViewChildren,
+  InternalBootPickerViewKeyEvent,
+  InternalGetCursorImage,
+  InternalBootPickerExitLoop,
+  mBootPickerFocusListReversed,
+  ARRAY_SIZE (mBootPickerFocusListReversed)
+};
+
 GLOBAL_REMOVE_IF_UNREFERENCED GUI_VIEW_CONTEXT  mBootPickerViewContextMinimal = {
   InternalCommonViewDraw,
   InternalCommonViewPtrEvent,
@@ -1337,6 +1414,11 @@ CopyLabel (
   IN  CONST GUI_IMAGE  *Source
   )
 {
+  if (Source->Buffer == NULL) {
+    ASSERT (FALSE);
+    return EFI_UNSUPPORTED;
+  }
+
   Destination->Width  = Source->Width;
   Destination->Height = Source->Height;
   Destination->Buffer = (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *)AllocateCopyPool (
@@ -1431,7 +1513,12 @@ BootPickerEntriesSet (
         Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_WINDOWS]);
         break;
       case OC_BOOT_EXTERNAL_OS:
-        Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_OTHER]);
+        if (OcAsciiStriStr (Entry->Flavour, OC_FLAVOUR_ID_NETWORK_BOOT) != NULL) {
+          Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_NETWORK_BOOT]);
+        } else {
+          Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_OTHER]);
+        }
+
         break;
       //
       // Use flavour-based labels for system entries (e.g. from boot entry protocol).
@@ -1446,6 +1533,8 @@ BootPickerEntriesSet (
           Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_SIP_IS_DISABLED]);
         } else if (OcAsciiStriStr (Entry->Flavour, OC_FLAVOUR_ID_UEFI_SHELL) != NULL) {
           Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_SHELL]);
+        } else if (OcAsciiStriStr (Entry->Flavour, OC_FLAVOUR_ID_FIRMWARE_SETTINGS) != NULL) {
+          Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_FIRMWARE_SETTINGS]);
         } else if (Entry->Type == OC_BOOT_EXTERNAL_TOOL) {
           Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_TOOL]);
         } else {
@@ -1454,7 +1543,7 @@ BootPickerEntriesSet (
         }
 
         break;
-      case OC_BOOT_EXTERNAL_SYSTEM:
+      case OC_BOOT_UNMANAGED:
         if (OcAsciiStriStr (Entry->Flavour, OC_FLAVOUR_WINDOWS) != NULL) {
           Status = CopyLabel (&VolumeEntry->Label, &GuiContext->Labels[LABEL_WINDOWS]);
         } else {
@@ -1568,7 +1657,9 @@ BootPickerEntriesSet (
     if (EFI_ERROR (Status)) {
       SuggestedIcon = NULL;
 
-      if (Entry->Type == OC_BOOT_EXTERNAL_OS) {
+      if (Entry->IsCdrom) {
+        SuggestedIcon = &GuiContext->Icons[ICON_GENERIC_CD][ICON_TYPE_BASE];
+      } else if (Entry->Type == OC_BOOT_EXTERNAL_OS) {
         SuggestedIcon = &GuiContext->Icons[ICON_OTHER][IconTypeIndex];
       } else if ((Entry->Type & (OC_BOOT_EXTERNAL_TOOL | OC_BOOT_SYSTEM)) != 0) {
         SuggestedIcon = &GuiContext->Icons[ICON_TOOL][IconTypeIndex];
@@ -1628,6 +1719,10 @@ InternalBootPickerEntryDestruct (
     FreePool (Entry->EntryIcon.Buffer);
   }
 
+  if (Entry->DarkIcon.Buffer != NULL) {
+    FreePool (Entry->DarkIcon.Buffer);
+  }
+
   FreePool (Entry->Label.Buffer);
   FreePool (Entry);
 }
@@ -1680,6 +1775,8 @@ InternalBootPickerAnimateImageList (
   return FALSE;
 }
 
+STATIC UINT32  mPrevSine;
+
 STATIC GUI_INTERPOLATION  mBpAnimInfoSinMove = {
   GuiInterpolTypeSmooth,
   0,
@@ -1700,6 +1797,8 @@ InitBpAnimIntro (
   //        mBootPickerContainer between animation initialisation and start.
   //
   mBootPickerContainer.Obj.OffsetX += 35 * DrawContext->Scale;
+
+  mPrevSine = 0;
 }
 
 BOOLEAN
@@ -1709,8 +1808,6 @@ InternalBootPickerAnimateIntro (
   IN     UINT64                   CurrentTime
   )
 {
-  STATIC UINT32  PrevSine = 0;
-
   UINT8   Opacity;
   UINT32  InterpolVal;
   UINT32  DeltaSine;
@@ -1755,9 +1852,9 @@ InternalBootPickerAnimateIntro (
   }
 
   InterpolVal                       = GuiGetInterpolatedValue (&mBpAnimInfoSinMove, CurrentTime);
-  DeltaSine                         = InterpolVal - PrevSine;
+  DeltaSine                         = InterpolVal - mPrevSine;
   mBootPickerContainer.Obj.OffsetX -= DeltaSine;
-  PrevSine                          = InterpolVal;
+  mPrevSine                         = InterpolVal;
   //
   // Draw the full dimension of the inner container to implicitly cover the
   // scroll buttons with the off-screen entries.
@@ -1870,7 +1967,10 @@ BootPickerViewInitialize (
     DrawContext,
     GuiContext,
     (GuiContext->PickerContext->PickerAttributes & OC_ATTR_USE_MINIMAL_UI) == 0
-      ? &mBootPickerViewContext
+      ? ((GuiContext->PickerContext->PickerAttributes & OC_ATTR_USE_REVERSED_UI) == 0
+        ? &mBootPickerViewContext
+        : &mBootPickerViewContextReversed
+         )
       : &mBootPickerViewContextMinimal
     );
 
@@ -2000,7 +2100,7 @@ BootPickerViewInitialize (
 
   InitializeListHead (&mBootPickerLabelAnimation.Link);
 
-  if (!GuiContext->DoneIntroAnimation) {
+  if (GuiContext->UseMenuEaseIn) {
     InitBpAnimIntro (DrawContext);
     InsertHeadList (&DrawContext->Animations, &mBootPickerIntroAnimation.Link);
     //
@@ -2009,8 +2109,6 @@ BootPickerViewInitialize (
     mBootPickerContainer.Obj.Opacity       = 0;
     mBootPickerLeftScroll.Hdr.Obj.Opacity  = 0;
     mBootPickerRightScroll.Hdr.Obj.Opacity = 0;
-
-    GuiContext->DoneIntroAnimation = TRUE;
   } else {
     //
     // The late code assumes the scroll buttons are visible by default.
@@ -2023,7 +2121,9 @@ BootPickerViewInitialize (
     mCommonActionButtonsContainer.Obj.Opacity = 0xFF;
   }
 
-  if (DrawContext->TimeOutSeconds > 0) {
+  if (  !GuiContext->PickerContext->PickerAudioAssist
+     && (DrawContext->TimeOutSeconds > 0))
+  {
     STATIC GUI_ANIMATION  PickerAnim2;
     PickerAnim2.Context = NULL;
     PickerAnim2.Animate = InternalBootPickerAnimateTimeout;

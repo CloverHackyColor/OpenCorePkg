@@ -134,29 +134,31 @@ OC_DECLARE(OC_BOOTER_PATCH_ARRAY)
 ///
 /// Apple bootloader quirks.
 ///
-#define OC_BOOTER_QUIRKS_FIELDS(_, __)                                         \
-  _(BOOLEAN, AllowRelocationBlock, , FALSE, ())                                \
-  _(BOOLEAN, AvoidRuntimeDefrag, , FALSE, ())                                  \
-  _(BOOLEAN, DevirtualiseMmio, , FALSE, ())                                    \
-  _(BOOLEAN, DisableSingleUser, , FALSE, ())                                   \
-  _(BOOLEAN, DisableVariableWrite, , FALSE, ())                                \
-  _(BOOLEAN, DiscardHibernateMap, , FALSE, ())                                 \
-  _(BOOLEAN, EnableSafeModeSlide, , FALSE, ())                                 \
-  _(BOOLEAN, EnableWriteUnprotector, , FALSE, ())                              \
-  _(BOOLEAN, FixupAppleEfiImages, , FALSE, ())                                 \
-  _(BOOLEAN, ForceBooterSignature, , FALSE, ())                                \
-  _(BOOLEAN, ForceExitBootServices, , FALSE, ())                               \
-  _(BOOLEAN, ProtectMemoryRegions, , FALSE, ())                                \
-  _(BOOLEAN, ProtectSecureBoot, , FALSE, ())                                   \
-  _(BOOLEAN, ProtectUefiServices, , FALSE, ())                                 \
-  _(BOOLEAN, ProvideCustomSlide, , FALSE, ())                                  \
-  _(UINT8, ProvideMaxSlide, , 0, ())                                           \
-  _(BOOLEAN, RebuildAppleMemoryMap, , FALSE, ())                               \
-  _(INT8, ResizeAppleGpuBars, , -1, ())                                        \
-  _(BOOLEAN, SetupVirtualMap, , FALSE, ())                                     \
-  _(BOOLEAN, SignalAppleOS, , FALSE, ())                                       \
-  _(BOOLEAN, SyncRuntimePermissions, , FALSE, ())
-OC_DECLARE(OC_BOOTER_QUIRKS)
+#define OC_BOOTER_QUIRKS_FIELDS(_, __) \
+  _(BOOLEAN                     , AllowRelocationBlock      ,     , FALSE  , ()) \
+  _(BOOLEAN                     , AvoidRuntimeDefrag        ,     , FALSE  , ()) \
+  _(BOOLEAN                     , ClearTaskSwitchBit        ,     , FALSE  , ()) \
+  _(BOOLEAN                     , DevirtualiseMmio          ,     , FALSE  , ()) \
+  _(BOOLEAN                     , DisableSingleUser         ,     , FALSE  , ()) \
+  _(BOOLEAN                     , DisableVariableWrite      ,     , FALSE  , ()) \
+  _(BOOLEAN                     , DiscardHibernateMap       ,     , FALSE  , ()) \
+  _(BOOLEAN                     , EnableSafeModeSlide       ,     , FALSE  , ()) \
+  _(BOOLEAN                     , EnableWriteUnprotector    ,     , FALSE  , ()) \
+  _(BOOLEAN                     , FixupAppleEfiImages       ,     , FALSE  , ()) \
+  _(BOOLEAN                     , ForceBooterSignature      ,     , FALSE  , ()) \
+  _(BOOLEAN                     , ForceExitBootServices     ,     , FALSE  , ()) \
+  _(BOOLEAN                     , ProtectMemoryRegions      ,     , FALSE  , ()) \
+  _(BOOLEAN                     , ProtectSecureBoot         ,     , FALSE  , ()) \
+  _(BOOLEAN                     , ProtectUefiServices       ,     , FALSE  , ()) \
+  _(BOOLEAN                     , ProvideCustomSlide        ,     , FALSE  , ()) \
+  _(UINT8                       , ProvideMaxSlide           ,     , 0      , ()) \
+  _(BOOLEAN                     , RebuildAppleMemoryMap     ,     , FALSE  , ()) \
+  _(INT8                        , ResizeAppleGpuBars        ,     , -1     , ()) \
+  _(BOOLEAN                     , SetupVirtualMap           ,     , FALSE  , ()) \
+  _(BOOLEAN                     , SignalAppleOS             ,     , FALSE  , ()) \
+  _(BOOLEAN                     , SyncRuntimePermissions    ,     , FALSE  , ())
+OC_DECLARE (OC_BOOTER_QUIRKS)
+
 
 ///
 /// Apple bootloader section.
@@ -693,15 +695,24 @@ OC_DECLARE(OC_PLATFORM_CONFIG)
 **/
 
 ///
+/// Array of driver names to unload.
+///
+#define OC_UEFI_UNLOAD_ARRAY_FIELDS(_, __) \
+  OC_ARRAY (OC_STRING, _, __)
+OC_DECLARE (OC_UEFI_UNLOAD_ARRAY)
+
+///
 /// Drivers is an ordered array of drivers to load.
 ///
-#define OC_UEFI_DRIVER_ENTRY_FIELDS(_, __)                                     \
-  _(OC_STRING, Arguments, , OC_STRING_CONSTR("", _, __), OC_DESTR(OC_STRING))  \
-  _(OC_STRING, Comment, , OC_STRING_CONSTR("", _, __), OC_DESTR(OC_STRING))    \
-  _(BOOLEAN, Enabled, , FALSE, ())                                             \
-  _(BOOLEAN, LoadEarly, , FALSE, ())                                           \
-  _(OC_STRING, Path, , OC_STRING_CONSTR("", _, __), OC_DESTR(OC_STRING))
-OC_DECLARE(OC_UEFI_DRIVER_ENTRY)
+#define OC_UEFI_DRIVER_ENTRY_FIELDS(_, __) \
+  _(OC_STRING                   , Arguments          ,     , OC_STRING_CONSTR ("", _, __)                    , OC_DESTR (OC_STRING) ) \
+  _(OC_STRING                   , Comment            ,     , OC_STRING_CONSTR ("", _, __)                    , OC_DESTR (OC_STRING) ) \
+  _(BOOLEAN                     , Enabled            ,     , FALSE                                           , ()) \
+  _(BOOLEAN                     , HideVerbose        ,     , FALSE                                           , ()) \
+  _(BOOLEAN                     , LoadEarly          ,     , FALSE                                           , ()) \
+  _(OC_STRING                   , Path               ,     , OC_STRING_CONSTR ("", _, __)                    , OC_DESTR (OC_STRING) )
+OC_DECLARE (OC_UEFI_DRIVER_ENTRY)
+
 
 #define OC_UEFI_DRIVER_ARRAY_FIELDS(_, __) OC_ARRAY(OC_UEFI_DRIVER_ENTRY, _, __)
 OC_DECLARE(OC_UEFI_DRIVER_ARRAY)
@@ -868,30 +879,20 @@ OC_DECLARE(OC_UEFI_RSVD_ARRAY)
 ///
 /// Uefi contains firmware tweaks and extra drivers.
 ///
-#define OC_UEFI_CONFIG_FIELDS(_, __)                                           \
-  _(BOOLEAN, ConnectDrivers, , FALSE, ())                                      \
-  _(OC_UEFI_APFS, Apfs, , OC_CONSTR2(OC_UEFI_APFS, _, __),                     \
-    OC_DESTR(OC_UEFI_APFS))                                                    \
-  _(OC_UEFI_APPLEINPUT, AppleInput, , OC_CONSTR2(OC_UEFI_APPLEINPUT, _, __),   \
-    OC_DESTR(OC_UEFI_APPLEINPUT))                                              \
-  _(OC_UEFI_AUDIO, Audio, , OC_CONSTR2(OC_UEFI_AUDIO, _, __),                  \
-    OC_DESTR(OC_UEFI_AUDIO))                                                   \
-  _(OC_UEFI_DRIVER_ARRAY, Drivers, , OC_CONSTR2(OC_UEFI_DRIVER_ARRAY, _, __),  \
-    OC_DESTR(OC_UEFI_DRIVER_ARRAY))                                            \
-  _(OC_UEFI_INPUT, Input, , OC_CONSTR2(OC_UEFI_INPUT, _, __),                  \
-    OC_DESTR(OC_UEFI_INPUT))                                                   \
-  _(OC_UEFI_OUTPUT, Output, , OC_CONSTR2(OC_UEFI_OUTPUT, _, __),               \
-    OC_DESTR(OC_UEFI_OUTPUT))                                                  \
-  _(OC_UEFI_PROTOCOL_OVERRIDES, ProtocolOverrides, ,                           \
-    OC_CONSTR2(OC_UEFI_PROTOCOL_OVERRIDES, _, __),                             \
-    OC_DESTR(OC_UEFI_PROTOCOL_OVERRIDES))                                      \
-  _(OC_UEFI_QUIRKS, Quirks, , OC_CONSTR2(OC_UEFI_QUIRKS, _, __),               \
-    OC_DESTR(OC_UEFI_QUIRKS))                                                  \
-  _(OC_UEFI_RSVD_ARRAY, ReservedMemory, ,                                      \
-    OC_CONSTR2(OC_UEFI_RSVD_ARRAY, _, __), OC_DESTR(OC_UEFI_RSVD_ARRAY))       \
-  _(OC_UEFI_UNLOAD_ARRAY, Unload, , OC_CONSTR2(OC_UEFI_UNLOAD_ARRAY, _, __),   \
-    OC_DESTR(OC_UEFI_UNLOAD_ARRAY))
-OC_DECLARE(OC_UEFI_CONFIG)
+#define OC_UEFI_CONFIG_FIELDS(_, __) \
+  _(BOOLEAN                     , ConnectDrivers    ,     , FALSE                                          , ()) \
+  _(OC_UEFI_APFS                , Apfs              ,     , OC_CONSTR2 (OC_UEFI_APFS, _, __)               , OC_DESTR (OC_UEFI_APFS)) \
+  _(OC_UEFI_APPLEINPUT          , AppleInput        ,     , OC_CONSTR2 (OC_UEFI_APPLEINPUT, _, __)         , OC_DESTR (OC_UEFI_APPLEINPUT)) \
+  _(OC_UEFI_AUDIO               , Audio             ,     , OC_CONSTR2 (OC_UEFI_AUDIO, _, __)              , OC_DESTR (OC_UEFI_AUDIO)) \
+  _(OC_UEFI_DRIVER_ARRAY        , Drivers           ,     , OC_CONSTR2 (OC_UEFI_DRIVER_ARRAY, _, __)       , OC_DESTR (OC_UEFI_DRIVER_ARRAY)) \
+  _(OC_UEFI_INPUT               , Input             ,     , OC_CONSTR2 (OC_UEFI_INPUT, _, __)              , OC_DESTR (OC_UEFI_INPUT)) \
+  _(OC_UEFI_OUTPUT              , Output            ,     , OC_CONSTR2 (OC_UEFI_OUTPUT, _, __)             , OC_DESTR (OC_UEFI_OUTPUT)) \
+  _(OC_UEFI_PROTOCOL_OVERRIDES  , ProtocolOverrides ,     , OC_CONSTR2 (OC_UEFI_PROTOCOL_OVERRIDES, _, __) , OC_DESTR (OC_UEFI_PROTOCOL_OVERRIDES)) \
+  _(OC_UEFI_QUIRKS              , Quirks            ,     , OC_CONSTR2 (OC_UEFI_QUIRKS, _, __)             , OC_DESTR (OC_UEFI_QUIRKS)) \
+  _(OC_UEFI_RSVD_ARRAY          , ReservedMemory    ,     , OC_CONSTR2 (OC_UEFI_RSVD_ARRAY, _, __)         , OC_DESTR (OC_UEFI_RSVD_ARRAY)) \
+  _(OC_UEFI_UNLOAD_ARRAY        , Unload            ,     , OC_CONSTR2 (OC_UEFI_UNLOAD_ARRAY, _, __)       , OC_DESTR (OC_UEFI_UNLOAD_ARRAY))
+OC_DECLARE (OC_UEFI_CONFIG)
+
 
 /**
   Root configuration

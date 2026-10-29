@@ -307,8 +307,12 @@ MACH_X (
   CONST MACH_DYSYMTAB_COMMAND  *DySymtab;
   CONST MACH_NLIST_X           *UndefinedSymbols;
   CONST MACH_NLIST_X           *UndefinedSymbolsTop;
-  CONST MACH_NLIST_X           *ExternalSymbols;
-  CONST MACH_NLIST_X           *ExternalSymbolsTop;
+
+ #ifdef SOLVE_INDR
+  CONST MACH_NLIST_X  *ExternalSymbols;
+  CONST MACH_NLIST_X  *ExternalSymbolsTop;
+ #endif
+
 
   ASSERT (Context != NULL);
   ASSERT (Symbol != NULL);
@@ -332,6 +336,8 @@ MACH_X (
   if ((Symbol >= UndefinedSymbols) && (Symbol < UndefinedSymbolsTop)) {
     return FALSE;
   }
+
+ #ifdef SOLVE_INDR
 
   //
   // If a symbol is marked as external, but is outside the external symbol

@@ -21,20 +21,22 @@
   SUPPORTED_ARCHITECTURES = X64|IA32
   BUILD_TARGETS           = RELEASE|DEBUG|NOOPT
   SKUID_IDENTIFIER        = DEFAULT
-  DSC_SPECIFICATION       = 0x00010006
+  DSC_SPECIFICATION       = 0x0001001C
   FLASH_DEFINITION        = OpenCorePkg/OpenCorePkg.fdf
 
   #
   # Network definition
   #
-  DEFINE NETWORK_ENABLE                 = FALSE
-  DEFINE NETWORK_SNP_ENABLE             = FALSE
-  DEFINE NETWORK_IP4_ENABLE             = FALSE
-  DEFINE NETWORK_IP6_ENABLE             = FALSE
-  DEFINE NETWORK_TLS_ENABLE             = FALSE
-  DEFINE NETWORK_HTTP_ENABLE            = FALSE
-  DEFINE NETWORK_HTTP_BOOT_ENABLE       = FALSE
-  DEFINE NETWORK_ALLOW_HTTP_CONNECTIONS = FALSE
+
+  DEFINE NETWORK_ENABLE                 = TRUE
+  DEFINE NETWORK_SNP_ENABLE             = TRUE
+  DEFINE NETWORK_IP4_ENABLE             = TRUE
+  DEFINE NETWORK_IP6_ENABLE             = TRUE
+  DEFINE NETWORK_TLS_ENABLE             = TRUE
+  DEFINE NETWORK_HTTP_ENABLE            = TRUE
+  DEFINE NETWORK_HTTP_BOOT_ENABLE       = TRUE
+  DEFINE NETWORK_ALLOW_HTTP_CONNECTIONS = TRUE
+
   DEFINE NETWORK_ISCSI_ENABLE           = FALSE
   DEFINE NETWORK_ISCSI_MD5_ENABLE       = FALSE
   DEFINE NETWORK_VLAN_ENABLE            = FALSE
@@ -64,6 +66,7 @@
   DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
   DxeServicesTableLib|MdePkg/Library/DxeServicesTableLib/DxeServicesTableLib.inf
   FileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
+  VirtioLib|OvmfPkg/Library/VirtioLib/VirtioLib.inf
   FrameBufferBltLib|MdeModulePkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
 #  HandleParsingLib|ShellPkg/Library/UefiHandleParsingLib/UefiHandleParsingLib.inf
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
@@ -78,6 +81,7 @@
   OcAppleChunklistLib|OpenCorePkg/Library/OcAppleChunklistLib/OcAppleChunklistLib.inf
   OcAppleDiskImageLib|OpenCorePkg/Library/OcAppleDiskImageLib/OcAppleDiskImageLib.inf
   OcAppleEventLib|OpenCorePkg/Library/OcAppleEventLib/OcAppleEventLib.inf
+  OcAppleFirmwarePasswordLib|OpenCorePkg/Library/OcAppleFirmwarePasswordLib/OcAppleFirmwarePasswordLib.inf
   OcAppleImageConversionLib|OpenCorePkg/Library/OcAppleImageConversionLib/OcAppleImageConversionLib.inf
   OcAppleImg4Lib|OpenCorePkg/Library/OcAppleImg4Lib/OcAppleImg4Lib.inf
   OcAppleKernelLib|OpenCorePkg/Library/OcAppleKernelLib/OcAppleKernelLib.inf
@@ -105,7 +109,6 @@
   OcDirectResetLib|OpenCorePkg/Library/OcDirectResetLib/OcDirectResetLib.inf
   OcDriverConnectionLib|OpenCorePkg/Library/OcDriverConnectionLib/OcDriverConnectionLib.inf
   OcFileLib|OpenCorePkg/Library/OcFileLib/OcFileLib.inf
-  OcFirmwarePasswordLib|OpenCorePkg/Library/OcFirmwarePasswordLib/OcFirmwarePasswordLib.inf
   OcFirmwareVolumeLib|OpenCorePkg/Library/OcFirmwareVolumeLib/OcFirmwareVolumeLib.inf
   OcFlexArrayLib|OpenCorePkg/Library/OcFlexArrayLib/OcFlexArrayLib.inf
   OcGuardLib|OpenCorePkg/Library/OcGuardLib/OcGuardLib.inf
@@ -145,6 +148,8 @@
   OcVariableRuntimeLib|OpenCorePkg/Library/OcVariableRuntimeLib/OcVariableRuntimeLib.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
   PciCf8Lib|MdePkg/Library/BasePciCf8Lib/BasePciCf8Lib.inf
+  PciCapLib|OvmfPkg/Library/BasePciCapLib/BasePciCapLib.inf
+  PciCapPciIoLib|OvmfPkg/Library/UefiPciCapPciIoLib/UefiPciCapPciIoLib.inf
   PciLib|MdePkg/Library/BasePciLibCf8/BasePciLibCf8.inf
   PeCoffLib2|MdePkg/Library/BasePeCoffLib2/BasePeCoffLib2.inf
   PerformanceLib|MdePkg/Library/BasePerformanceLibNull/BasePerformanceLibNull.inf
@@ -160,7 +165,7 @@
   UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
   UefiBootManagerLib|MdeModulePkg/Library/UefiBootManagerLib/UefiBootManagerLib.inf
   UefiDriverEntryPoint|OpenCorePkg/Library/OcDriverEntryPoint/UefiDriverEntryPoint.inf
-  UefiHiiServicesLib|MdeModulePkg/Library/UefiHiiServicesLib/UefiHiiServicesLib.inf
+  UefiHiiServicesLib|OpenCorePkg/Library/OcHiiServicesLib/OcHiiServicesLib.inf
   UefiImageExtraActionLib|MdePkg/Library/BaseUefiImageExtraActionLibNull/BaseUefiImageExtraActionLibNull.inf
   UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
   UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
@@ -169,7 +174,20 @@
   VariableFlashInfoLib|MdeModulePkg/Library/BaseVariableFlashInfoLib/BaseVariableFlashInfoLib.inf
   ResetSystemLib|OpenCorePkg/Library/OcResetSystemLib/OcResetSystemLib.inf
 
+  !if $(NETWORK_TLS_ENABLE) == TRUE
+    BaseCryptLib|CryptoPkg/Library/BaseCryptLib/BaseCryptLib.inf
+    # FileExplorerLib is for TlsAuthConfigDxe only (not used by us, but enabled by NETWORK_TLS_ENABLE)
+    FileExplorerLib|MdeModulePkg/Library/FileExplorerLib/FileExplorerLib.inf
+    IntrinsicLib|MdePkg/Library/IntrinsicLib/IntrinsicLib.inf
+    OpensslLib|CryptoPkg/Library/OpensslLib/OpensslLib.inf
+    RngLib|MdeModulePkg/Library/BaseRngLibTimerLib/BaseRngLibTimerLib.inf
+    SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
+    TlsLib|CryptoPkg/Library/TlsLib/TlsLib.inf
+  !endif
+
   !include NetworkPkg/NetworkLibs.dsc.inc
+
+  HttpLib|NetworkPkg/Library/DxeHttpLib/DxeHttpLib.inf
 
   !include Ext4Pkg/Ext4Defines.dsc.inc
   !include Ext4Pkg/Ext4Libs.dsc.inc
@@ -184,7 +202,7 @@
   MdeModulePkg/Bus/Pci/XhciDxe/XhciDxe.inf {
     <LibraryClasses>
       !if $(TARGET) == RELEASE
-        DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+        DebugLib|OpenCorePkg/Library/OcDebugLibNull/OcDebugLibNull.inf
       !endif
   }
   MdeModulePkg/Bus/Isa/Ps2MouseDxe/Ps2MouseDxe.inf
@@ -233,6 +251,7 @@
   OpenCorePkg/Library/OcAppleChunklistLib/OcAppleChunklistLib.inf
   OpenCorePkg/Library/OcAppleDiskImageLib/OcAppleDiskImageLib.inf
   OpenCorePkg/Library/OcAppleEventLib/OcAppleEventLib.inf
+  OpenCorePkg/Library/OcAppleFirmwarePasswordLib/OcAppleFirmwarePasswordLib.inf
   OpenCorePkg/Library/OcAppleImageConversionLib/OcAppleImageConversionLib.inf
   OpenCorePkg/Library/OcAppleImg4Lib/OcAppleImg4Lib.inf
   OpenCorePkg/Library/OcAppleKernelLib/OcAppleKernelLib.inf
@@ -244,7 +263,6 @@
   OpenCorePkg/Library/OcBlitLib/OcBlitLib.inf
   OpenCorePkg/Library/OcBootManagementLib/OcBootManagementLib.inf
   OpenCorePkg/Library/OcBootServicesTableLib/OcBootServicesTableLib.inf
-  OpenCorePkg/Library/OcCompilerIntrinsicsLib/OcCompilerIntrinsicsLib.inf
   OpenCorePkg/Library/OcCompressionLib/OcCompressionLib.inf
   OpenCorePkg/Library/OcConfigurationLib/OcConfigurationLib.inf
   OpenCorePkg/Library/OcConsoleControlEntryModeLib/OcConsoleControlEntryModeGenericLib.inf
@@ -263,8 +281,9 @@
   OpenCorePkg/Library/OcDirectResetLib/OcDirectResetLib.inf
   OpenCorePkg/Library/OcDriverConnectionLib/OcDriverConnectionLib.inf
   OpenCorePkg/Library/OcFileLib/OcFileLib.inf
-  OpenCorePkg/Library/OcFirmwarePasswordLib/OcFirmwarePasswordLib.inf
-#  OpenCorePkg/Library/OcFirmwareVolumeLib/OcFirmwareVolumeLib.inf
+
+  OpenCorePkg/Library/OcFirmwareVolumeLib/OcFirmwareVolumeLib.inf
+
   OpenCorePkg/Library/OcFlexArrayLib/OcFlexArrayLib.inf
   OpenCorePkg/Library/OcGuardLib/OcGuardLib.inf
   OpenCorePkg/Library/OcHashServicesLib/OcHashServicesLib.inf
@@ -301,6 +320,7 @@
   OpenCorePkg/Platform/OpenCanopy/OpenCanopy.inf
   OpenCorePkg/Platform/OpenLegacyBoot/OpenLegacyBoot.inf
   OpenCorePkg/Platform/OpenLinuxBoot/OpenLinuxBoot.inf
+  OpenCorePkg/Platform/OpenNetworkBoot/OpenNetworkBoot.inf
   OpenCorePkg/Platform/OpenNtfsDxe/OpenNtfsDxe.inf
   OpenCorePkg/Platform/OpenPartitionDxe/PartitionDxe.inf
   OpenCorePkg/Platform/OpenRuntime/OpenRuntime.inf
@@ -321,6 +341,7 @@
       DebugLib|OpenCorePkg/Library/OcDebugLibNull/OcDebugLibNull.inf
       NULL|OpenCorePkg/Library/OcVariableRuntimeLib/OcVariableRuntimeLib.inf
   }
+  OpenCorePkg/Platform/FirmwareSettingsEntry/FirmwareSettingsEntry.inf
   OpenCorePkg/Platform/ResetNvramEntry/ResetNvramEntry.inf
   OpenCorePkg/Platform/ToggleSipEntry/ToggleSipEntry.inf
   OpenCorePkg/Staging/AudioDxe/AudioDxe.inf
@@ -369,13 +390,34 @@
   # Ext4 driver
   Ext4Pkg/Ext4Dxe/Ext4Dxe.inf
 
+  # RNG and HASH2 protocols are required by various network boot drivers since edk2-stable202405
+  # REF: https://github.com/acidanthera/bugtracker/issues/2421
+  SecurityPkg/RandomNumberGenerator/RngDxe/RngDxe.inf
+  SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
+
   #
   # Network Support
   #
 #  !include NetworkPkg/NetworkComponents.dsc.inc
 
+  #
+  # Ramdisk support (driver required for network boot native .iso/.img support)
+  #
+  MdeModulePkg/Universal/Disk/RamDiskDxe/RamDiskDxe.inf
+
+  #
+  # QEMU Virtio devices support
+  #
+  OvmfPkg/VirtioPciDeviceDxe/VirtioPciDeviceDxe.inf
+  OvmfPkg/Virtio10Dxe/Virtio10.inf
+  OvmfPkg/VirtioBlkDxe/VirtioBlk.inf
+  OvmfPkg/VirtioScsiDxe/VirtioScsi.inf
+  OvmfPkg/VirtioSerialDxe/VirtioSerial.inf
+  OvmfPkg/VirtioGpuDxe/VirtioGpu.inf
+  OvmfPkg/VirtioNetDxe/VirtioNet.inf
+
 [LibraryClasses]
-  NULL|OpenCorePkg/Library/OcCompilerIntrinsicsLib/OcCompilerIntrinsicsLib.inf
+  NULL|MdePkg/Library/IntrinsicLib/IntrinsicLib.inf
 
 [PcdsFixedAtBuild]
   gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|0
@@ -405,7 +447,6 @@
   gEfiMdePkgTokenSpaceGuid.PcdImageLoaderAlignmentPolicy|0xFFFFFFFF
   gEfiMdePkgTokenSpaceGuid.PcdImageLoaderRelocTypePolicy|0xFFFFFFFF
   gEfiMdePkgTokenSpaceGuid.PcdImageProtectionPolicy|0x00000003
-  gEfiMdePkgTokenSpaceGuid.PcdUefiImageFormatSupportNonFv|0x01
 
 [PcdsPatchableInModule]
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterAccessWidth|8
@@ -423,7 +464,7 @@
   #
   # Network Pcds
   #
-  !include NetworkPkg/NetworkPcds.dsc.inc
+  !include NetworkPkg/NetworkFixedPcds.dsc.inc
 
 [BuildOptions]
 
@@ -444,9 +485,9 @@ DEFINE JIEF_DEBUG_FLAG = -DJIEF_DEBUG
   CLANGGCC:DEBUG_*_*_CC_FLAGS   = $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -fstack-protector-strong -mstack-protector-guard=global -ftrivial-auto-var-init=pattern
   CLANGGCC:NOOPT_*_*_CC_FLAGS   = $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -fstack-protector-strong -mstack-protector-guard=global -ftrivial-auto-var-init=pattern
   CLANGGCC:RELEASE_*_*_CC_FLAGS = $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -fstack-protector-strong -mstack-protector-guard=global -ftrivial-auto-var-init=pattern
-  MSFT:DEBUG_*_*_CC_FLAGS       = $(OCPKG_BUILD_OPTIONS_GEN) /wd4723 /GS /kernel
-  MSFT:NOOPT_*_*_CC_FLAGS       = $(OCPKG_BUILD_OPTIONS_GEN) /wd4723 /GS /kernel
-  MSFT:RELEASE_*_*_CC_FLAGS     = $(OCPKG_BUILD_OPTIONS_GEN) /wd4723 /GS /kernel
+  MSFT:DEBUG_*_*_CC_FLAGS       = $(OCPKG_BUILD_OPTIONS_GEN) /wd4324 /wd4723 /GS /kernel
+  MSFT:NOOPT_*_*_CC_FLAGS       = $(OCPKG_BUILD_OPTIONS_GEN) /wd4324 /wd4723 /GS /kernel
+  MSFT:RELEASE_*_*_CC_FLAGS     = $(OCPKG_BUILD_OPTIONS_GEN) /wd4324 /wd4723 /GS /kernel
   XCODE:DEBUG_*_*_CC_FLAGS      = $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -fstack-protector-strong -ftrivial-auto-var-init=pattern
   XCODE:NOOPT_*_*_CC_FLAGS      = $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -fstack-protector-strong -ftrivial-auto-var-init=pattern
   XCODE:RELEASE_*_*_CC_FLAGS    = $(OCPKG_BUILD_OPTIONS_GEN) $(OCPKG_ANAL_OPTIONS_GEN) -Oz -flto -fstack-protector-strong -ftrivial-auto-var-init=pattern

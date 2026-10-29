@@ -105,6 +105,7 @@ AppleModelCode:
   - "FR1M"
   - "FD57"
   - "FD59"
+  - "G3QD"
   - "G3QP"
   - "FTPY"
   - "G5HL"
@@ -156,4 +157,4 @@ AppleModelYear:
   - 2014
   - 2015
 MinimumOSVersion: "10.9.4"
-MaximumOSVersion: "11.7.10"
+MaximumOSVersion: "11.7.11"

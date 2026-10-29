@@ -316,6 +316,7 @@ CheckUefiDrivers (
   BOOLEAN               IsConnectDriversEnabled;
   BOOLEAN               HasOpenVariableRuntimeDxeEfiDriver;
   UINT32                IndexOpenVariableRuntimeDxeEfiDriver;
+  BOOLEAN               HasFirmwareSettingsEntryEfiDriver;
 
   ErrorCount = 0;
 
@@ -332,6 +333,7 @@ CheckUefiDrivers (
   HasOpenVariableRuntimeDxeEfiDriver   = FALSE;
   IndexOpenVariableRuntimeDxeEfiDriver = 0;
   IsOpenRuntimeLoadEarly               = FALSE;
+  HasFirmwareSettingsEntryEfiDriver    = FALSE;
   for (Index = 0; Index < Config->Uefi.Drivers.Count; ++Index) {
     DriverEntry = Config->Uefi.Drivers.Values[Index];
     Comment     = OC_BLOB_GET (&DriverEntry->Comment);
@@ -416,6 +418,10 @@ CheckUefiDrivers (
       HasAudioDxeEfiDriver   = TRUE;
       IndexAudioDxeEfiDriver = Index;
     }
+
+    if (AsciiStrCmp (Driver, "FirmwareSettingsEntry.efi") == 0) {
+      HasFirmwareSettingsEntryEfiDriver = TRUE;
+    }
   }
 
   //
@@ -459,6 +465,11 @@ CheckUefiDrivers (
         ++ErrorCount;
       }
     }
+  }
+
+  if (HasFirmwareSettingsEntryEfiDriver && HasOpenVariableRuntimeDxeEfiDriver) {
+    DEBUG ((DEBUG_WARN, "OpenVariableRuntimeDxe.efi is incompatible with FirmwareSettingsEntry.efi!\n"));
+    ++ErrorCount;
   }
 
   IsRequestBootVarRoutingEnabled = Config->Uefi.Quirks.RequestBootVarRouting;

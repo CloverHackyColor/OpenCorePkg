@@ -40,9 +40,11 @@
 #define BOOT_SCROLL_BUTTON_DIMENSION  40U
 #define BOOT_SCROLL_BUTTON_SPACE      40U
 
-#define BOOT_ACTION_BUTTON_DIMENSION        128U
-#define BOOT_ACTION_BUTTON_FOCUS_DIMENSION  144U
-#define BOOT_ACTION_BUTTON_SPACE            36U
+#define BOOT_ACTION_BUTTON_DIMENSION           128U
+#define BOOT_ACTION_BUTTON_FOCUS_DIMENSION     144U
+#define BOOT_ACTION_BUTTON_PRESSED_FACTOR      ((53U << 16) / 100)
+#define BOOT_ACTION_BUTTON_PRESSED_FACTOR_MAX  0x10000U
+#define BOOT_ACTION_BUTTON_SPACE               36U
 
 #define PASSWORD_LOCK_DIMENSION  144U
 
@@ -66,6 +68,8 @@ typedef enum {
   LABEL_SHELL,
   LABEL_SIP_IS_ENABLED,
   LABEL_SIP_IS_DISABLED,
+  LABEL_FIRMWARE_SETTINGS,
+  LABEL_NETWORK_BOOT,
   LABEL_NUM_TOTAL
 } LABEL_TARGET;
 
@@ -90,6 +94,7 @@ typedef enum {
   ICON_APPLE_RECOVERY,
   ICON_APPLE_TIME_MACHINE,
   ICON_WINDOWS,
+  ICON_GENERIC_CD,
   ICON_OTHER,
   ICON_TOOL,
   ICON_RESET_NVRAM,
@@ -123,7 +128,8 @@ typedef struct _BOOT_PICKER_GUI_CONTEXT {
   BOOLEAN                                HideAuxiliary;
   BOOLEAN                                Refresh;
   BOOLEAN                                LightBackground;
-  BOOLEAN                                DoneIntroAnimation;
+  BOOLEAN                                UsePasswordEaseIn;
+  BOOLEAN                                UseMenuEaseIn;
   BOOLEAN                                ReadyToBoot;
   UINT8                                  Scale;
   UINT8                                  VoAction;

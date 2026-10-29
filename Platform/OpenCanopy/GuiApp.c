@@ -28,11 +28,6 @@
 
 GLOBAL_REMOVE_IF_UNREFERENCED BOOT_PICKER_GUI_CONTEXT  mGuiContext;
 
-//
-// FIXME: Should not be global here.
-//
-STATIC EFI_GRAPHICS_OUTPUT_BLT_PIXEL  mHighlightPixel = { 0xAF, 0xAF, 0xAF, 0x32 };
-
 STATIC
 CONST CHAR8 *
   mLabelNames[LABEL_NUM_TOTAL] = {
@@ -46,7 +41,9 @@ CONST CHAR8 *
   [LABEL_RESET_NVRAM]        = "ResetNVRAM",
   [LABEL_SHELL]              = "Shell",
   [LABEL_SIP_IS_ENABLED]     = "SIPEnabled",
-  [LABEL_SIP_IS_DISABLED]    = "SIPDisabled"
+  [LABEL_SIP_IS_DISABLED]    = "SIPDisabled",
+  [LABEL_FIRMWARE_SETTINGS]  = "FirmwareSettings",
+  [LABEL_NETWORK_BOOT]       = "NetworkBoot"
 };
 
 STATIC
@@ -66,6 +63,7 @@ CONST CHAR8 *
   [ICON_ENTER]              = "Enter",
   [ICON_LOCK]               = "Lock",
   [ICON_GENERIC_HDD]        = "HardDrive",
+  [ICON_GENERIC_CD]         = "OpticalDrive",
   [ICON_APPLE]              = "Apple",
   [ICON_APPLE_RECOVERY]     = "AppleRecv",
   [ICON_APPLE_TIME_MACHINE] = "AppleTM",
@@ -402,11 +400,14 @@ InternalContextConstruct (
   UINT32                             ImageHeight;
   BOOLEAN                            Result;
   BOOLEAN                            AllowLessSize;
+  BOOLEAN                            UseGenericLabel;
 
   ASSERT (Context != NULL);
 
   Context->Scale = 1;
   UiScaleSize    = sizeof (Context->Scale);
+
+  UseGenericLabel = (Picker->PickerAttributes & OC_ATTR_USE_GENERIC_LABEL_IMAGE) != 0;
 
   Status = gRT->GetVariable (
                   APPLE_UI_SCALE_VARIABLE_NAME,
@@ -533,10 +534,10 @@ InternalContextConstruct (
                );
     if (!EFI_ERROR (Status)) {
       if ((Index == ICON_SELECTOR) || (Index == ICON_SET_DEFAULT) || (Index == ICON_LEFT) || (Index == ICON_RIGHT) || (Index == ICON_SHUT_DOWN) || (Index == ICON_RESTART) || (Index == ICON_ENTER)) {
-        Status = GuiCreateHighlightedImage (
+        Status = GuiCreateDarkenedImage (
                    &Context->Icons[Index][ICON_TYPE_HELD],
                    &Context->Icons[Index][ICON_TYPE_BASE],
-                   &mHighlightPixel
+                   BOOT_ACTION_BUTTON_PRESSED_FACTOR
                    );
         if (Index == ICON_SET_DEFAULT) {
           if (Context->Icons[Index]->Width != Context->Icons[ICON_SELECTOR]->Width) {
@@ -596,18 +597,22 @@ InternalContextConstruct (
   }
 
   for (Index = 0; Index < LABEL_NUM_TOTAL; ++Index) {
-    Status = LoadLabelFromStorage (
-               Storage,
-               mLabelNames[Index],
-               Context->Scale,
-               Context->LightBackground,
-               &Context->Labels[Index]
-               );
-    if (EFI_ERROR (Status)) {
+    if (!UseGenericLabel) {
       Context->Labels[Index].Buffer = NULL;
-      DEBUG ((DEBUG_WARN, "OCUI: Failed to load images\n"));
-      InternalContextDestruct (Context);
-      return EFI_UNSUPPORTED;
+    } else {
+      Status = LoadLabelFromStorage (
+                 Storage,
+                 mLabelNames[Index],
+                 Context->Scale,
+                 Context->LightBackground,
+                 &Context->Labels[Index]
+                 );
+      if (EFI_ERROR (Status)) {
+        Context->Labels[Index].Buffer = NULL;
+        DEBUG ((DEBUG_WARN, "OCUI: Failed to load images\n"));
+        InternalContextDestruct (Context);
+        return EFI_UNSUPPORTED;
+      }
     }
   }
 

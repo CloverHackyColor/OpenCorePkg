@@ -694,6 +694,35 @@ ScanAmdProcessor (
     MaxBusRatio     = 0;
 
     switch (Cpu->ExtFamily) {
+      case AMD_CPU_EXT_FAMILY_1AH:
+        if (Cpu->CPUFrequencyFromVMT == 0) {
+          CofVid          = AsmReadMsr64 (K10_PSTATE_STATUS);
+          CoreFrequencyID = (UINT8)BitFieldRead64 (CofVid, 0, 11); // 12-bit field for FID
+
+          // On AMD Family 1Ah and later, if the Frequency ID (FID) exceeds 0x0f,
+          // the core frequency is scaled by a factor of 5. This scaling behavior
+          // is based on Linux kernel logic for handling higher frequency multipliers
+          // in newer AMD CPUs, where the FID no longer directly correlates to the
+          // bus ratio.
+          if (CoreFrequencyID > 0x0f) {
+            CoreFrequencyID *= 5;
+          }
+
+          MaxBusRatio = (UINT8)(CoreFrequencyID);
+        }
+
+        //
+        // Get core count from CPUID
+        //
+        if (Cpu->MaxExtId >= 0x8000001E) {
+          AsmCpuid (0x8000001E, NULL, &CpuidEbx, NULL, NULL);
+          Cpu->CoreCount = (UINT16)DivU64x32 (
+                                     Cpu->ThreadCount,
+                                     (BitFieldRead32 (CpuidEbx, 8, 15) + 1)
+                                     );
+        }
+
+        break;
       case AMD_CPU_EXT_FAMILY_17H:
       case AMD_CPU_EXT_FAMILY_19H:
         if (Cpu->CPUFrequencyFromVMT == 0) {
@@ -721,6 +750,7 @@ ScanAmdProcessor (
         }
 
         break;
+      case AMD_CPU_EXT_FAMILY_10H:
       case AMD_CPU_EXT_FAMILY_15H:
       case AMD_CPU_EXT_FAMILY_16H:
         if (Cpu->CPUFrequencyFromVMT == 0) {
@@ -744,8 +774,25 @@ ScanAmdProcessor (
         }
 
         //
-        // AMD 15h and 16h CPUs don't support hyperthreading,
-        // so the core count is equal to the thread count
+        // AMD 10h, 15h, and 16h CPUs don't support hyperthreading,
+        // so the core count is equal to the thread count.
+        //
+        Cpu->CoreCount = Cpu->ThreadCount;
+        break;
+      case AMD_CPU_EXT_FAMILY_0FH:
+        if (Cpu->CPUFrequencyFromVMT == 0) {
+          // FIXME: Please refer to FIXME(1) for the MSR used here.
+          CofVid          = AsmReadMsr64 (K8_FIDVID_STATUS);
+          CoreFrequencyID = (UINT8)BitFieldRead64 (CofVid, 0, 5);
+
+          // Frequency ID directly specifies the clock multiplier as a 6-bit coding.
+          // Coding starts at x4.
+          MaxBusRatio = (CoreFrequencyID / 2) + 4;
+        }
+
+        //
+        // AMD 0Fh CPUs don't support hyperthreading,
+        // so the core count is equal to the thread count.
         //
         Cpu->CoreCount = Cpu->ThreadCount;
         break;
@@ -789,6 +836,8 @@ ScanAmdProcessor (
       //
       if (MaxBusRatio == 0) {
         Cpu->FSBFrequency = 100000000; // 100 MHz like Intel part.
+      } else if (Cpu->ExtFamily == AMD_CPU_EXT_FAMILY_1AH) {
+        Cpu->FSBFrequency = DivU64x32 (Cpu->CPUFrequency, CoreFrequencyID);  // No divisor for Family 1Ah
       } else {
         Cpu->FSBFrequency = DivU64x32 (Cpu->CPUFrequency, MaxBusRatio);
       }
@@ -1480,6 +1529,15 @@ InternalDetectIntelProcessorGeneration (
 
 
         CpuGeneration = OcCpuGenerationAlderLake;
+        break;
+      case CPU_MODEL_RAPTORLAKE_S:
+      case CPU_MODEL_RAPTORLAKE_HX:
+        CpuGeneration = OcCpuGenerationRaptorLake;
+        break;
+      case CPU_MODEL_ARROWLAKE_S:
+      case CPU_MODEL_ARROWLAKE_HX:
+      case CPU_MODEL_ARROWLAKE_U:
+        CpuGeneration = OcCpuGenerationArrowLake;
         break;
       default:
         if (CpuInfo->Model < CPU_MODEL_PENRYN) {
