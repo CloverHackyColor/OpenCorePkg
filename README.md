@@ -5,6 +5,9 @@
 
 OpenCore bootloader with development SDK.
 
+Slice: This fork is not intended to be a separate bootloader. It serves as a library for used in https://github.com/CloverHackyColor/CloverBootloader
+because of unique technology for KC patching. Other methods for CPU, ACPI, SMBIOS and devices properties excluded in the favour of Clovers methods.
+
 ## Libraries
 
 This repository also contains additional UEFI support common libraries shared by other projects in [Acidanthera](https://github.com/acidanthera). The primary purpose of the library set is to provide supplemental functionality for Apple-specific UEFI drivers. Key features:
