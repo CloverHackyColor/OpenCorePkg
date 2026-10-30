@@ -5,7 +5,7 @@
 
 OpenCore bootloader with development SDK.
 
-Slice: This fork is not intended to be a separate bootloader. It serves as a library for used in https://github.com/CloverHackyColor/CloverBootloader
+@SergeySlice: This fork is not intended to be a separate bootloader. It serves as a library for used in https://github.com/CloverHackyColor/CloverBootloader
 because of unique technology for KC patching. Other methods for CPU, ACPI, SMBIOS and devices properties excluded in the favour of Clovers methods.
 
 ## Libraries
